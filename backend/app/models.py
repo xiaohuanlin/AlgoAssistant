@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, JSON, Table
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timedelta
 from .database import Base
 
 class User(Base):
@@ -44,6 +44,8 @@ class Record(Base):
     ai_analysis = Column(JSON, nullable=True)  # Store AI result as JSON
     notion_url = Column(String(256), nullable=True)  # Notion page link after sync
     github_pushed = Column(DateTime, nullable=True)  # GitHub push timestamp
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     user = relationship("User", backref="records")
     tags = relationship("Tag", secondary="record_tag", backref="records")
 
@@ -57,6 +59,8 @@ class SyncLog(Base):
     record_count = Column(Integer, default=0)
     record_ids = Column(JSON, nullable=True)  # List of new record IDs or problem IDs
     summary = Column(String(512), nullable=True)  # Optional: brief summary or status
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     user = relationship("User", backref="sync_logs")
 
 record_tag = Table(
@@ -73,6 +77,8 @@ class Tag(Base):
     name = Column(String(64), unique=True, nullable=False)
     wiki = Column(Text, nullable=True)
     notion_url = Column(String(256), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class Review(Base):
     """Model for tracking wrong problems and review plans."""
@@ -82,7 +88,7 @@ class Review(Base):
     record_id = Column(Integer, ForeignKey("records.id"), nullable=False)
     wrong_reason = Column(Text, nullable=True)  # Why the problem was wrong
     review_plan = Column(Text, nullable=True)   # Review plan or notes
-    next_review_date = Column(DateTime, nullable=True)  # Next review date based on memory curve
+    next_review_date = Column(DateTime, default=lambda: datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1))  # Next review date based on memory curve
     review_count = Column(Integer, default=0)   # Number of times reviewed
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

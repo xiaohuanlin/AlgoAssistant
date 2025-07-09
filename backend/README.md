@@ -11,6 +11,7 @@ A comprehensive algorithm practice management system with GitHub OAuth integrati
 - **Review System**: Spaced repetition for wrong problems
 - **Tag Management**: Algorithm tags with wiki documentation
 - **Multi-user Support**: User isolation and configuration management
+- **Comprehensive Testing**: Unit tests, integration tests, and 80%+ code coverage
 
 ## Quick Start with Docker
 
@@ -99,6 +100,120 @@ pip install -r requirements.txt
 # Run with hot reload
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+## Testing
+
+### Running Tests with Tox
+
+```bash
+# Navigate to backend directory
+cd backend
+
+# Install tox
+pip install tox
+
+# Run all tests (Python 3.11 and 3.12)
+tox
+
+# Run tests for specific Python version
+tox -e py311
+tox -e py312
+
+# Run tests with coverage report
+tox -e coverage
+
+# Run code quality checks
+tox -e lint
+
+# Run security checks
+tox -e security
+
+# Run fast tests (stop on first failure)
+tox -e fast
+
+# Run specific test with tox
+tox -- tests/test_utils_security.py::TestSecurityUtils::test_password_hashing
+```
+
+### Direct pytest Usage (Alternative)
+
+```bash
+# Install development dependencies
+pip install -r requirements-dev.txt
+
+# Run all tests
+pytest
+
+# Run tests with coverage
+pytest --cov=app --cov-report=html --cov-report=term-missing
+
+# Run specific test file
+pytest tests/test_utils_security.py
+
+# Run specific test class
+pytest tests/test_utils_security.py::TestSecurityUtils
+
+# Run specific test method
+pytest tests/test_utils_security.py::TestSecurityUtils::test_password_hashing
+```
+
+### Code Quality Checks
+
+```bash
+# Format code with black
+black app tests
+
+# Sort imports with isort
+isort app tests
+
+# Check code style with flake8
+flake8 app tests
+
+# Type checking with mypy
+mypy app
+
+# Security check with bandit
+bandit -r app
+```
+
+### Pre-commit Hooks
+
+```bash
+# Install pre-commit hooks
+pre-commit install
+
+# Run pre-commit on all files
+pre-commit run --all-files
+
+# Run specific hook
+pre-commit run black --all-files
+```
+
+### Test Coverage
+
+- **Target Coverage**: 80% or higher
+- **Core Business Logic**: 90% or higher
+- **Security-related Code**: 100%
+
+### Test Types
+
+- **Unit Tests**: Individual functions and methods
+- **Integration Tests**: API endpoints and component interactions
+- **Security Tests**: Authentication, authorization, and data protection
+- **Code Quality Tests**: Style, formatting, and type checking
+
+### Test Structure
+
+```
+tests/
+├── conftest.py              # pytest configuration and fixtures
+├── test_utils_security.py   # Security utilities testing
+├── test_models.py           # Data models testing
+├── test_services_*.py       # Service layer testing
+└── test_api_*.py            # API integration testing
+```
+
+For detailed testing documentation, see [tests/README.md](tests/README.md).
 
 ## Docker Commands
 
@@ -256,8 +371,20 @@ docker-compose logs -f backend
 1. Fork the repository
 2. Create feature branch
 3. Follow existing code style and patterns
-4. Add tests for new functionality
-5. Submit pull request
+4. **Add tests for new functionality** - All new features must include unit tests
+5. **Ensure test coverage** - Maintain 80%+ overall coverage
+6. **Run tests locally** - Use `tox` or `tox -e coverage` before submitting
+7. **Install pre-commit hooks** - Run `pre-commit install` for automatic code quality checks
+8. Submit pull request
+
+### Development Guidelines
+
+- **Test-Driven Development**: Write tests before implementing features
+- **Code Quality**: Follow PEP 8 style guidelines and use black for formatting
+- **Type Hints**: Use mypy for static type checking
+- **Documentation**: Update API docs and README for new features
+- **Security**: Ensure sensitive data is properly encrypted and validated
+- **Pre-commit**: Use pre-commit hooks for automatic code quality enforcement
 
 ## License
 

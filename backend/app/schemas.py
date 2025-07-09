@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 
@@ -17,8 +17,9 @@ class UserLogin(BaseModel):
 
 class UserOut(UserBase):
     id: int
-    class Config:
-        orm_mode = True
+    created_at: datetime
+    updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
 class UserConfigBase(BaseModel):
     leetcode_name: Optional[str] = None
@@ -31,11 +32,13 @@ class UserConfigBase(BaseModel):
 class UserConfigCreate(UserConfigBase):
     pass
 
-class UserConfigOut(UserConfigBase):
+class UserConfigOut(BaseModel):
     id: int
     user_id: int
-    class Config:
-        orm_mode = True
+    leetcode_name: Optional[str] = None
+    github_repo: Optional[str] = None
+    notion_db_id: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
 
 class RecordBase(BaseModel):
     oj_type: str
@@ -53,11 +56,13 @@ class TagBase(BaseModel):
     name: str
     wiki: Optional[str] = None
 
+class TagCreate(TagBase):
+    pass
+
 class TagOut(TagBase):
     id: int
     notion_url: Optional[str] = None
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class RecordOut(RecordBase):
     id: int
@@ -66,8 +71,7 @@ class RecordOut(RecordBase):
     tags: List[TagOut] = []
     notion_url: Optional[str] = None
     github_pushed: Optional[datetime] = None
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class SyncLogBase(BaseModel):
     oj_type: str
@@ -78,8 +82,7 @@ class SyncLogBase(BaseModel):
 
 class SyncLogOut(SyncLogBase):
     id: int
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ReviewBase(BaseModel):
     wrong_reason: Optional[str] = None
@@ -95,5 +98,4 @@ class ReviewOut(ReviewBase):
     review_count: int
     created_at: datetime
     updated_at: datetime
-    class Config:
-        orm_mode = True 
+    model_config = ConfigDict(from_attributes=True) 

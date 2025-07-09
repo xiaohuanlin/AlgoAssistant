@@ -30,6 +30,10 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
     access_token = jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
     return {"access_token": access_token, "token_type": "bearer"}
 
+@router.get("/me", response_model=UserOut)
+def get_current_user_info(current_user = Depends(get_current_user)):
+    return current_user
+
 @router.get("/user/profile", response_model=UserOut)
 def get_profile(current_user = Depends(get_current_user)):
     return current_user
@@ -46,12 +50,17 @@ def update_profile(user: UserCreate, db: Session = Depends(get_db), current_user
     db.refresh(db_user)
     return db_user
 
-@router.get("/user/config", response_model=UserConfigOut)
+@router.post("/config", response_model=UserConfigOut)
+def create_config(config: UserConfigCreate, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+    service = UserService(db)
+    return service.create_user_config(current_user.id, config)
+
+@router.get("/config", response_model=UserConfigOut)
 def get_config(db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     service = UserService(db)
     return service.get_user_config(current_user.id)
 
-@router.put("/user/config", response_model=UserConfigOut)
+@router.put("/config", response_model=UserConfigOut)
 def update_config(config: UserConfigCreate, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     service = UserService(db)
     updated = service.update_user_config(current_user.id, config)

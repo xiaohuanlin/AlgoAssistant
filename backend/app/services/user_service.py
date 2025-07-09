@@ -45,20 +45,9 @@ class UserService:
         self.db.refresh(db_config)
         return db_config
 
-    def get_user_config(self, user_id: int) -> Optional[schemas.UserConfigOut]:
-        """Get user config and decrypt sensitive fields."""
-        config = self.db.query(models.UserConfig).filter(models.UserConfig.user_id == user_id).first()
-        if config:
-            return schemas.UserConfigOut(
-                id=config.id,
-                user_id=config.user_id,
-                leetcode_name=config.leetcode_name,
-                github_repo=config.github_repo,
-                notion_token=security.decrypt_data(config.notion_token) if config.notion_token else None,
-                notion_db_id=config.notion_db_id,
-                openai_key=security.decrypt_data(config.openai_key) if config.openai_key else None
-            )
-        return None
+    def get_user_config(self, user_id: int) -> Optional[models.UserConfig]:
+        """Get user config."""
+        return self.db.query(models.UserConfig).filter(models.UserConfig.user_id == user_id).first()
 
     def update_user_config(self, user_id: int, config: schemas.UserConfigCreate) -> Optional[models.UserConfig]:
         """Update user config with encrypted sensitive fields."""

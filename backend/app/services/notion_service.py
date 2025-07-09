@@ -4,6 +4,10 @@ from typing import Any, Dict
 class NotionService(BaseNoteService):
     """Notion integration service implementation."""
 
+    def __init__(self, token: str, db_id: str):
+        self.token = token
+        self.db_id = db_id
+
     def sync_record(self, record: Dict[str, Any]) -> str:
         """Sync a problem record to Notion database and return the Notion page URL (mock)."""
         # For demo, return a fake Notion page URL with tag relations
