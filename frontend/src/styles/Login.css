@@ -1,0 +1,126 @@
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.login-card .ant-card-head {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 24px 24px 0;
+}
+
+.login-card .ant-card-head-title {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+}
+
+.login-card .ant-card-body {
+  padding: 24px;
+}
+
+.login-footer {
+  text-align: center;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.login-footer span {
+  color: #666;
+  margin-right: 8px;
+}
+
+.login-footer a {
+  color: #1890ff;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.login-footer a:hover {
+  text-decoration: underline;
+}
+
+/* Google login button styles */
+.google-login-button {
+  height: 44px;
+  border-color: #db4437;
+  color: #db4437;
+  margin-bottom: 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.google-login-button:hover {
+  border-color: #c23321;
+  color: #c23321;
+  background: #fff;
+}
+
+.google-login-button:focus {
+  border-color: #db4437;
+  color: #db4437;
+  box-shadow: 0 0 0 2px rgba(219, 68, 55, 0.2);
+}
+
+/* Form styles */
+.login-form .ant-form-item {
+  margin-bottom: 20px;
+}
+
+.login-form .ant-input-affix-wrapper {
+  height: 44px;
+  border-radius: 6px;
+}
+
+.login-form .ant-input {
+  height: 42px;
+  border-radius: 6px;
+}
+
+.login-form .ant-btn {
+  height: 44px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 16px;
+}
+
+/* Divider styles */
+.ant-divider {
+  margin: 24px 0;
+  color: #999;
+  font-size: 14px;
+}
+
+.ant-divider::before,
+.ant-divider::after {
+  border-top-color: #f0f0f0;
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+  .login-container {
+    padding: 16px;
+  }
+  
+  .login-card {
+    margin: 0;
+  }
+  
+  .login-card .ant-card-body {
+    padding: 20px;
+  }
+} 

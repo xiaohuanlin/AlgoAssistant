@@ -22,6 +22,7 @@ class UserConfig(Base):
     leetcode_name = Column(String(64), nullable=True)
     github_repo = Column(String(256), nullable=True)
     github_token = Column(String(512), nullable=True)  # Encrypted GitHub access token
+    google_token = Column(String(512), nullable=True)  # Encrypted Google access token
     notion_token = Column(String(256), nullable=True)  # Encrypted storage
     notion_db_id = Column(String(128), nullable=True)
     openai_key = Column(String(256), nullable=True)    # Encrypted storage

@@ -87,7 +87,7 @@ class TestSecurityUtils:
     
     def test_encryption_with_unicode(self):
         """Test encryption with unicode characters."""
-        unicode_data = "测试数据 🚀 中文"
+        unicode_data = "test data 🚀 unicode"
         
         encrypted = encrypt_data(unicode_data)
         decrypted = decrypt_data(encrypted)

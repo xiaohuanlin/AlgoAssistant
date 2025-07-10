@@ -5,9 +5,33 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = os.getenv('DATABASE_URL', 'sqlite:///./app.db')
-    SECRET_KEY: str = os.getenv('SECRET_KEY', 'changeme')
-    ENCRYPT_KEY: str = os.getenv('ENCRYPT_KEY', 'changeme')
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES', 60 * 24))
+    # Database
+    DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/algo_assistant"
+    
+    # Security
+    SECRET_KEY: str = "your-secret-key-change-in-production"
+    FERNET_KEY: str = "your-32-byte-base64-encoded-fernet-key"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    
+    # GitHub OAuth
+    GITHUB_CLIENT_ID: str = "your-github-client-id"
+    GITHUB_CLIENT_SECRET: str = "your-github-client-secret"
+    GITHUB_REDIRECT_URI: str = "http://localhost:8000/api/github/callback"
+    
+    # Google OAuth
+    GOOGLE_CLIENT_ID: str = "your-google-client-id"
+    GOOGLE_CLIENT_SECRET: str = "your-google-client-secret"
+    GOOGLE_REDIRECT_URI: str = "http://localhost:8000/api/google/callback"
+    
+    # OpenAI
+    OPENAI_API_KEY: str = "your-openai-api-key"
+    
+    # Notion
+    NOTION_TOKEN: str = "your-notion-token"
+    NOTION_DATABASE_ID: str = "your-notion-database-id"
+    
+    class Config:
+        env_file = ".env"
 
 settings = Settings() 

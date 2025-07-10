@@ -30,6 +30,15 @@ ENV/
 env.bak/
 venv.bak/
 
+# Environment variables (IMPORTANT: Never commit these!)
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+backend/.env
+frontend/.env
+
 # IDE
 .vscode/
 .idea/
@@ -66,12 +75,6 @@ coverage.xml
 # Logs
 *.log
 logs/
-
-# Local development
-.env.local
-.env.development
-.env.test
-.env.production
 
 # Docker
 .dockerignore

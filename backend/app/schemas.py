@@ -98,4 +98,12 @@ class ReviewOut(ReviewBase):
     review_count: int
     created_at: datetime
     updated_at: datetime
-    model_config = ConfigDict(from_attributes=True) 
+    model_config = ConfigDict(from_attributes=True)
+
+class GoogleLoginRequest(BaseModel):
+    access_token: str = Field(..., description="Google access token for authentication")
+
+class GoogleLoginResponse(BaseModel):
+    access_token: str
+    token_type: str
+    user: Dict[str, Any] 
