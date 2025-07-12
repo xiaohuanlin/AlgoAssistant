@@ -54,8 +54,8 @@ class TestRecordModel:
         """Test record creation."""
         record = Record(
             user_id=1,
+            submission_id=123456789,
             oj_type="leetcode",
-            problem_id="1",
             problem_title="Two Sum",
             status="accepted",
             language="python",
@@ -65,9 +65,8 @@ class TestRecordModel:
         db_session.commit()
         db_session.refresh(record)
         
-        assert record.id is not None
+        assert record.submission_id == 123456789
         assert record.oj_type == "leetcode"
-        assert record.problem_id == "1"
         assert record.status == "accepted"
         assert record.created_at is not None
     
@@ -81,8 +80,8 @@ class TestRecordModel:
         # Create record
         record = Record(
             user_id=user.id,
+            submission_id=123456789,
             oj_type="leetcode",
-            problem_id="1",
             problem_title="Two Sum",
             status="accepted",
             language="python",
@@ -140,8 +139,8 @@ class TestTagModel:
         # Create records
         record1 = Record(
             user_id=user.id,
+            submission_id=123456789,
             oj_type="leetcode",
-            problem_id="1",
             problem_title="Two Sum",
             status="accepted",
             language="python",
@@ -149,8 +148,8 @@ class TestTagModel:
         )
         record2 = Record(
             user_id=user.id,
+            submission_id=123456790,
             oj_type="leetcode",
-            problem_id="15",
             problem_title="3Sum",
             status="accepted",
             language="python",
@@ -177,7 +176,7 @@ class TestReviewModel:
         """Test review creation."""
         review = Review(
             user_id=1,
-            record_id=1,
+            record_id=123456789,
             wrong_reason="Didn't consider edge case",
             review_plan="Review two pointers technique"
         )

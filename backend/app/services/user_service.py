@@ -35,6 +35,8 @@ class UserService:
         db_config = models.UserConfig(
             user_id=user_id,
             leetcode_name=config.leetcode_name,
+            leetcode_session_cookie=config.leetcode_session_cookie,
+            leetcode_csrf_token=config.leetcode_csrf_token,
             github_repo=config.github_repo,
             notion_token=security.encrypt_data(config.notion_token) if config.notion_token else None,
             notion_db_id=config.notion_db_id,
@@ -55,6 +57,8 @@ class UserService:
         if not db_config:
             return None
         db_config.leetcode_name = config.leetcode_name
+        db_config.leetcode_session_cookie = config.leetcode_session_cookie
+        db_config.leetcode_csrf_token = config.leetcode_csrf_token
         db_config.github_repo = config.github_repo
         db_config.notion_token = security.encrypt_data(config.notion_token) if config.notion_token else None
         db_config.notion_db_id = config.notion_db_id

@@ -3,6 +3,28 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api import users, records, leetcode, notion, github, google, review
 from app.database import engine
 from app import models
+import logging
+import sys
+
+# Configure detailed logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler('app.log')
+    ]
+)
+
+# Set specific loggers to DEBUG level
+logging.getLogger('app.api.leetcode').setLevel(logging.DEBUG)
+logging.getLogger('app.services.leetcode_service').setLevel(logging.DEBUG)
+logging.getLogger('app.services.leetcode_query_service').setLevel(logging.DEBUG)
+logging.getLogger('app.services.leetcode_graphql_service').setLevel(logging.DEBUG)
+logging.getLogger('app.services.leetcode_crawler').setLevel(logging.DEBUG)
+
+logger = logging.getLogger(__name__)
+logger.info("Starting AlgoAssistant API with detailed logging enabled")
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)

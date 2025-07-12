@@ -13,13 +13,12 @@ router = APIRouter(prefix="/api/review", tags=["review"])
 @router.post("/mark/{record_id}", response_model=ReviewOut)
 def mark_as_wrong(
     record_id: int,
-    wrong_reason: Optional[str] = Body(None, embed=True),
-    review_plan: Optional[str] = Body(None, embed=True),
+    review_data: ReviewCreate,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
     service = ReviewService(db)
-    review = service.mark_as_wrong(current_user.id, record_id, wrong_reason, review_plan)
+    review = service.mark_as_wrong(current_user.id, record_id, review_data.wrong_reason, review_data.review_plan)
     return review
 
 @router.get("/list", response_model=List[ReviewOut])

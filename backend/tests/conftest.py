@@ -73,7 +73,7 @@ def test_record_data():
     """Sample record data for testing."""
     return {
         "oj_type": "leetcode",
-        "problem_id": "1",
+        "problem_number": "1",
         "problem_title": "Two Sum",
         "status": "accepted",
         "language": "python",

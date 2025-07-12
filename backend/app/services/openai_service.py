@@ -37,6 +37,6 @@ class OpenAIService(BaseAIService):
             "recommendations": ["1", "15", "167"]
         }
 
-    def recommend_related_problems(self, code: str, problem_id: str = "") -> List[str]:
+    def recommend_related_problems(self, code: str, problem_number: str = "") -> List[str]:
         """Recommend related problems based on code and problem context (mock)."""
         return ["1", "15", "167"] 

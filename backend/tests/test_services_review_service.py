@@ -21,8 +21,8 @@ class TestReviewService:
         # Create record
         record = Record(
             user_id=user.id,
+            submission_id=123456789,
             oj_type="leetcode",
-            problem_id="1",
             problem_title="Two Sum",
             status="wrong_answer",
             language="python",
@@ -34,14 +34,14 @@ class TestReviewService:
         service = ReviewService(db_session)
         review = service.mark_as_wrong(
             user.id, 
-            record.id, 
+            record.submission_id, 
             wrong_reason="Didn't consider edge case",
             review_plan="Review two pointers technique"
         )
         
         assert review.id is not None
         assert review.user_id == user.id
-        assert review.record_id == record.id
+        assert review.record_id == record.submission_id
         assert review.wrong_reason == "Didn't consider edge case"
         assert review.review_plan == "Review two pointers technique"
         assert review.review_count == 0
@@ -61,8 +61,8 @@ class TestReviewService:
         # Create record
         record = Record(
             user_id=user.id,
+            submission_id=123456789,
             oj_type="leetcode",
-            problem_id="1",
             problem_title="Two Sum",
             status="wrong_answer",
             language="python",
@@ -76,7 +76,7 @@ class TestReviewService:
         # Create first review
         review1 = service.mark_as_wrong(
             user.id, 
-            record.id, 
+            record.submission_id, 
             wrong_reason="Didn't consider edge case",
             review_plan="Review two pointers technique"
         )
@@ -84,7 +84,7 @@ class TestReviewService:
         # Mark as wrong again
         review2 = service.mark_as_wrong(
             user.id, 
-            record.id, 
+            record.submission_id, 
             wrong_reason="Updated wrong reason",
             review_plan="Updated review plan"
         )
@@ -107,8 +107,8 @@ class TestReviewService:
         # Create record
         record = Record(
             user_id=user.id,
+            submission_id=123456789,
             oj_type="leetcode",
-            problem_id="1",
             problem_title="Two Sum",
             status="wrong_answer",
             language="python",
@@ -122,7 +122,7 @@ class TestReviewService:
         # Create reviews
         review1 = service.mark_as_wrong(
             user.id, 
-            record.id, 
+            record.submission_id, 
             wrong_reason="Didn't consider edge case",
             review_plan="Review two pointers technique"
         )
@@ -130,8 +130,8 @@ class TestReviewService:
         # Create another record and review
         record2 = Record(
             user_id=user.id,
+            submission_id=123456790,
             oj_type="leetcode",
-            problem_id="2",
             problem_title="Add Two Numbers",
             status="wrong_answer",
             language="python",
@@ -142,7 +142,7 @@ class TestReviewService:
         
         review2 = service.mark_as_wrong(
             user.id, 
-            record2.id, 
+            record2.submission_id, 
             wrong_reason="Wrong algorithm",
             review_plan="Study dynamic programming"
         )
@@ -167,8 +167,8 @@ class TestReviewService:
         # Create record
         record = Record(
             user_id=user.id,
+            submission_id=123456789,
             oj_type="leetcode",
-            problem_id="1",
             problem_title="Two Sum",
             status="wrong_answer",
             language="python",
@@ -182,7 +182,7 @@ class TestReviewService:
         # Create review with past due date
         review = Review(
             user_id=user.id,
-            record_id=record.id,
+            record_id=record.submission_id,
             wrong_reason="Didn't consider edge case",
             review_plan="Review two pointers technique",
             next_review_date=datetime.utcnow() - timedelta(days=1)
@@ -209,8 +209,8 @@ class TestReviewService:
         # Create record
         record = Record(
             user_id=user.id,
+            submission_id=123456789,
             oj_type="leetcode",
-            problem_id="1",
             problem_title="Two Sum",
             status="wrong_answer",
             language="python",
@@ -224,7 +224,7 @@ class TestReviewService:
         # Create review
         review = service.mark_as_wrong(
             user.id, 
-            record.id, 
+            record.submission_id, 
             wrong_reason="Didn't consider edge case",
             review_plan="Review two pointers technique"
         )

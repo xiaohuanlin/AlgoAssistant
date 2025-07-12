@@ -9,27 +9,27 @@ class ReviewService:
         self.db = db
 
     def mark_as_wrong(self, user_id: int, record_id: int, wrong_reason: Optional[str] = None, review_plan: Optional[str] = None) -> models.Review:
-        """Mark a problem as wrong and create a review plan."""
+        """Mark a problem as wrong and create/update review."""
         # Check if review already exists
         existing_review = self.db.query(models.Review).filter(
             models.Review.user_id == user_id,
             models.Review.record_id == record_id
         ).first()
+        
         if existing_review:
+            # Update existing review
             existing_review.wrong_reason = wrong_reason
             existing_review.review_plan = review_plan
-            existing_review.next_review_date = self._calculate_next_review_date(existing_review.review_count)
             self.db.commit()
             self.db.refresh(existing_review)
             return existing_review
+        
         # Create new review
-        next_review_date = self._calculate_next_review_date(0)
         review = models.Review(
             user_id=user_id,
             record_id=record_id,
             wrong_reason=wrong_reason,
-            review_plan=review_plan,
-            next_review_date=next_review_date
+            review_plan=review_plan
         )
         self.db.add(review)
         self.db.commit()

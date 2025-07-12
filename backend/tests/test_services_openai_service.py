@@ -112,7 +112,7 @@ class TestOpenAIService:
         service = OpenAIService()
         
         code = "def twoSum(nums, target):\n    return [0, 1]"
-        recommendations = service.recommend_related_problems(code, problem_id="1")
+        recommendations = service.recommend_related_problems(code, problem_number="1")
         
         assert isinstance(recommendations, list)
         assert len(recommendations) > 0

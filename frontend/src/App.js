@@ -7,6 +7,8 @@ import Layout from './components/Layout';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import Records from './pages/Records';
+import Settings from './pages/Settings';
 import PrivateRoute from './components/PrivateRoute';
 import './i18n';
 import './styles/App.css';
@@ -32,6 +34,26 @@ function App() {
                 <PrivateRoute>
                   <Layout>
                     <Dashboard />
+                  </Layout>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/records"
+              element={
+                <PrivateRoute>
+                  <Layout>
+                    <Records />
+                  </Layout>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <PrivateRoute>
+                  <Layout>
+                    <Settings />
                   </Layout>
                 </PrivateRoute>
               }

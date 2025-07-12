@@ -21,7 +21,7 @@ class TestRecordService:
         service = RecordService(db_session)
         record_data = RecordCreate(
             oj_type="leetcode",
-            problem_id="1",
+            submission_id=123456789,
             problem_title="Two Sum",
             status="accepted",
             language="python",
@@ -30,7 +30,7 @@ class TestRecordService:
         
         record = service.create_record(user.id, record_data)
         
-        assert record.id is not None
+        assert record.submission_id == 123456789
         assert record.user_id == user.id
         assert record.problem_title == "Two Sum"
         assert record.oj_type == "leetcode"
@@ -49,8 +49,8 @@ class TestRecordService:
         # Create records
         record1 = Record(
             user_id=user.id,
+            submission_id=123456789,
             oj_type="leetcode",
-            problem_id="1",
             problem_title="Two Sum",
             status="accepted",
             language="python",
@@ -58,8 +58,8 @@ class TestRecordService:
         )
         record2 = Record(
             user_id=user.id,
+            submission_id=123456790,
             oj_type="leetcode",
-            problem_id="2",
             problem_title="Add Two Numbers",
             status="accepted",
             language="python",
@@ -76,7 +76,7 @@ class TestRecordService:
         assert records[1].problem_title == "Add Two Numbers"
     
     def test_get_record(self, db_session):
-        """Test getting record by ID."""
+        """Test getting record by submission_id."""
         # Create user first
         user = User(
             username="testuser",
@@ -89,8 +89,8 @@ class TestRecordService:
         # Create record
         record = Record(
             user_id=user.id,
+            submission_id=123456789,
             oj_type="leetcode",
-            problem_id="1",
             problem_title="Two Sum",
             status="accepted",
             language="python",
@@ -100,14 +100,14 @@ class TestRecordService:
         db_session.commit()
         
         service = RecordService(db_session)
-        found_record = service.get_record(user.id, record.id)
+        found_record = service.get_record(user.id, 123456789)
         
         assert found_record is not None
-        assert found_record.id == record.id
+        assert found_record.submission_id == 123456789
         assert found_record.problem_title == "Two Sum"
     
     def test_get_record_not_found(self, db_session):
-        """Test getting non-existent record by ID."""
+        """Test getting non-existent record by submission_id."""
         # Create user first
         user = User(
             username="testuser",
@@ -118,7 +118,7 @@ class TestRecordService:
         db_session.commit()
         
         service = RecordService(db_session)
-        record = service.get_record(user.id, 999)
+        record = service.get_record(user.id, 999999999)
         assert record is None
     
     def test_analyze_record_with_ai(self, db_session):
@@ -135,8 +135,8 @@ class TestRecordService:
         # Create record
         record = Record(
             user_id=user.id,
+            submission_id=123456789,
             oj_type="leetcode",
-            problem_id="1",
             problem_title="Two Sum",
             status="accepted",
             language="python",
@@ -213,8 +213,8 @@ class TestRecordService:
         # Create record
         record = Record(
             user_id=user.id,
+            submission_id=123456789,
             oj_type="leetcode",
-            problem_id="1",
             problem_title="Two Sum",
             status="accepted",
             language="python",
@@ -247,8 +247,8 @@ class TestRecordService:
         # Create record
         record = Record(
             user_id=user.id,
+            submission_id=123456789,
             oj_type="leetcode",
-            problem_id="1",
             problem_title="Two Sum",
             status="accepted",
             language="python",
@@ -261,7 +261,7 @@ class TestRecordService:
         service = RecordService(db_session)
         record_out = service.to_record_out(record)
         
-        assert record_out.id == record.id
+        assert record_out.submission_id == 123456789
         assert record_out.problem_title == "Two Sum"
         assert record_out.analyzed is True
         assert record_out.ai_analysis == {"complexity": "O(n)"} 

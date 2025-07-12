@@ -252,43 +252,37 @@ All endpoints require JWT authentication except:
 - `POST /api/users/login` - User login
 - `GET /api/users/me` - Get current user info
 
-#### Records
-- `GET /api/records` - List user's problem records
+### Records API
+- `GET /api/records` - Get all records for current user
 - `POST /api/records` - Create new record
-- `GET /api/records/{record_id}` - Get specific record
-- `PUT /api/records/{record_id}` - Update record
-- `DELETE /api/records/{record_id}` - Delete record
+- `GET /api/records/{submission_id}` - Get specific record
+- `PUT /api/records/{submission_id}` - Update record
+- `DELETE /api/records/{submission_id}` - Delete record
+- `GET /api/records/stats` - Get user statistics
+- `POST /api/records/analyze/batch` - Batch analyze records with AI
+- `POST /api/records/{submission_id}/analyze` - Analyze single record with AI
+- `GET /api/records/tags` - Get all tags
+- `POST /api/records/{submission_id}/tags` - Assign tags to record
 
-#### LeetCode Sync
-- `POST /api/leetcode/sync` - Sync LeetCode submissions
-- `GET /api/leetcode/sync/logs` - Get sync history
+### Notion API
+- `POST /api/notion/sync/{submission_id}` - Sync single record to Notion
+- `POST /api/notion/sync/batch` - Batch sync records to Notion
+- `POST /api/notion/tags/sync` - Sync tags to Notion
 
-#### Notion Sync
-- `POST /api/notion/sync/{record_id}` - Sync single record to Notion
-- `POST /api/notion/sync/batch` - Batch sync records
-- `POST /api/notion/sync/tags` - Sync tags to Notion
+### GitHub API
+- `GET /api/github/auth` - GitHub OAuth authorization
+- `GET /api/github/callback` - GitHub OAuth callback
+- `POST /api/github/push/{submission_id}` - Push single record to GitHub
+- `POST /api/github/push/batch` - Batch push records to GitHub
 
-#### GitHub Integration
-- `GET /api/github/auth` - Get GitHub OAuth URL
-- `GET /api/github/callback` - OAuth callback handler
-- `GET /api/github/status` - Check connection status
-- `DELETE /api/github/disconnect` - Disconnect GitHub
-- `PUT /api/github/repo` - Update repository name
-- `POST /api/github/push/{record_id}` - Push single record to GitHub
-- `POST /api/github/push/batch` - Batch push records
-
-#### Review System
-- `POST /api/review/mark/{record_id}` - Mark problem as wrong
-- `GET /api/review/list` - List all reviews
+### Review API
+- `POST /api/review/mark/{submission_id}` - Mark problem as wrong
+- `GET /api/review/list` - Get user reviews
 - `GET /api/review/due` - Get due reviews
 - `POST /api/review/{review_id}/complete` - Mark review as completed
 
-#### Tags
-- `GET /api/tags` - List all tags
-- `POST /api/tags` - Create new tag
-- `PUT /api/tags/{tag_id}` - Update tag
-- `DELETE /api/tags/{tag_id}` - Delete tag
-- `POST /api/tags/{record_id}/assign` - Assign tags to record
+### Tags API
+- `POST /api/tags/{submission_id}/assign` - Assign tags to record
 
 ## Architecture
 

@@ -31,6 +31,15 @@ class Settings(BaseSettings):
     NOTION_TOKEN: str = "your-notion-token"
     NOTION_DATABASE_ID: str = "your-notion-database-id"
     
+    # Redis Configuration
+    REDIS_URL: str = "redis://localhost:6379/0"
+    
+    # LeetCode Sync Rate Limiting
+    USER_RATE_LIMIT_DELAY: float = 2.0
+    
+    # LeetCode Sync Configuration
+    MAX_SUBMISSIONS_PER_USER: int = 1000
+    
     class Config:
         env_file = ".env"
 

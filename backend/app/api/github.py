@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, Query
+from fastapi import APIRouter, Depends, HTTPException, Request, Query, Body
 from fastapi.responses import RedirectResponse, HTMLResponse
 from sqlalchemy.orm import Session
 from app.deps import get_db, get_current_user
@@ -6,41 +6,37 @@ from app.services.service_factory import ServiceFactory
 from app.services.record_service import RecordService
 from app.services.github_oauth_service import GitHubOAuthService
 from app import models
+from typing import Dict, Any
 
 router = APIRouter(prefix="/api/github", tags=["github"])
 
 # Placeholder for GitHub integration endpoints
 # Future: push code, repo config, etc. 
 
-@router.post("/push/{record_id}")
-def push_record_to_github(
-    record_id: int,
+@router.post("/push/{submission_id}")
+def push_to_github(
+    submission_id: int,
+    repo_config: Dict[str, Any] = Body(...),
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    """Push a single record to GitHub using OAuth token."""
-    # Get user config for GitHub token and repo
-    user_config = db.query(models.UserConfig).filter(models.UserConfig.user_id == current_user.id).first()
-    if not user_config or not user_config.github_token:
-        raise HTTPException(status_code=400, detail="GitHub not configured. Please complete OAuth setup first.")
-    
-    # Create service factory with user config
-    config_dict = {
-        "repo_type": "github",
-        "github_token": user_config.github_token,
-        "github_repo": user_config.github_repo
-    }
-    factory = ServiceFactory(config_dict)
-    github_service = factory.repo_service
-    
+    """Push a record's code to GitHub."""
     service = RecordService(db)
-    db_record = service.get_record(current_user.id, record_id)
+    
+    # Get the record
+    db_record = service.get_record(current_user.id, submission_id)
     if not db_record:
         raise HTTPException(status_code=404, detail="Record not found")
     
-    repo_config = {"repo": user_config.github_repo}
-    github_url = service.push_record_to_github(db_record, github_service, repo_config)
-    return {"github_url": github_url}
+    # Get GitHub service
+    factory = ServiceFactory({"github_token": repo_config.get("github_token")})
+    github_service = factory.github_service
+    
+    try:
+        github_url = service.push_record_to_github(db_record, github_service, repo_config)
+        return {"message": "Successfully pushed to GitHub", "github_url": github_url}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to push to GitHub: {str(e)}")
 
 @router.post("/push/batch")
 def batch_push_records_to_github(

@@ -58,12 +58,16 @@ def create_config(config: UserConfigCreate, db: Session = Depends(get_db), curre
 @router.get("/config", response_model=UserConfigOut)
 def get_config(db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     service = UserService(db)
-    return service.get_user_config(current_user.id)
+    config = service.get_user_config(current_user.id)
+    if not config:
+        raise HTTPException(status_code=404, detail="User config not found")
+    return config
 
 @router.put("/config", response_model=UserConfigOut)
 def update_config(config: UserConfigCreate, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     service = UserService(db)
     updated = service.update_user_config(current_user.id, config)
     if not updated:
-        raise HTTPException(status_code=404, detail="Config not found")
+        # If config doesn't exist, create new config
+        return service.create_user_config(current_user.id, config)
     return service.get_user_config(current_user.id) 

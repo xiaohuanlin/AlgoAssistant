@@ -29,25 +29,66 @@ class UserConfigBase(BaseModel):
     notion_db_id: Optional[str] = None
     openai_key: Optional[str] = None    # Encrypted storage
 
-class UserConfigCreate(UserConfigBase):
-    pass
+class UserConfigCreate(BaseModel):
+    leetcode_name: Optional[str] = None
+    leetcode_session_cookie: Optional[str] = None
+    leetcode_csrf_token: Optional[str] = None
+    github_repo: Optional[str] = None
+    github_token: Optional[str] = None
+    google_token: Optional[str] = None
+    notion_token: Optional[str] = None
+    notion_db_id: Optional[str] = None
+    openai_key: Optional[str] = None
 
 class UserConfigOut(BaseModel):
     id: int
     user_id: int
     leetcode_name: Optional[str] = None
+    leetcode_session_cookie: Optional[str] = None
+    leetcode_csrf_token: Optional[str] = None
     github_repo: Optional[str] = None
+    github_token: Optional[str] = None
+    google_token: Optional[str] = None
+    notion_token: Optional[str] = None
     notion_db_id: Optional[str] = None
-    model_config = ConfigDict(from_attributes=True)
+    openai_key: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
 
 class RecordBase(BaseModel):
+    # Basic submission information
     oj_type: str
-    problem_id: str
+    submission_id: int
     problem_title: str
     status: str
+    sync_status: Optional[str] = "pending"
     language: str
     code: str
     submit_time: Optional[datetime] = None
+    submission_url: Optional[str] = None
+    
+    # Performance metrics
+    runtime: Optional[str] = None
+    memory: Optional[str] = None
+    runtime_percentile: Optional[float] = None
+    memory_percentile: Optional[float] = None
+    
+    # Test case information
+    total_correct: Optional[int] = None
+    total_testcases: Optional[int] = None
+    success_rate: Optional[float] = None
+    
+    # Error and output information
+    runtime_error: Optional[str] = None
+    compile_error: Optional[str] = None
+    code_output: Optional[str] = None
+    expected_output: Optional[str] = None
+    
+    # Additional information
+    topic_tags: Optional[List[str]] = None
 
 class RecordCreate(RecordBase):
     pass
@@ -65,13 +106,16 @@ class TagOut(TagBase):
     model_config = ConfigDict(from_attributes=True)
 
 class RecordOut(RecordBase):
-    id: int
+    user_id: int
     ai_analysis: Optional[Dict[str, Any]] = None
     analyzed: bool = False
-    tags: List[TagOut] = []
     notion_url: Optional[str] = None
     github_pushed: Optional[datetime] = None
-    model_config = ConfigDict(from_attributes=True)
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
 
 class SyncLogBase(BaseModel):
     oj_type: str

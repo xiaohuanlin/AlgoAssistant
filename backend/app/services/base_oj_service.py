@@ -10,6 +10,6 @@ class BaseOJService(ABC):
         pass
 
     @abstractmethod
-    def fetch_problem_detail(self, problem_id: str) -> Dict[str, Any]:
+    def fetch_problem_detail(self, problem_number: str) -> Dict[str, Any]:
         """Fetch problem detail from the OJ platform."""
         pass 

@@ -2,6 +2,9 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy.orm import Session
 from app import models, schemas
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 class RecordService:
     """Service for problem record business logic."""
@@ -13,7 +16,6 @@ class RecordService:
         db_record = models.Record(
             user_id=user_id,
             oj_type=record_data.oj_type,
-            problem_id=record_data.problem_id,
             problem_title=record_data.problem_title,
             status=record_data.status,
             language=record_data.language,
@@ -25,13 +27,63 @@ class RecordService:
         self.db.refresh(db_record)
         return db_record
 
+    def get_record(self, user_id: int, submission_id: int) -> Optional[models.Record]:
+        """Get a single problem record by submission_id for a user."""
+        return self.db.query(models.Record).filter(
+            models.Record.user_id == user_id, 
+            models.Record.submission_id == submission_id
+        ).first()
+
+    def create_record_from_leetcode_submission(self, user_id: int, submission: Dict[str, Any]) -> models.Record:
+        """Create a new problem record from LeetCode submission data."""
+        # Check if record already exists based on submission_id
+        if submission.get("submission_id"):
+            exists = self.db.query(models.Record).filter(
+                models.Record.user_id == user_id,
+                models.Record.submission_id == submission["submission_id"]
+            ).first()
+            if exists:
+                logger.debug(f"Record already exists for submission {submission['submission_id']}")
+                return exists
+        
+        # Parse submit_time if it's a string
+        submit_time = submission.get("submit_time")
+        if isinstance(submit_time, str):
+            try:
+                from datetime import datetime
+                submit_time = datetime.fromisoformat(submit_time.replace('Z', '+00:00'))
+            except Exception as e:
+                logger.warning(f"Failed to parse submit_time {submit_time}: {e}")
+                submit_time = None
+        
+        db_record = models.Record(
+            user_id=user_id,
+            oj_type=submission.get("oj_type", "leetcode"),
+            submission_id=submission["submission_id"],
+            problem_title=submission["problem_title"],
+            status=submission["status"],
+            sync_status=submission.get("sync_status", "pending"),
+            language=submission["language"],
+            code=submission["code"],
+            submit_time=submit_time,
+            runtime=submission.get("runtime"),
+            memory=submission.get("memory"),
+            submission_url=submission.get("submission_url"),
+            topic_tags=submission.get("topic_tags", [])
+        )
+        self.db.add(db_record)
+        self.db.commit()
+        self.db.refresh(db_record)
+        return db_record
+
     def get_records(self, user_id: int) -> List[models.Record]:
         """Get all problem records for a user."""
-        return self.db.query(models.Record).filter(models.Record.user_id == user_id).all()
-
-    def get_record(self, user_id: int, record_id: int) -> Optional[models.Record]:
-        """Get a single problem record by id for a user."""
-        return self.db.query(models.Record).filter(models.Record.user_id == user_id, models.Record.id == record_id).first()
+        return self.db.query(models.Record).filter(
+            models.Record.user_id == user_id
+        ).order_by(
+            models.Record.submit_time.desc().nullslast(),
+            models.Record.created_at.desc()
+        ).all()
 
     def analyze_record_with_ai(self, record: models.Record, ai_service) -> Dict[str, Any]:
         """Analyze a problem record with AI service and update the record."""
@@ -45,32 +97,49 @@ class RecordService:
         self.db.refresh(record)
         return ai_result
 
-    def sync_records_from_oj(self, user_id: int, oj_service, leetcode_username: str) -> models.SyncLog:
+    def sync_records_from_oj(self, user_id: int, oj_service, leetcode_username: str, session_cookie: str = None) -> models.SyncLog:
         """Sync problem records from OJ platform for a user. Log the sync event and return SyncLog."""
-        submissions = oj_service.fetch_user_submissions(leetcode_username)
+        from app.services.leetcode_crawler import LeetCodeCrawler
+        
+        # Use crawler for detailed submissions
+        crawler = LeetCodeCrawler(session_cookie)
+        submissions = crawler.get_all_submissions(leetcode_username)
+        
         new_record_ids = []
         for sub in submissions:
-            # Check if record already exists
-            exists = self.db.query(models.Record).filter(
-                models.Record.user_id == user_id,
-                models.Record.oj_type == sub.get("oj_type", "leetcode"),
-                models.Record.problem_id == sub["problem_id"],
-                models.Record.submit_time == sub["submit_time"]
-            ).first()
+            # Check if record already exists based on submission_id if available
+            if sub.get("submission_id"):
+                exists = self.db.query(models.Record).filter(
+                    models.Record.user_id == user_id,
+                    models.Record.submission_id == sub["submission_id"]
+                ).first()
+            else:
+                # Fallback to old method if no submission_id
+                exists = self.db.query(models.Record).filter(
+                    models.Record.user_id == user_id,
+                    models.Record.oj_type == sub.get("oj_type", "leetcode"),
+                    models.Record.submit_time == sub["submit_time"]
+                ).first()
+            
             if not exists:
                 db_record = models.Record(
                     user_id=user_id,
                     oj_type=sub.get("oj_type", "leetcode"),
-                    problem_id=sub["problem_id"],
+                    submission_id=sub["submission_id"],
                     problem_title=sub["problem_title"],
                     status=sub["status"],
                     language=sub["language"],
                     code=sub["code"],
-                    submit_time=sub["submit_time"]
+                    submit_time=sub["submit_time"],
+                    runtime=sub.get("runtime"),
+                    memory=sub.get("memory"),
+                    submission_url=sub.get("submission_url"),
+                    topic_tags=sub.get("topic_tags", [])
                 )
                 self.db.add(db_record)
-                self.db.flush()  # Get id before commit
-                new_record_ids.append(db_record.id)
+                self.db.flush()  # Get submission_id before commit
+                new_record_ids.append(db_record.submission_id)
+        
         self.db.commit()
         sync_log = models.SyncLog(
             user_id=user_id,
@@ -78,7 +147,7 @@ class RecordService:
             sync_time=datetime.utcnow(),
             record_count=len(new_record_ids),
             record_ids=new_record_ids,
-            summary=f"Synced {len(new_record_ids)} new records."
+            summary=f"Synced {len(new_record_ids)} new records with detailed information."
         )
         self.db.add(sync_log)
         self.db.commit()
@@ -102,22 +171,49 @@ class RecordService:
             record.ai_analysis = ai_result
             self.db.commit()
             self.db.refresh(record)
-            results.append({"record_id": record.id, "ai_analysis": ai_result})
+            results.append({"submission_id": record.submission_id, "ai_analysis": ai_result})
         return results
 
     def to_record_out(self, record: models.Record) -> schemas.RecordOut:
         """Convert a Record model to RecordOut schema, with analyzed flag."""
         return schemas.RecordOut(
-            id=record.id,
+            user_id=record.user_id,
             oj_type=record.oj_type,
-            problem_id=record.problem_id,
+            submission_id=record.submission_id,
             problem_title=record.problem_title,
             status=record.status,
+            sync_status=record.sync_status,
             language=record.language,
             code=record.code,
             submit_time=record.submit_time,
+            runtime=record.runtime,
+            memory=record.memory,
+            submission_url=record.submission_url,
+            topic_tags=record.topic_tags,
             ai_analysis=record.ai_analysis,
-            analyzed=record.ai_analysis is not None
+            analyzed=record.ai_analysis is not None,
+            
+            # Performance metrics
+            runtime_percentile=record.runtime_percentile,
+            memory_percentile=record.memory_percentile,
+            
+            # Test case information
+            total_correct=record.total_correct,
+            total_testcases=record.total_testcases,
+            success_rate=record.success_rate,
+            
+            # Error and output information
+            runtime_error=record.runtime_error,
+            compile_error=record.compile_error,
+            code_output=record.code_output,
+            expected_output=record.expected_output,
+            
+            # External service information
+            notion_url=record.notion_url,
+            github_pushed=record.github_pushed,
+            
+            created_at=record.created_at,
+            updated_at=record.updated_at
         )
 
     def add_tag(self, name: str, wiki: Optional[str] = None, notion_url: Optional[str] = None) -> models.Tag:
@@ -147,8 +243,7 @@ class RecordService:
         """Sync a record to Notion and update notion_url field, including tag Notion URLs as Relation."""
         tag_notion_urls = [tag.notion_url for tag in record.tags if tag.notion_url]
         notion_url = notion_service.sync_record({
-            "id": record.id,
-            "problem_id": record.problem_id,
+            "submission_id": record.submission_id,
             "problem_title": record.problem_title,
             "status": record.status,
             "language": record.language,
@@ -169,8 +264,7 @@ class RecordService:
         for record in records:
             tag_notion_urls = [tag.notion_url for tag in record.tags if tag.notion_url]
             notion_url = notion_service.sync_record({
-                "id": record.id,
-                "problem_id": record.problem_id,
+                "submission_id": record.submission_id,
                 "problem_title": record.problem_title,
                 "status": record.status,
                 "language": record.language,
@@ -182,7 +276,7 @@ class RecordService:
             record.notion_url = notion_url
             self.db.commit()
             self.db.refresh(record)
-            results.append({"record_id": record.id, "notion_url": notion_url})
+            results.append({"submission_id": record.submission_id, "notion_url": notion_url})
         return results
 
     def batch_sync_tags_to_notion(self, notion_service) -> list:
@@ -203,7 +297,9 @@ class RecordService:
 
     def push_record_to_github(self, record: models.Record, github_service, repo_config: Dict[str, Any]) -> str:
         """Push a record's code to GitHub and update github_pushed field."""
-        file_path = f"Leetcode/{record.problem_id}.{record.language}"
+        # Use submission_id as problem identifier
+        problem_identifier = str(record.submission_id)
+        file_path = f"Leetcode/{problem_identifier}.{record.language}"
         commit_message = datetime.now().strftime('%Y%m%d')
         github_url = github_service.push_code(file_path, record.code, commit_message, repo_config)
         record.github_pushed = datetime.utcnow()
@@ -212,10 +308,10 @@ class RecordService:
         return github_url
 
     def batch_push_records_to_github(self, user_id: int, github_service, repo_config: Dict[str, Any]) -> list:
-        """Batch push all records without github_pushed to GitHub. Return list of {record_id, github_url}."""
+        """Batch push all records without github_pushed to GitHub. Return list of {submission_id, github_url}."""
         records = self.db.query(models.Record).filter(models.Record.user_id == user_id, models.Record.github_pushed == None).all()
         results = []
         for record in records:
             github_url = self.push_record_to_github(record, github_service, repo_config)
-            results.append({"record_id": record.id, "github_url": github_url})
+            results.append({"submission_id": record.submission_id, "github_url": github_url})
         return results 
