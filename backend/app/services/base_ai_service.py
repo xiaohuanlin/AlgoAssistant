@@ -1,15 +1,22 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List
 
-class BaseAIService(ABC):
+from .base_service import BaseService
+
+
+class BaseAIService(BaseService):
     """Abstract base class for AI analysis services."""
 
     @abstractmethod
-    def analyze_code(self, code: str, problem_description: str = "", language: str = "") -> Dict[str, Any]:
+    def analyze_code(
+        self, code: str, problem_description: str = "", language: str = ""
+    ) -> Dict[str, Any]:
         """Analyze code and return summary, tags, error analysis, etc."""
         pass
 
     @abstractmethod
-    def recommend_related_problems(self, code: str, problem_number: str = "") -> List[str]:
+    def recommend_related_problems(
+        self, code: str, problem_number: str = ""
+    ) -> List[str]:
         """Recommend related problems based on code and problem context."""
-        pass 
+        pass

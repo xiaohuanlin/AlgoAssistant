@@ -80,9 +80,9 @@ const LeetCodeProfile = () => {
         <Col xs={24} md={12}>
           <Card size="small" title="Basic Information">
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
-              <Avatar 
-                size={64} 
-                src={profile.user_avatar} 
+              <Avatar
+                size={64}
+                src={profile.user_avatar}
                 icon={<UserOutlined />}
                 style={{ marginRight: 16 }}
               />
@@ -93,7 +93,7 @@ const LeetCodeProfile = () => {
                 <Text type="secondary">@{profile.username}</Text>
               </div>
             </div>
-            
+
             {profile.about_me && (
               <div style={{ marginBottom: 16 }}>
                 <Text strong>About:</Text>
@@ -196,4 +196,4 @@ const LeetCodeProfile = () => {
   );
 };
 
-export default LeetCodeProfile; 
+export default LeetCodeProfile;

@@ -1,7 +1,10 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import Any, Dict
 
-class BaseNoteService(ABC):
+from .base_service import BaseService
+
+
+class BaseNoteService(BaseService):
     """Abstract base class for note/knowledge base integration services (e.g., Notion)."""
 
     @abstractmethod
@@ -12,4 +15,4 @@ class BaseNoteService(ABC):
     @abstractmethod
     def update_tag_wiki(self, tag: str, wiki_content: str) -> Any:
         """Update or create wiki information for a specific tag."""
-        pass 
+        pass

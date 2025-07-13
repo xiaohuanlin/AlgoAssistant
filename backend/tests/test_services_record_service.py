@@ -1,267 +1,475 @@
+from datetime import datetime
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
+
+from app.models import OJType, Record, RecordStatus, User
 from app.services.record_service import RecordService
-from app.schemas import RecordCreate
-from app.models import User, Record, Tag
+
 
 class TestRecordService:
-    """Test RecordService functionality."""
-    
-    def test_create_record(self, db_session):
-        """Test record creation."""
-        # Create user first
+    """Test cases for RecordService."""
+
+    def test_create_record_success(self, client):
+        """Test creating a new record successfully."""
+        from app.deps import get_db
+
+        db = next(get_db())
+
+        # Create a user first
         user = User(
             username="testuser",
             email="test@example.com",
-            password_hash="hashed_password"
+            hashed_password="hashed_password",
         )
-        db_session.add(user)
-        db_session.commit()
-        
-        service = RecordService(db_session)
-        record_data = RecordCreate(
-            oj_type="leetcode",
-            submission_id=123456789,
-            problem_title="Two Sum",
-            status="accepted",
-            language="python",
-            code="def twoSum(nums, target): pass"
-        )
-        
-        record = service.create_record(user.id, record_data)
-        
-        assert record.submission_id == 123456789
-        assert record.user_id == user.id
-        assert record.problem_title == "Two Sum"
-        assert record.oj_type == "leetcode"
-    
-    def test_get_records(self, db_session):
-        """Test getting user records."""
-        # Create user first
-        user = User(
-            username="testuser",
-            email="test@example.com",
-            password_hash="hashed_password"
-        )
-        db_session.add(user)
-        db_session.commit()
-        
-        # Create records
-        record1 = Record(
-            user_id=user.id,
-            submission_id=123456789,
-            oj_type="leetcode",
-            problem_title="Two Sum",
-            status="accepted",
-            language="python",
-            code="def twoSum(nums, target): pass"
-        )
-        record2 = Record(
-            user_id=user.id,
-            submission_id=123456790,
-            oj_type="leetcode",
-            problem_title="Add Two Numbers",
-            status="accepted",
-            language="python",
-            code="def addTwoNumbers(l1, l2): pass"
-        )
-        db_session.add_all([record1, record2])
-        db_session.commit()
-        
-        service = RecordService(db_session)
-        records = service.get_records(user.id)
-        
-        assert len(records) == 2
-        assert records[0].problem_title == "Two Sum"
-        assert records[1].problem_title == "Add Two Numbers"
-    
-    def test_get_record(self, db_session):
-        """Test getting record by submission_id."""
-        # Create user first
-        user = User(
-            username="testuser",
-            email="test@example.com",
-            password_hash="hashed_password"
-        )
-        db_session.add(user)
-        db_session.commit()
-        
-        # Create record
-        record = Record(
-            user_id=user.id,
-            submission_id=123456789,
-            oj_type="leetcode",
-            problem_title="Two Sum",
-            status="accepted",
-            language="python",
-            code="def twoSum(nums, target): pass"
-        )
-        db_session.add(record)
-        db_session.commit()
-        
-        service = RecordService(db_session)
-        found_record = service.get_record(user.id, 123456789)
-        
-        assert found_record is not None
-        assert found_record.submission_id == 123456789
-        assert found_record.problem_title == "Two Sum"
-    
-    def test_get_record_not_found(self, db_session):
-        """Test getting non-existent record by submission_id."""
-        # Create user first
-        user = User(
-            username="testuser",
-            email="test@example.com",
-            password_hash="hashed_password"
-        )
-        db_session.add(user)
-        db_session.commit()
-        
-        service = RecordService(db_session)
-        record = service.get_record(user.id, 999999999)
-        assert record is None
-    
-    def test_analyze_record_with_ai(self, db_session):
-        """Test record analysis with AI."""
-        # Create user first
-        user = User(
-            username="testuser",
-            email="test@example.com",
-            password_hash="hashed_password"
-        )
-        db_session.add(user)
-        db_session.commit()
-        
-        # Create record
-        record = Record(
-            user_id=user.id,
-            submission_id=123456789,
-            oj_type="leetcode",
-            problem_title="Two Sum",
-            status="accepted",
-            language="python",
-            code="def twoSum(nums, target): pass"
-        )
-        db_session.add(record)
-        db_session.commit()
-        
-        service = RecordService(db_session)
-        
-        mock_ai_service = MagicMock()
-        mock_ai_service.analyze_code.return_value = {
-            "complexity": "O(n)",
-            "tags": ["Two Pointers", "HashMap"],
-            "analysis": "Good solution using hash map"
+        db.add(user)
+        db.commit()
+
+        service = RecordService(db)
+
+        record_data = {
+            "user_id": user.id,
+            "oj_type": "leetcode",
+            "problem_number": "1",
+            "problem_title": "Two Sum",
+            "status": "accepted",
+            "language": "python",
+            "code": "def twoSum(nums, target): pass",
+            "submitted_at": datetime.utcnow(),
         }
-        
-        result = service.analyze_record_with_ai(record, mock_ai_service)
-        
-        assert result is not None
-        assert result["complexity"] == "O(n)"
-        assert "Two Pointers" in result["tags"]
-        assert record.ai_analysis is not None
-    
-    def test_add_tag(self, db_session):
-        """Test adding a new tag."""
-        service = RecordService(db_session)
-        
-        tag = service.add_tag("Two Pointers", "Two pointers technique")
-        
-        assert tag.id is not None
-        assert tag.name == "Two Pointers"
-        assert tag.wiki == "Two pointers technique"
-    
-    def test_add_existing_tag(self, db_session):
-        """Test adding an existing tag."""
-        service = RecordService(db_session)
-        
-        # Add tag first time
-        tag1 = service.add_tag("Two Pointers", "Two pointers technique")
-        
-        # Add same tag again
-        tag2 = service.add_tag("Two Pointers", "Different description")
-        
-        assert tag1.id == tag2.id
-        assert tag1.name == tag2.name
-    
-    def test_get_tags(self, db_session):
-        """Test getting all tags."""
-        service = RecordService(db_session)
-        
-        # Add some tags
-        service.add_tag("Two Pointers", "Two pointers technique")
-        service.add_tag("HashMap", "Hash map technique")
-        
-        tags = service.get_tags()
-        
-        assert len(tags) == 2
-        tag_names = [tag.name for tag in tags]
-        assert "Two Pointers" in tag_names
-        assert "HashMap" in tag_names
-    
-    def test_assign_tags_to_record(self, db_session):
-        """Test assigning tags to a record."""
-        # Create user first
+
+        record = service.create_record(**record_data)
+
+        assert record.id is not None
+        assert record.user_id == user.id
+        assert record.oj_type == OJType.LEETCODE
+        assert record.problem_number == "1"
+        assert record.problem_title == "Two Sum"
+        assert record.status == RecordStatus.ACCEPTED
+        assert record.language == "python"
+        assert record.code == "def twoSum(nums, target): pass"
+
+    def test_get_record_by_id(self, client):
+        """Test getting a record by ID."""
+        from app.deps import get_db
+
+        db = next(get_db())
+
+        # Create a user first
         user = User(
             username="testuser",
             email="test@example.com",
-            password_hash="hashed_password"
+            hashed_password="hashed_password",
         )
-        db_session.add(user)
-        db_session.commit()
-        
-        # Create record
-        record = Record(
-            user_id=user.id,
-            submission_id=123456789,
-            oj_type="leetcode",
-            problem_title="Two Sum",
-            status="accepted",
-            language="python",
-            code="def twoSum(nums, target): pass"
-        )
-        db_session.add(record)
-        db_session.commit()
-        
-        service = RecordService(db_session)
-        
-        # Assign tags
-        updated_record = service.assign_tags_to_record(record, ["Two Pointers", "HashMap"])
-        
-        assert len(updated_record.tags) == 2
-        tag_names = [tag.name for tag in updated_record.tags]
-        assert "Two Pointers" in tag_names
-        assert "HashMap" in tag_names
-    
-    def test_to_record_out(self, db_session):
-        """Test converting record to RecordOut schema."""
-        # Create user first
+        db.add(user)
+        db.commit()
+
+        service = RecordService(db)
+
+        # Create a record
+        record_data = {
+            "user_id": user.id,
+            "oj_type": "leetcode",
+            "problem_number": "1",
+            "problem_title": "Two Sum",
+            "status": "accepted",
+            "language": "python",
+            "code": "def twoSum(nums, target): pass",
+        }
+        created_record = service.create_record(**record_data)
+
+        # Get record by ID
+        retrieved_record = service.get_record_by_id(created_record.id)
+
+        assert retrieved_record is not None
+        assert retrieved_record.id == created_record.id
+        assert retrieved_record.problem_title == "Two Sum"
+
+    def test_get_record_by_id_nonexistent(self, client):
+        """Test getting a non-existent record by ID."""
+        from app.deps import get_db
+
+        db = next(get_db())
+
+        service = RecordService(db)
+
+        record = service.get_record_by_id(999)
+
+        assert record is None
+
+    def test_get_user_records(self, client):
+        """Test getting all records for a user."""
+        from app.deps import get_db
+
+        db = next(get_db())
+
+        # Create a user first
         user = User(
             username="testuser",
             email="test@example.com",
-            password_hash="hashed_password"
+            hashed_password="hashed_password",
         )
-        db_session.add(user)
-        db_session.commit()
-        
-        # Create record
-        record = Record(
-            user_id=user.id,
-            submission_id=123456789,
-            oj_type="leetcode",
-            problem_title="Two Sum",
-            status="accepted",
-            language="python",
-            code="def twoSum(nums, target): pass",
-            ai_analysis={"complexity": "O(n)"}
+        db.add(user)
+        db.commit()
+
+        service = RecordService(db)
+
+        # Create multiple records
+        record_data1 = {
+            "user_id": user.id,
+            "oj_type": "leetcode",
+            "problem_number": "1",
+            "problem_title": "Two Sum",
+            "status": "accepted",
+            "language": "python",
+            "code": "def twoSum(nums, target): pass",
+        }
+        record_data2 = {
+            "user_id": user.id,
+            "oj_type": "leetcode",
+            "problem_number": "2",
+            "problem_title": "Add Two Numbers",
+            "status": "accepted",
+            "language": "python",
+            "code": "def addTwoNumbers(l1, l2): pass",
+        }
+        service.create_record(**record_data1)
+        service.create_record(**record_data2)
+
+        # Get user records
+        records = service.get_user_records(user.id)
+
+        assert len(records) == 2
+        assert all(record.user_id == user.id for record in records)
+
+    def test_get_user_records_with_filters(self, client):
+        """Test getting user records with filters."""
+        from app.deps import get_db
+
+        db = next(get_db())
+
+        # Create a user first
+        user = User(
+            username="testuser",
+            email="test@example.com",
+            hashed_password="hashed_password",
         )
-        db_session.add(record)
-        db_session.commit()
-        
-        service = RecordService(db_session)
-        record_out = service.to_record_out(record)
-        
-        assert record_out.submission_id == 123456789
-        assert record_out.problem_title == "Two Sum"
-        assert record_out.analyzed is True
-        assert record_out.ai_analysis == {"complexity": "O(n)"} 
+        db.add(user)
+        db.commit()
+
+        service = RecordService(db)
+
+        # Create records with different statuses
+        record_data1 = {
+            "user_id": user.id,
+            "oj_type": "leetcode",
+            "problem_number": "1",
+            "problem_title": "Two Sum",
+            "status": "accepted",
+            "language": "python",
+            "code": "def twoSum(nums, target): pass",
+        }
+        record_data2 = {
+            "user_id": user.id,
+            "oj_type": "leetcode",
+            "problem_number": "2",
+            "problem_title": "Add Two Numbers",
+            "status": "wrong_answer",
+            "language": "python",
+            "code": "def addTwoNumbers(l1, l2): pass",
+        }
+        service.create_record(**record_data1)
+        service.create_record(**record_data2)
+
+        # Get accepted records only
+        accepted_records = service.get_user_records(
+            user.id, status=RecordStatus.ACCEPTED
+        )
+        assert len(accepted_records) == 1
+        assert accepted_records[0].status == RecordStatus.ACCEPTED
+
+        # Get records by language
+        python_records = service.get_user_records(user.id, language="python")
+        assert len(python_records) == 2
+        assert all(record.language == "python" for record in python_records)
+
+    def test_update_record(self, client):
+        """Test updating a record."""
+        from app.deps import get_db
+
+        db = next(get_db())
+
+        # Create a user first
+        user = User(
+            username="testuser",
+            email="test@example.com",
+            hashed_password="hashed_password",
+        )
+        db.add(user)
+        db.commit()
+
+        service = RecordService(db)
+
+        # Create a record
+        record_data = {
+            "user_id": user.id,
+            "oj_type": "leetcode",
+            "problem_number": "1",
+            "problem_title": "Two Sum",
+            "status": "accepted",
+            "language": "python",
+            "code": "def twoSum(nums, target): pass",
+        }
+        created_record = service.create_record(**record_data)
+
+        # Update record
+        update_data = {
+            "status": "wrong_answer",
+            "code": "def twoSum(nums, target): return []",
+        }
+        updated_record = service.update_record(created_record.id, update_data)
+
+        assert updated_record.status == RecordStatus.WRONG_ANSWER
+        assert updated_record.code == "def twoSum(nums, target): return []"
+        assert updated_record.problem_title == "Two Sum"  # Should remain unchanged
+
+    def test_delete_record(self, client):
+        """Test deleting a record."""
+        from app.deps import get_db
+
+        db = next(get_db())
+
+        # Create a user first
+        user = User(
+            username="testuser",
+            email="test@example.com",
+            hashed_password="hashed_password",
+        )
+        db.add(user)
+        db.commit()
+
+        service = RecordService(db)
+
+        # Create a record
+        record_data = {
+            "user_id": user.id,
+            "oj_type": "leetcode",
+            "problem_number": "1",
+            "problem_title": "Two Sum",
+            "status": "accepted",
+            "language": "python",
+            "code": "def twoSum(nums, target): pass",
+        }
+        created_record = service.create_record(**record_data)
+
+        # Delete record
+        service.delete_record(created_record.id)
+
+        # Verify record is deleted
+        retrieved_record = service.get_record_by_id(created_record.id)
+        assert retrieved_record is None
+
+    def test_get_user_statistics(self, client):
+        """Test getting user statistics."""
+        from app.deps import get_db
+
+        db = next(get_db())
+
+        # Create a user first
+        user = User(
+            username="testuser",
+            email="test@example.com",
+            hashed_password="hashed_password",
+        )
+        db.add(user)
+        db.commit()
+
+        service = RecordService(db)
+
+        # Create records with different statuses
+        record_data1 = {
+            "user_id": user.id,
+            "oj_type": "leetcode",
+            "problem_number": "1",
+            "problem_title": "Two Sum",
+            "status": "accepted",
+            "language": "python",
+            "code": "def twoSum(nums, target): pass",
+        }
+        record_data2 = {
+            "user_id": user.id,
+            "oj_type": "leetcode",
+            "problem_number": "2",
+            "problem_title": "Add Two Numbers",
+            "status": "wrong_answer",
+            "language": "python",
+            "code": "def addTwoNumbers(l1, l2): pass",
+        }
+        record_data3 = {
+            "user_id": user.id,
+            "oj_type": "leetcode",
+            "problem_number": "3",
+            "problem_title": "Longest Substring",
+            "status": "accepted",
+            "language": "java",
+            "code": "public int lengthOfLongestSubstring(String s) { return 0; }",
+        }
+        service.create_record(**record_data1)
+        service.create_record(**record_data2)
+        service.create_record(**record_data3)
+
+        # Get statistics
+        stats = service.get_user_statistics(user.id)
+
+        assert stats["total_records"] == 3
+        assert stats["accepted_records"] == 2
+        assert stats["wrong_answer_records"] == 1
+        assert stats["languages"] == ["python", "java"]
+        assert stats["oj_types"] == ["leetcode"]
+
+    def test_search_records(self, client):
+        """Test searching records."""
+        from app.deps import get_db
+
+        db = next(get_db())
+
+        # Create a user first
+        user = User(
+            username="testuser",
+            email="test@example.com",
+            hashed_password="hashed_password",
+        )
+        db.add(user)
+        db.commit()
+
+        service = RecordService(db)
+
+        # Create records with different titles
+        record_data1 = {
+            "user_id": user.id,
+            "oj_type": "leetcode",
+            "problem_number": "1",
+            "problem_title": "Two Sum",
+            "status": "accepted",
+            "language": "python",
+            "code": "def twoSum(nums, target): pass",
+        }
+        record_data2 = {
+            "user_id": user.id,
+            "oj_type": "leetcode",
+            "problem_number": "2",
+            "problem_title": "Add Two Numbers",
+            "status": "accepted",
+            "language": "python",
+            "code": "def addTwoNumbers(l1, l2): pass",
+        }
+        record_data3 = {
+            "user_id": user.id,
+            "oj_type": "leetcode",
+            "problem_number": "3",
+            "problem_title": "Longest Substring Without Repeating Characters",
+            "status": "accepted",
+            "language": "java",
+            "code": "public int lengthOfLongestSubstring(String s) { return 0; }",
+        }
+        service.create_record(**record_data1)
+        service.create_record(**record_data2)
+        service.create_record(**record_data3)
+
+        # Search for "Two"
+        results = service.search_records(user.id, "Two")
+        assert len(results) == 2
+        assert all("Two" in record.problem_title for record in results)
+
+        # Search for "Longest"
+        results = service.search_records(user.id, "Longest")
+        assert len(results) == 1
+        assert "Longest" in results[0].problem_title
+
+    def test_get_records_by_oj_type(self, client):
+        """Test getting records by OJ type."""
+        from app.deps import get_db
+
+        db = next(get_db())
+
+        # Create a user first
+        user = User(
+            username="testuser",
+            email="test@example.com",
+            hashed_password="hashed_password",
+        )
+        db.add(user)
+        db.commit()
+
+        service = RecordService(db)
+
+        # Create records for different OJ types
+        record_data1 = {
+            "user_id": user.id,
+            "oj_type": "leetcode",
+            "problem_number": "1",
+            "problem_title": "Two Sum",
+            "status": "accepted",
+            "language": "python",
+            "code": "def twoSum(nums, target): pass",
+        }
+        record_data2 = {
+            "user_id": user.id,
+            "oj_type": "codeforces",
+            "problem_number": "A",
+            "problem_title": "Watermelon",
+            "status": "accepted",
+            "language": "cpp",
+            "code": "#include <iostream>",
+        }
+        service.create_record(**record_data1)
+        service.create_record(**record_data2)
+
+        # Get LeetCode records
+        leetcode_records = service.get_user_records(user.id, oj_type=OJType.LEETCODE)
+        assert len(leetcode_records) == 1
+        assert leetcode_records[0].oj_type == OJType.LEETCODE
+
+        # Get Codeforces records
+        codeforces_records = service.get_user_records(
+            user.id, oj_type=OJType.CODEFORCES
+        )
+        assert len(codeforces_records) == 1
+        assert codeforces_records[0].oj_type == OJType.CODEFORCES
+
+    def test_get_records_pagination(self, client):
+        """Test getting records with pagination."""
+        from app.deps import get_db
+
+        db = next(get_db())
+
+        # Create a user first
+        user = User(
+            username="testuser",
+            email="test@example.com",
+            hashed_password="hashed_password",
+        )
+        db.add(user)
+        db.commit()
+
+        service = RecordService(db)
+
+        # Create multiple records
+        for i in range(5):
+            record_data = {
+                "user_id": user.id,
+                "oj_type": "leetcode",
+                "problem_number": str(i + 1),
+                "problem_title": f"Problem {i + 1}",
+                "status": "accepted",
+                "language": "python",
+                "code": f"def problem{i + 1}(): pass",
+            }
+            service.create_record(**record_data)
+
+        # Get records with pagination
+        records = service.get_user_records(user.id, skip=0, limit=3)
+        assert len(records) == 3
+
+        records = service.get_user_records(user.id, skip=3, limit=3)
+        assert len(records) == 2  # Only 2 records remaining

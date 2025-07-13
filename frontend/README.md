@@ -88,7 +88,7 @@ The app supports both English and Chinese languages. Users can switch languages 
 Create a `.env` file to configure environment variables:
 
 ```env
-REACT_APP_API_URL=http://localhost:8000
+REACT_APP_API_URL=your_api_url_here
 ```
 
 ## Docker Deployment
@@ -173,4 +173,4 @@ Use the provided Dockerfile for containerized deployment.
 
 ## License
 
-MIT License 
+MIT License

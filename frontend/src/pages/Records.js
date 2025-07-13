@@ -12,20 +12,33 @@ import {
   Row,
   Col,
   Statistic,
-  Tooltip
+  Tooltip,
+  Tabs,
+  Select,
+  Alert,
+  Form,
+  Input,
+  DatePicker,
 } from 'antd';
 import {
   BookOutlined,
   EyeOutlined,
   CheckCircleOutlined,
-  CloseCircleOutlined
+  CloseCircleOutlined,
+  SyncOutlined,
+  FilterOutlined,
+  ClearOutlined
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import recordsService from '../services/recordsService';
+import gitSyncService from '../services/gitSyncService';
+import GitSyncAction from '../components/GitSyncAction';
+import GitSyncStatusPage from '../components/GitSyncStatusPage';
 import dayjs from 'dayjs';
 
+const { RangePicker } = DatePicker;
 const { Title, Text, Link } = Typography;
 
 const Records = () => {
@@ -36,26 +49,36 @@ const Records = () => {
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [currentRecord, setCurrentRecord] = useState(null);
 
-  const loadRecords = useCallback(async () => {
+  // Batch sync states
+  const [selectedRecords, setSelectedRecords] = useState([]);
+  const [syncOrder, setSyncOrder] = useState('asc');
+  const [batchSyncLoading, setBatchSyncLoading] = useState(false);
+  const [configStatus, setConfigStatus] = useState(null);
+
+  // Filter states
+  const [filters, setFilters] = useState({});
+  const [filterForm] = Form.useForm();
+
+  const loadRecords = useCallback(async (filterParams = {}) => {
     setLoading(true);
     try {
-      console.log('Loading records...');
+      console.log('Loading records with filters:', filterParams);
       console.log('Current token:', localStorage.getItem('token'));
-      
+
       const [recordsData, statsData] = await Promise.all([
-        recordsService.getRecords(),
+        recordsService.getRecords(filterParams),
         recordsService.getStats()
       ]);
       console.log('Records data:', recordsData);
       console.log('Stats data:', statsData);
-      
+
       // Ensure we have valid arrays/objects
       const validRecords = Array.isArray(recordsData) ? recordsData : [];
       const validStats = statsData && typeof statsData === 'object' ? statsData : {};
-      
+
       console.log('Valid records:', validRecords);
       console.log('Valid stats:', validStats);
-      
+
       setRecords(validRecords);
       setStats(validStats);
     } catch (error) {
@@ -65,7 +88,7 @@ const Records = () => {
         response: error.response?.data,
         status: error.response?.status
       });
-      
+
       if (error.response?.status === 401) {
         message.error('Authentication required. Please login again.');
         // Redirect to login
@@ -75,7 +98,7 @@ const Records = () => {
       } else {
         message.error(t('records.loadError'));
       }
-      
+
       setRecords([]);
       setStats({});
     } finally {
@@ -83,45 +106,118 @@ const Records = () => {
     }
   }, [t]);
 
-  const loadStats = async () => {
-    setLoading(true);
-    try {
-      const statsData = await recordsService.getStats();
-      setStats(statsData);
-    } catch (error) {
-      console.error('Error loading stats:', error);
-      console.error('Error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      });
-      setStats({});
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadStats();
-  }, []);
-
   useEffect(() => {
     // Add error boundary for debugging
     const handleError = (error) => {
       console.error('Global error caught:', error);
       console.error('Error stack:', error.stack);
     };
-    
+
     window.addEventListener('error', handleError);
-    
+
     return () => {
       window.removeEventListener('error', handleError);
     };
   }, []);
 
+  // Combine all initialization requests into one useEffect
   useEffect(() => {
-    loadRecords();
-  }, [loadRecords]);
+    const initializeData = async () => {
+      setLoading(true);
+      try {
+        // Parallel requests for all data
+        const [recordsData, statsData, configData] = await Promise.all([
+          recordsService.getRecords(filters),
+          recordsService.getStats(),
+          gitSyncService.getConfigurationStatus().catch(err => ({
+            configured: false,
+            message: 'Failed to check configuration',
+            action: 'configure',
+            actionText: 'Configure Git Repository'
+          }))
+        ]);
+
+        // Set data
+        const validRecords = Array.isArray(recordsData) ? recordsData : [];
+        const validStats = statsData && typeof statsData === 'object' ? statsData : {};
+
+        setRecords(validRecords);
+        setStats(validStats);
+        setConfigStatus(configData);
+      } catch (error) {
+        console.error('Error initializing data:', error);
+        if (error.response?.status === 401) {
+          message.error('Authentication required. Please login again.');
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/login';
+        } else {
+          message.error(t('records.loadError'));
+        }
+        setRecords([]);
+        setStats({});
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeData();
+  }, [filters, t]);
+
+  const handleFilter = (values) => {
+    const filterParams = { ...values };
+
+    // Handle date range
+    if (values.timeRange && values.timeRange.length === 2) {
+      filterParams.start_time = values.timeRange[0].startOf('day').toISOString();
+      filterParams.end_time = values.timeRange[1].endOf('day').toISOString();
+      delete filterParams.timeRange;
+    }
+
+    // Handle tags (convert array to comma-separated string)
+    if (values.tags && Array.isArray(values.tags)) {
+      filterParams.tags = values.tags.join(',');
+    }
+
+    setFilters(filterParams);
+  };
+
+  const handleClearFilters = () => {
+    filterForm.resetFields();
+    setFilters({});
+  };
+
+
+
+  const handleBatchSync = async () => {
+    if (selectedRecords.length === 0) {
+      message.warning(t('git.selectRecordsFirst'));
+      return;
+    }
+
+    // Check if Git is configured
+    if (!configStatus?.configured) {
+      message.warning(t('git.configRequired'));
+      return;
+    }
+
+    setBatchSyncLoading(true);
+    try {
+      await gitSyncService.syncToGit(selectedRecords, { order: syncOrder });
+      message.success(t('git.batchSyncStarted', { count: selectedRecords.length }));
+      setSelectedRecords([]);
+      // Trigger data reload
+      setFilters(prev => ({ ...prev }));
+    } catch (error) {
+      if (error.message.includes('Git configuration not found')) {
+        message.warning(t('git.configRequired'));
+      } else {
+        message.error(t('git.batchSyncError') + ': ' + error.message);
+      }
+    } finally {
+      setBatchSyncLoading(false);
+    }
+  };
 
   const handleViewRecord = (record) => {
     if (!record) {
@@ -132,9 +228,9 @@ const Records = () => {
     setViewModalVisible(true);
   };
 
-  const getStatusColor = (status) => {
-    if (!status || typeof status !== 'string') return 'default';
-    switch (status.toLowerCase()) {
+  const getStatusColor = (execution_result) => {
+    if (!execution_result || typeof execution_result !== 'string') return 'default';
+    switch (execution_result.toLowerCase()) {
       case 'accepted':
         return 'success';
       case 'wrong answer':
@@ -181,13 +277,10 @@ const Records = () => {
 
   const getProblemDisplay = (record) => {
     if (!record) return 'Unknown Problem';
-    // Use question_id if available
-    if (record.question_id) {
-      const problemTitle = record.problem_title || 'Unknown';
-      return `${record.question_id}. ${problemTitle}`;
+    if (record.problem && record.problem.title) {
+      return `${record.id}. ${record.problem.title}`;
     }
-    // Fallback to just problem title
-    return record.problem_title || 'Unknown Problem';
+    return `#${record.id}`;
   };
 
   const getLanguageForHighlight = (language) => {
@@ -205,6 +298,16 @@ const Records = () => {
   };
 
   const columns = [
+    {
+      title: t('records.problemNumber'),
+      dataIndex: 'problem_id',
+      key: 'problem_id',
+      width: 80,
+      render: (problemId) => {
+        if (!problemId) return <Text type="secondary">-</Text>;
+        return <Text strong>{problemId}</Text>;
+      }
+    },
     {
       title: t('records.problem'),
       key: 'problem',
@@ -226,14 +329,14 @@ const Records = () => {
     },
     {
       title: t('records.status'),
-      dataIndex: 'status',
-      key: 'status',
+      dataIndex: 'execution_result',
+      key: 'execution_result',
       width: 120,
-      render: (status) => {
-        const safeStatus = status && typeof status === 'string' ? status : '';
+      render: (execution_result) => {
+        const safeStatus = execution_result && typeof execution_result === 'string' ? execution_result : '';
         const lowerStatus = safeStatus.toLowerCase();
         return (
-          <Tag 
+          <Tag
             color={getStatusColor(safeStatus)}
             icon={lowerStatus === 'accepted' ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
           >
@@ -257,64 +360,6 @@ const Records = () => {
       }
     },
     {
-      title: t('records.runtime'),
-      dataIndex: 'runtime',
-      key: 'runtime',
-      width: 120,
-      render: (runtime) => (
-        <Text type="secondary">
-          {runtime || '-'}
-        </Text>
-      )
-    },
-    {
-      title: t('records.memory'),
-      dataIndex: 'memory',
-      key: 'memory',
-      width: 120,
-      render: (memory) => (
-        <Text type="secondary">
-          {memory || '-'}
-        </Text>
-      )
-    },
-    {
-      title: t('records.runtimePercentile'),
-      dataIndex: 'runtime_percentile',
-      key: 'runtime_percentile',
-      width: 100,
-      render: (percentile) => {
-        if (percentile !== null && percentile !== undefined) {
-          const value = typeof percentile === 'number' ? percentile.toFixed(1) : percentile;
-          const color = percentile <= 25 ? 'green' : percentile <= 50 ? 'orange' : 'red';
-          return (
-            <Tag color={color}>
-              {value}%
-            </Tag>
-          );
-        }
-        return <Text type="secondary">-</Text>;
-      }
-    },
-    {
-      title: t('records.memoryPercentile'),
-      dataIndex: 'memory_percentile',
-      key: 'memory_percentile',
-      width: 100,
-      render: (percentile) => {
-        if (percentile !== null && percentile !== undefined) {
-          const value = typeof percentile === 'number' ? percentile.toFixed(1) : percentile;
-          const color = percentile <= 25 ? 'green' : percentile <= 50 ? 'orange' : 'red';
-          return (
-            <Tag color={color}>
-              {value}%
-            </Tag>
-          );
-        }
-        return <Text type="secondary">-</Text>;
-      }
-    },
-    {
       title: t('records.ojType'),
       dataIndex: 'oj_type',
       key: 'oj_type',
@@ -330,29 +375,69 @@ const Records = () => {
     },
     {
       title: t('records.syncStatus'),
-      dataIndex: 'sync_status',
-      key: 'sync_status',
+      dataIndex: 'oj_status',
+      key: 'oj_status',
       width: 100,
-      render: (syncStatus) => {
-        const safeSyncStatus = syncStatus && typeof syncStatus === 'string' ? syncStatus : 'pending';
+      render: (oj_status) => {
+        const safeSyncStatus = oj_status && typeof oj_status === 'string' ? oj_status : 'pending';
         const colorMap = {
           'synced': 'success',
           'syncing': 'processing',
           'failed': 'error',
-          'pending': 'default'
+          'pending': 'default',
+          'paused': 'default',
+          'retry': 'default'
+        };
+        const textMap = {
+          'pending': t('records.gitSyncStatusPending'),
+          'syncing': t('records.gitSyncStatusSyncing'),
+          'synced': t('records.gitSyncStatusSynced'),
+          'failed': t('records.gitSyncStatusFailed'),
+          'paused': t('records.gitSyncStatusPaused'),
+          'retry': t('records.gitSyncStatusRetry')
         };
         return (
           <Tag color={colorMap[safeSyncStatus] || 'default'}>
-            {safeSyncStatus}
+            {textMap[safeSyncStatus] || safeSyncStatus}
           </Tag>
         );
       }
     },
     {
-      title: t('records.aiAnalysis'),
+      title: t('records.githubSyncStatus'),
+      dataIndex: 'git_sync_status',
+      key: 'git_sync_status',
+      width: 120,
+      render: (gitSyncStatus) => {
+        const safeGitSyncStatus = gitSyncStatus && typeof gitSyncStatus === 'string' ? gitSyncStatus : 'pending';
+        const colorMap = {
+          'synced': 'success',
+          'syncing': 'processing',
+          'failed': 'error',
+          'pending': 'default',
+          'paused': 'default',
+          'retry': 'default'
+        };
+        const textMap = {
+          'pending': t('records.gitSyncStatusPending'),
+          'syncing': t('records.gitSyncStatusSyncing'),
+          'synced': t('records.gitSyncStatusSynced'),
+          'failed': t('records.gitSyncStatusFailed'),
+          'paused': t('records.gitSyncStatusPaused'),
+          'retry': t('records.gitSyncStatusRetry')
+        };
+        return (
+          <Tag color={colorMap[safeGitSyncStatus] || 'default'}>
+            {textMap[safeGitSyncStatus] || safeGitSyncStatus}
+          </Tag>
+        );
+      }
+    },
+    {
+      title: t('records.aiAnalysisStatus'),
       dataIndex: 'ai_analysis',
       key: 'ai_analysis',
-      width: 80,
+      width: 100,
       render: (aiAnalysis) => {
         if (aiAnalysis && typeof aiAnalysis === 'object') {
           return (
@@ -420,29 +505,6 @@ const Records = () => {
       }
     },
     {
-      title: t('records.testCases'),
-      key: 'testcases',
-      width: 140,
-      render: (_, record) => {
-        if (record.total_testcases !== null && record.total_testcases !== undefined && 
-            record.total_correct !== null && record.total_correct !== undefined) {
-          return (
-            <div>
-              <Text type="secondary">
-                {record.total_correct}/{record.total_testcases}
-              </Text>
-              {record.success_rate !== null && record.success_rate !== undefined && (
-                <div style={{ fontSize: '11px', color: '#999' }}>
-                  {typeof record.success_rate === 'number' ? record.success_rate.toFixed(1) : record.success_rate}%
-                </div>
-              )}
-            </div>
-          );
-        }
-        return <Text type="secondary">-</Text>;
-      }
-    },
-    {
       title: t('records.submitTime'),
       dataIndex: 'submit_time',
       key: 'submit_time',
@@ -468,15 +530,229 @@ const Records = () => {
     {
       title: t('records.actions'),
       key: 'actions',
-      width: 80,
+      width: 120,
       render: (_, record) => (
-        <Tooltip title={t('records.view')}>
-          <Button
-            type="text"
-            icon={<EyeOutlined />}
-            onClick={() => handleViewRecord(record)}
+        <Space>
+          <Tooltip title={t('records.view')}>
+            <Button
+              type="text"
+              icon={<EyeOutlined />}
+              onClick={() => handleViewRecord(record)}
+            />
+          </Tooltip>
+          <GitSyncAction
+            record={record}
+            onSync={loadRecords}
           />
-        </Tooltip>
+        </Space>
+      )
+    }
+  ];
+
+  const items = [
+    {
+      key: 'records',
+      label: t('records.recordList'),
+      children: (
+        <>
+          {/* Statistics */}
+          <Spin spinning={loading}>
+            <Row gutter={16} style={{ marginBottom: 24 }}>
+              <Col xs={24} sm={12} lg={6}>
+                <Statistic title={t('records.totalSubmissions')} value={stats.total || 0} />
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <Statistic title={t('records.uniqueProblems')} value={stats.unique_problems || 0} />
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <Statistic title={t('records.solvedProblems')} value={stats.solved || 0} />
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <Statistic title={t('records.successRate')} value={stats.successRate || 0} suffix="%" precision={1} />
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <Statistic title={t('records.languages')} value={stats.languages || 0} />
+              </Col>
+            </Row>
+          </Spin>
+
+          {/* Record List */}
+          <Card
+            title={t('records.recordList')}
+            extra={
+              <Button onClick={() => setFilters(prev => ({ ...prev }))} loading={loading}>
+                  {t('common.refresh')}
+                </Button>
+            }
+          >
+            {/* 3. Always show filter form directly */}
+            <Card
+              size="small"
+              style={{ marginBottom: 16, backgroundColor: '#fafafa' }}
+              title={
+                <Space>
+                  <FilterOutlined />
+                  {t('records.filters')}
+              </Space>
+            }
+              extra={
+                <Button
+                  size="small"
+                  icon={<ClearOutlined />}
+                  onClick={handleClearFilters}
+                >
+                  {t('records.clearFilters')}
+                </Button>
+              }
+            >
+              <Form
+                form={filterForm}
+                layout="vertical"
+                onFinish={handleFilter}
+                initialValues={filters}
+              >
+                <Row gutter={[16, 0]}>
+                  <Col span={6} style={{ minWidth: 200 }}>
+                    <Form.Item name="problem_title" label={t('records.problemTitle')}>
+                      <Input placeholder={t('records.enterProblemTitle')} />
+                    </Form.Item>
+                  </Col>
+                  <Col span={6} style={{ minWidth: 160 }}>
+                    <Form.Item name="problem_id" label={t('records.problemId')}>
+                      <Input placeholder={t('records.enterProblemId')} type="number" />
+                    </Form.Item>
+                  </Col>
+                  <Col span={6} style={{ minWidth: 180 }}>
+                    <Form.Item name="status" label={t('records.status')}>
+                      <Select placeholder={t('records.selectStatus')} allowClear>
+                        <Select.Option value="Accepted">{t('records.accepted')}</Select.Option>
+                        <Select.Option value="Wrong Answer">{t('records.wrongAnswer')}</Select.Option>
+                        <Select.Option value="Time Limit Exceeded">{t('records.timeLimitExceeded')}</Select.Option>
+                        <Select.Option value="Runtime Error">{t('records.runtimeError')}</Select.Option>
+                        <Select.Option value="Memory Limit Exceeded">{t('records.memoryLimitExceeded')}</Select.Option>
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                  <Col span={6} style={{ minWidth: 160 }}>
+                    <Form.Item name="language" label={t('records.language')}>
+                      <Select placeholder={t('records.selectLanguage')} allowClear>
+                        <Select.Option value="python">{t('records.python')}</Select.Option>
+                        <Select.Option value="java">{t('records.java')}</Select.Option>
+                        <Select.Option value="cpp">{t('records.cpp')}</Select.Option>
+                        <Select.Option value="c">{t('records.c')}</Select.Option>
+                        <Select.Option value="javascript">{t('records.javascript')}</Select.Option>
+                        <Select.Option value="typescript">{t('records.typescript')}</Select.Option>
+                        <Select.Option value="go">{t('records.go')}</Select.Option>
+                        <Select.Option value="rust">{t('records.rust')}</Select.Option>
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                  <Col span={6} style={{ minWidth: 180 }}>
+                    <Form.Item name="git_sync_status" label={t('records.gitSyncStatus')}>
+                      <Select placeholder={t('records.selectGitSyncStatus')} allowClear>
+                        <Select.Option value="pending">{t('records.gitSyncStatusPending')}</Select.Option>
+                        <Select.Option value="syncing">{t('records.gitSyncStatusSyncing')}</Select.Option>
+                        <Select.Option value="synced">{t('records.gitSyncStatusSynced')}</Select.Option>
+                        <Select.Option value="failed">{t('records.gitSyncStatusFailed')}</Select.Option>
+                        <Select.Option value="paused">{t('records.gitSyncStatusPaused')}</Select.Option>
+                        <Select.Option value="retry">{t('records.gitSyncStatusRetry')}</Select.Option>
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                  <Col span={6} style={{ minWidth: 140 }}>
+                    <Form.Item name="oj_type" label={t('records.ojType')}>
+                      <Select placeholder={t('records.selectOjType')} allowClear>
+                        <Select.Option value="leetcode">LeetCode</Select.Option>
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                  <Col span={6} style={{ minWidth: 220 }}>
+                    <Form.Item name="timeRange" label={t('records.submitTime')}>
+                      <RangePicker style={{ width: '100%' }} placeholder={[t('records.startDate'), t('records.endDate')]} />
+                    </Form.Item>
+                  </Col>
+                  <Col span={6} style={{ minWidth: 120, display: 'flex', alignItems: 'flex-end' }}>
+                    <Form.Item>
+                      <Button type="primary" htmlType="submit">
+                        {t('records.filter')}
+                      </Button>
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </Form>
+            </Card>
+
+            {/* Git Configuration Status */}
+            {configStatus && !configStatus.configured && (
+              <Alert
+                message={t('git.configRequired')}
+                description={configStatus.message}
+                type="warning"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+            )}
+
+            {/* Batch Sync Controls */}
+            <Row gutter={16} style={{ marginBottom: 16 }} align="middle">
+              <Col>
+                <Text strong>{t('git.syncOrder')}:</Text>
+                <Select
+                  value={syncOrder}
+                  onChange={setSyncOrder}
+                  style={{ width: 120, marginLeft: 8 }}
+                >
+                  <Select.Option value="asc">{t('git.timeAsc')}</Select.Option>
+                  <Select.Option value="desc">{t('git.timeDesc')}</Select.Option>
+                </Select>
+              </Col>
+              <Col>
+                <Button
+                  type="primary"
+                  onClick={handleBatchSync}
+                  loading={batchSyncLoading}
+                  disabled={selectedRecords.length === 0}
+                  icon={<SyncOutlined />}
+                >
+                  {t('git.batchSync', { count: selectedRecords.length })}
+                </Button>
+              </Col>
+              <Col>
+                <Text type="secondary">
+                  {t('git.selectedCount', { count: selectedRecords.length, total: records.length })}
+                </Text>
+              </Col>
+            </Row>
+            <Spin spinning={loading}>
+              <Table
+                columns={columns}
+                dataSource={records}
+                rowKey={(record) => record?.submission_id || Math.random().toString()}
+                scroll={{ x: 2100 }}
+                rowSelection={{
+                  selectedRowKeys: selectedRecords,
+                  onChange: (selectedRowKeys, selectedRows) => {
+                    setSelectedRecords(selectedRowKeys);
+                  },
+                  getCheckboxProps: (record) => ({
+                    disabled: record.oj_status === 'syncing',
+                    name: record.submission_id || record.id,
+                  }),
+                }}
+                pagination={{
+                  pageSize: 20,
+                  showSizeChanger: true,
+                  showQuickJumper: true,
+                  showTotal: (total, range) =>
+                    `${range[0]}-${range[1]} of ${total} ${t('common.items')}`
+                }}
+                locale={{
+                  emptyText: t('records.noRecords')
+                }}
+              />
+            </Spin>
+          </Card>
+        </>
       )
     }
   ];
@@ -487,57 +763,7 @@ const Records = () => {
         <BookOutlined /> {t('records.title')}
       </Title>
 
-      {/* Statistics */}
-      <Spin spinning={loading}>
-        <Row gutter={16} style={{ marginBottom: 24 }}>
-          <Col xs={24} sm={12} lg={6}>
-            <Statistic title={t('records.totalSubmissions')} value={stats.total || 0} />
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Statistic title={t('records.uniqueProblems')} value={stats.unique_problems || 0} />
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Statistic title={t('records.solvedProblems')} value={stats.solved || 0} />
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Statistic title={t('records.successRate')} value={stats.successRate || 0} suffix="%" precision={1} />
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Statistic title={t('records.languages')} value={stats.languages || 0} />
-          </Col>
-        </Row>
-      </Spin>
-
-      {/* Record List */}
-      <Card
-        title={t('records.recordList')}
-        extra={
-          <Space>
-            <Button onClick={loadRecords} loading={loading}>
-              {t('common.refresh')}
-            </Button>
-          </Space>
-        }
-      >
-        <Spin spinning={loading}>
-          <Table
-            columns={columns}
-            dataSource={records}
-            rowKey={(record) => record?.submission_id || Math.random().toString()}
-            scroll={{ x: 2100 }}
-            pagination={{
-              pageSize: 20,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total, range) =>
-                `${range[0]}-${range[1]} of ${total} ${t('common.items')}`
-            }}
-            locale={{
-              emptyText: t('records.noRecords')
-            }}
-          />
-        </Spin>
-      </Card>
+      <Tabs items={items} />
 
       {/* View Record Modal */}
       <Modal
@@ -554,56 +780,23 @@ const Records = () => {
         {currentRecord && (
           <div>
             <Row gutter={16} style={{ marginBottom: 16 }}>
-              <Col span={8}>
+              <Col span={12}>
                 <Text strong>{t('records.language')}:</Text>
                 <Tag color={getLanguageColor(currentRecord.language && typeof currentRecord.language === 'string' ? currentRecord.language : '')} style={{ marginLeft: 8 }}>
                   {currentRecord.language || 'Unknown'}
                 </Tag>
               </Col>
-              <Col span={8}>
+              <Col span={12}>
                 <Text strong>{t('records.status')}:</Text>
-                <Tag 
-                  color={getStatusColor(currentRecord.status && typeof currentRecord.status === 'string' ? currentRecord.status : '')}
+                <Tag
+                  color={getStatusColor(currentRecord.execution_result && typeof currentRecord.execution_result === 'string' ? currentRecord.execution_result : '')}
                   style={{ marginLeft: 8 }}
                 >
-                  {currentRecord.status || 'Unknown'}
+                  {currentRecord.execution_result || 'Unknown'}
                 </Tag>
               </Col>
-              <Col span={8}>
-                <Text strong>{t('records.runtime')}:</Text>
-                <Text style={{ marginLeft: 8 }}>
-                  {currentRecord.runtime || '-'}
-                </Text>
-              </Col>
             </Row>
-            
-            <Row gutter={16} style={{ marginBottom: 16 }}>
-              <Col span={8}>
-                <Text strong>{t('records.memory')}:</Text>
-                <Text style={{ marginLeft: 8 }}>
-                  {currentRecord.memory || '-'}
-                </Text>
-              </Col>
-              <Col span={8}>
-                <Text strong>{t('records.runtimePercentile')}:</Text>
-                <Text style={{ marginLeft: 8 }}>
-                  {currentRecord.runtime_percentile !== null && currentRecord.runtime_percentile !== undefined 
-                    ? `${typeof currentRecord.runtime_percentile === 'number' ? currentRecord.runtime_percentile.toFixed(1) : currentRecord.runtime_percentile}%`
-                    : '-'
-                  }
-                </Text>
-              </Col>
-              <Col span={8}>
-                <Text strong>{t('records.memoryPercentile')}:</Text>
-                <Text style={{ marginLeft: 8 }}>
-                  {currentRecord.memory_percentile !== null && currentRecord.memory_percentile !== undefined 
-                    ? `${typeof currentRecord.memory_percentile === 'number' ? currentRecord.memory_percentile.toFixed(1) : currentRecord.memory_percentile}%`
-                    : '-'
-                  }
-                </Text>
-              </Col>
-            </Row>
-            
+
             <Row gutter={16} style={{ marginBottom: 16 }}>
               <Col span={8}>
                 <Text strong>{t('records.ojType')}:</Text>
@@ -613,13 +806,13 @@ const Records = () => {
               </Col>
               <Col span={8}>
                 <Text strong>{t('records.syncStatus')}:</Text>
-                <Tag 
-                  color={currentRecord.sync_status === 'synced' ? 'success' : 
-                         currentRecord.sync_status === 'failed' ? 'error' : 
-                         currentRecord.sync_status === 'syncing' ? 'processing' : 'default'} 
+                <Tag
+                  color={currentRecord.oj_status === 'synced' ? 'success' :
+                         currentRecord.oj_status === 'failed' ? 'error' :
+                         currentRecord.oj_status === 'syncing' ? 'processing' : 'default'}
                   style={{ marginLeft: 8 }}
                 >
-                  {currentRecord.sync_status || 'pending'}
+                  {currentRecord.oj_status || 'pending'}
                 </Tag>
               </Col>
               <Col span={8}>
@@ -639,7 +832,7 @@ const Records = () => {
                 </Text>
               </Col>
             </Row>
-            
+
             <Row gutter={16} style={{ marginBottom: 16 }}>
               <Col span={12}>
                 <Text strong>{t('records.createdAt')}:</Text>
@@ -674,31 +867,9 @@ const Records = () => {
                 </Text>
               </Col>
             </Row>
-            
-            {/* Test Case Information */}
-            {(currentRecord.total_testcases !== null && currentRecord.total_testcases !== undefined) && (
-              <Row gutter={16} style={{ marginBottom: 16 }}>
-                <Col span={8}>
-                  <Text strong>{t('records.totalTestcases')}:</Text>
-                  <Text style={{ marginLeft: 8 }}>
-                    {currentRecord.total_testcases}
-                  </Text>
-                </Col>
-                <Col span={8}>
-                  <Text strong>{t('records.correctTestcases')}:</Text>
-                  <Text style={{ marginLeft: 8 }}>
-                    {currentRecord.total_correct || 0}
-                  </Text>
-                </Col>
-                <Col span={8}>
-                  <Text strong>{t('records.successRate')}:</Text>
-                  <Text style={{ marginLeft: 8 }}>
-                    {currentRecord.success_rate ? `${currentRecord.success_rate}%` : '-'}
-                  </Text>
-                </Col>
-              </Row>
-            )}
-            
+
+
+
             {/* Error Information */}
             {(currentRecord.runtime_error || currentRecord.compile_error) && (
               <div style={{ marginBottom: 16 }}>
@@ -707,10 +878,10 @@ const Records = () => {
                   {currentRecord.runtime_error && (
                     <div style={{ marginBottom: 8 }}>
                       <Text type="danger" strong>{t('records.runtimeError')}:</Text>
-                      <div style={{ 
-                        marginTop: 4, 
-                        padding: 8, 
-                        backgroundColor: '#fff2f0', 
+                      <div style={{
+                        marginTop: 4,
+                        padding: 8,
+                        backgroundColor: '#fff2f0',
                         border: '1px solid #ffccc7',
                         borderRadius: 4,
                         fontFamily: 'monospace',
@@ -724,10 +895,10 @@ const Records = () => {
                   {currentRecord.compile_error && (
                     <div style={{ marginBottom: 8 }}>
                       <Text type="danger" strong>{t('records.compileError')}:</Text>
-                      <div style={{ 
-                        marginTop: 4, 
-                        padding: 8, 
-                        backgroundColor: '#fff2f0', 
+                      <div style={{
+                        marginTop: 4,
+                        padding: 8,
+                        backgroundColor: '#fff2f0',
                         border: '1px solid #ffccc7',
                         borderRadius: 4,
                         fontFamily: 'monospace',
@@ -741,75 +912,11 @@ const Records = () => {
                 </div>
               </div>
             )}
-            
-            {/* Test Case Details */}
-            {currentRecord.test_descriptions && Array.isArray(currentRecord.test_descriptions) && currentRecord.test_descriptions.length > 0 && (
-              <div style={{ marginBottom: 16 }}>
-                <Text strong>{t('records.testCases')}:</Text>
-                <div style={{ marginTop: 8 }}>
-                  {currentRecord.test_descriptions.map((description, index) => (
-                    <div key={index} style={{ 
-                      marginBottom: 8, 
-                      padding: 8, 
-                      backgroundColor: '#f6ffed', 
-                      border: '1px solid #b7eb8f',
-                      borderRadius: 4
-                    }}>
-                      <Text strong>Test {index + 1}:</Text>
-                      <div style={{ marginTop: 4, fontFamily: 'monospace', fontSize: '12px' }}>
-                        {description || 'No description available'}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            {/* Code Output vs Expected Output */}
-            {(currentRecord.code_output || currentRecord.expected_output) && (
-              <div style={{ marginBottom: 16 }}>
-                <Text strong>{t('records.outputComparison')}:</Text>
-                <Row gutter={16} style={{ marginTop: 8 }}>
-                  {currentRecord.code_output && (
-                    <Col span={12}>
-                      <Text type="secondary">{t('records.codeOutput')}:</Text>
-                      <div style={{ 
-                        marginTop: 4, 
-                        padding: 8, 
-                        backgroundColor: '#f5f5f5', 
-                        borderRadius: 4,
-                        fontFamily: 'monospace',
-                        fontSize: '12px',
-                        whiteSpace: 'pre-wrap',
-                        maxHeight: 200,
-                        overflow: 'auto'
-                      }}>
-                        {currentRecord.code_output}
-                      </div>
-                    </Col>
-                  )}
-                  {currentRecord.expected_output && (
-                    <Col span={12}>
-                      <Text type="secondary">{t('records.expectedOutput')}:</Text>
-                      <div style={{ 
-                        marginTop: 4, 
-                        padding: 8, 
-                        backgroundColor: '#f6ffed', 
-                        borderRadius: 4,
-                        fontFamily: 'monospace',
-                        fontSize: '12px',
-                        whiteSpace: 'pre-wrap',
-                        maxHeight: 200,
-                        overflow: 'auto'
-                      }}>
-                        {currentRecord.expected_output}
-                      </div>
-                    </Col>
-                  )}
-                </Row>
-              </div>
-            )}
-            
+
+
+
+
+
             <div style={{ marginBottom: 16 }}>
               <Text strong>{t('records.problemTitle')}:</Text>
               <Link
@@ -821,7 +928,7 @@ const Records = () => {
                 {currentRecord.problem_title}
               </Link>
             </div>
-            
+
             {currentRecord.topic_tags && Array.isArray(currentRecord.topic_tags) && currentRecord.topic_tags.length > 0 && (
               <div style={{ marginBottom: 16 }}>
                 <Text strong>{t('records.topicTags')}:</Text>
@@ -834,7 +941,7 @@ const Records = () => {
                 </div>
               </div>
             )}
-            
+
             {currentRecord.submission_url && (
               <div style={{ marginBottom: 16 }}>
                 <Text strong>{t('records.submissionUrl')}:</Text>
@@ -848,7 +955,7 @@ const Records = () => {
                 </Link>
               </div>
             )}
-            
+
             {/* AI Analysis Information */}
             {currentRecord.ai_analysis && (
               <div style={{ marginBottom: 16 }}>
@@ -856,10 +963,10 @@ const Records = () => {
                 <Tag color="green" style={{ marginLeft: 8 }}>
                   {t('records.analyzed')}
                 </Tag>
-                <div style={{ 
-                  marginTop: 8, 
-                  padding: 8, 
-                  backgroundColor: '#f0f9ff', 
+                <div style={{
+                  marginTop: 8,
+                  padding: 8,
+                  backgroundColor: '#f0f9ff',
                   border: '1px solid #91d5ff',
                   borderRadius: 4,
                   fontSize: '12px'
@@ -870,7 +977,7 @@ const Records = () => {
                 </div>
               </div>
             )}
-            
+
             {/* External Service Information */}
             {(currentRecord.notion_url || currentRecord.github_pushed) && (
               <div style={{ marginBottom: 16 }}>
@@ -909,11 +1016,11 @@ const Records = () => {
                 </div>
               </div>
             )}
-            
+
             <div>
               <Text strong>{t('records.code')}:</Text>
-              <div style={{ 
-                marginTop: 8, 
+              <div style={{
+                marginTop: 8,
                 borderRadius: 4,
                 overflow: 'auto',
                 maxHeight: 400
@@ -939,4 +1046,4 @@ const Records = () => {
   );
 };
 
-export default Records; 
+export default Records;

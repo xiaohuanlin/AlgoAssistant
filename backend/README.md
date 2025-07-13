@@ -1,385 +1,331 @@
-# AlgoAssistant Backend
+# AlgoAssistant API Documentation
 
-A comprehensive algorithm practice management system with GitHub OAuth integration, Notion sync, and AI-powered analysis.
+## Overview
 
-## Features
+AlgoAssistant is a comprehensive platform for managing algorithm problem-solving records, integrating with multiple online judge platforms, and providing AI-powered code analysis. This API serves as the backend for the AlgoAssistant application.
 
-- **Multi-platform OJ Support**: LeetCode, HackerRank (extensible)
-- **GitHub OAuth Integration**: Secure token-based code pushing with one-click authorization
-- **Notion Sync**: Automatic problem and tag synchronization
-- **AI Analysis**: OpenAI-powered code analysis and improvement suggestions
-- **Review System**: Spaced repetition for wrong problems
-- **Tag Management**: Algorithm tags with wiki documentation
-- **Multi-user Support**: User isolation and configuration management
-- **Comprehensive Testing**: Unit tests, integration tests, and 80%+ code coverage
-
-## Quick Start with Docker
-
-### Prerequisites
-
-- Docker and Docker Compose installed
-- Git
-
-### 1. Clone and Setup
-
-```bash
-# Clone the repository
-git clone <repository-url>
-cd backend
-
-# Make startup script executable
-chmod +x scripts/start.sh
-
-# Run the startup script
-./scripts/start.sh
-```
-
-### 2. Manual Setup (Alternative)
-
-```bash
-# Build and start all services
-docker-compose up --build -d
-
-# Check service status
-docker-compose ps
-
-# View logs
-docker-compose logs -f backend
-```
-
-### 3. Access Services
-
-- **Backend API**: http://localhost:8000
-- **API Documentation**: http://localhost:8000/docs
-- **Database**: PostgreSQL on localhost:5432
-- **Redis**: localhost:6379
-
-## Development Setup
-
-### 1. Environment Configuration
-
-Create `.env` file with your credentials:
-
-```env
-# Database
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/algo_assistant
-
-# Security
-SECRET_KEY=your-secret-key-here
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-
-# GitHub OAuth
-GITHUB_CLIENT_ID=your-github-client-id
-GITHUB_CLIENT_SECRET=your-github-client-secret
-GITHUB_REDIRECT_URI=http://localhost:8000/api/github/callback
-
-# OpenAI
-OPENAI_API_KEY=your-openai-api-key
-
-# Notion
-NOTION_TOKEN=your-notion-token
-NOTION_DATABASE_ID=your-notion-database-id
-```
-
-### 2. GitHub OAuth Setup
-
-1. Go to [GitHub Developer Settings](https://github.com/settings/developers)
-2. Create a new OAuth App with the following settings:
-   - **Application name**: AlgoAssistant
-   - **Homepage URL**: `http://localhost:3000` (or your frontend URL)
-   - **Authorization callback URL**: `http://localhost:8000/api/github/callback`
-3. Copy Client ID and Client Secret to `.env`
-
-### 3. Local Development
-
-```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Run with hot reload
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-## Testing
-
-### Running Tests with Tox
-
-```bash
-# Navigate to backend directory
-cd backend
-
-# Install tox
-pip install tox
-
-# Run all tests (Python 3.11 and 3.12)
-tox
-
-# Run tests for specific Python version
-tox -e py311
-tox -e py312
-
-# Run tests with coverage report
-tox -e coverage
-
-# Run code quality checks
-tox -e lint
-
-# Run security checks
-tox -e security
-
-# Run fast tests (stop on first failure)
-tox -e fast
-
-# Run specific test with tox
-tox -- tests/test_utils_security.py::TestSecurityUtils::test_password_hashing
-```
-
-### Direct pytest Usage (Alternative)
-
-```bash
-# Install development dependencies
-pip install -r requirements-dev.txt
-
-# Run all tests
-pytest
-
-# Run tests with coverage
-pytest --cov=app --cov-report=html --cov-report=term-missing
-
-# Run specific test file
-pytest tests/test_utils_security.py
-
-# Run specific test class
-pytest tests/test_utils_security.py::TestSecurityUtils
-
-# Run specific test method
-pytest tests/test_utils_security.py::TestSecurityUtils::test_password_hashing
-```
-
-### Code Quality Checks
-
-```bash
-# Format code with black
-black app tests
-
-# Sort imports with isort
-isort app tests
-
-# Check code style with flake8
-flake8 app tests
-
-# Type checking with mypy
-mypy app
-
-# Security check with bandit
-bandit -r app
-```
-
-### Pre-commit Hooks
-
-```bash
-# Install pre-commit hooks
-pre-commit install
-
-# Run pre-commit on all files
-pre-commit run --all-files
-
-# Run specific hook
-pre-commit run black --all-files
-```
-
-### Test Coverage
-
-- **Target Coverage**: 80% or higher
-- **Core Business Logic**: 90% or higher
-- **Security-related Code**: 100%
-
-### Test Types
-
-- **Unit Tests**: Individual functions and methods
-- **Integration Tests**: API endpoints and component interactions
-- **Security Tests**: Authentication, authorization, and data protection
-- **Code Quality Tests**: Style, formatting, and type checking
-
-### Test Structure
+## Base URL
 
 ```
-tests/
-├── conftest.py              # pytest configuration and fixtures
-├── test_utils_security.py   # Security utilities testing
-├── test_models.py           # Data models testing
-├── test_services_*.py       # Service layer testing
-└── test_api_*.py            # API integration testing
+http://localhost:8000
 ```
 
-For detailed testing documentation, see [tests/README.md](tests/README.md).
+## Authentication
 
-## Docker Commands
+The API uses JWT (JSON Web Token) authentication. Include the token in the Authorization header:
 
-```bash
-# Start all services
-docker-compose up -d
-
-# Stop all services
-docker-compose down
-
-# View logs
-docker-compose logs -f backend
-
-# Restart backend only
-docker-compose restart backend
-
-# Rebuild and start
-docker-compose up --build -d
-
-# Access database
-docker-compose exec postgres psql -U postgres -d algo_assistant
+```
+Authorization: Bearer <your_jwt_token>
 ```
 
-## API Documentation
+# AlgoAssistant API Summary
 
-### Authentication
+## Overview
 
-All endpoints require JWT authentication except:
-- `POST /api/users/register`
-- `POST /api/users/login`
+This document provides a quick overview of all API endpoints in the AlgoAssistant backend, organized by functionality.
 
-### Core Endpoints
+## API Statistics
 
-#### Users
-- `POST /api/users/register` - User registration
-- `POST /api/users/login` - User login
-- `GET /api/users/me` - Get current user info
+- **Total Endpoints**: 35
+- **Authentication Required**: 30 endpoints
+- **Public Endpoints**: 5 endpoints
+- **HTTP Methods**: GET, POST, PUT, DELETE
+- **Base URL**: `http://localhost:8000`
 
-### Records API
-- `GET /api/records` - Get all records for current user
-- `POST /api/records` - Create new record
-- `GET /api/records/{submission_id}` - Get specific record
-- `PUT /api/records/{submission_id}` - Update record
-- `DELETE /api/records/{submission_id}` - Delete record
-- `GET /api/records/stats` - Get user statistics
-- `POST /api/records/analyze/batch` - Batch analyze records with AI
-- `POST /api/records/{submission_id}/analyze` - Analyze single record with AI
-- `GET /api/records/tags` - Get all tags
-- `POST /api/records/{submission_id}/tags` - Assign tags to record
+## Endpoint Categories
 
-### Notion API
-- `POST /api/notion/sync/{submission_id}` - Sync single record to Notion
-- `POST /api/notion/sync/batch` - Batch sync records to Notion
-- `POST /api/notion/tags/sync` - Sync tags to Notion
+### 1. Health Check (2 endpoints)
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/` | Welcome message | ❌ |
+| GET | `/health` | Health check | ❌ |
 
-### GitHub API
-- `GET /api/github/auth` - GitHub OAuth authorization
-- `GET /api/github/callback` - GitHub OAuth callback
-- `POST /api/github/push/{submission_id}` - Push single record to GitHub
-- `POST /api/github/push/batch` - Batch push records to GitHub
+### 2. User Management (8 endpoints)
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/api/users/register` | User registration | ❌ |
+| POST | `/api/users/login` | User login | ❌ |
+| GET | `/api/users/me` | Get current user | ✅ |
+| GET | `/api/users/user/profile` | Get user profile | ✅ |
+| PUT | `/api/users/user/profile` | Update user profile | ✅ |
+| POST | `/api/users/config` | Create user config | ✅ |
+| GET | `/api/users/config` | Get user config | ✅ |
+| PUT | `/api/users/config` | Update user config | ✅ |
 
-### Review API
-- `POST /api/review/mark/{submission_id}` - Mark problem as wrong
-- `GET /api/review/list` - Get user reviews
-- `GET /api/review/due` - Get due reviews
-- `POST /api/review/{review_id}/complete` - Mark review as completed
+### 3. Problem Records (10 endpoints)
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/api/records/` | List records | ✅ |
+| POST | `/api/records/` | Create record | ✅ |
+| GET | `/api/records/stats` | Get statistics | ✅ |
+| GET | `/api/records/{id}` | Get specific record | ✅ |
+| PUT | `/api/records/{id}` | Update record | ✅ |
+| DELETE | `/api/records/{id}` | Delete record | ✅ |
+| GET | `/api/records/tags` | Get all tags | ✅ |
+| POST | `/api/records/{id}/tags` | Assign tags | ✅ |
+| PUT | `/api/records/tags/{tag_id}/wiki` | Update tag wiki | ✅ |
 
-### Tags API
-- `POST /api/tags/{submission_id}/assign` - Assign tags to record
+### 4. Review System (4 endpoints)
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/api/review/mark/{record_id}` | Mark as wrong | ✅ |
+| GET | `/api/review/list` | List reviews | ✅ |
+| GET | `/api/review/due` | Get due reviews | ✅ |
+| POST | `/api/review/{review_id}/complete` | Mark as reviewed | ✅ |
 
-## Architecture
+### 5. Platform Integrations (3 endpoints)
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/api/leetcode/test-connection` | Test LeetCode | ✅ |
+| GET | `/api/notion/test_connection` | Test Notion | ✅ |
+| GET | `/api/github/test_connection` | Test GitHub | ✅ |
 
-### Service Layer
-- **ServiceFactory**: Dependency injection for user-specific services
-- **RecordService**: Problem record management
-- **LeetCodeService**: LeetCode API integration
-- **NotionService**: Notion API integration
-- **GitHubService**: GitHub API with OAuth
-- **GitHubOAuthService**: OAuth flow management
-- **OpenAIService**: AI analysis
-- **ReviewService**: Spaced repetition system
+### 6. Google OAuth (5 endpoints)
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/api/google/auth` | Generate auth URL | ✅ |
+| GET | `/api/google/callback` | Handle callback | ❌ |
+| GET | `/api/google/status` | Check status | ✅ |
+| DELETE | `/api/google/disconnect` | Disconnect | ✅ |
+| POST | `/api/google/login` | Login with token | ❌ |
 
-### Security
-- JWT-based authentication
-- Password hashing with bcrypt
-- Encrypted storage for sensitive tokens
-- OAuth 2.0 for GitHub integration
-- State parameter validation for OAuth security
+### 7. Synchronization Tasks (4 endpoints)
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/api/sync_task/` | Create sync task | ✅ |
+| GET | `/api/sync_task/` | List sync tasks | ✅ |
+| GET | `/api/sync_task/{task_id}` | Get specific task | ✅ |
+| DELETE | `/api/sync_task/{task_id}` | Delete task | ✅ |
 
-### Database Models
-- **User**: User accounts and authentication
-- **UserConfig**: User-specific service configurations (including encrypted GitHub token)
-- **Record**: Problem solving records
-- **Tag**: Algorithm tags with wiki
-- **Review**: Wrong problem tracking
-- **SyncLog**: Synchronization history
+## Data Models Summary
+
+### User Models
+- **UserBase**: Common user fields (username, email, nickname, avatar)
+- **UserCreate**: Registration with password
+- **UserLogin**: Authentication credentials
+- **UserOut**: User data response (excludes password)
+- **UserUpdate**: Profile update fields
+- **UserConfigBase**: Integration configurations
+- **UserConfigCreate**: Configuration creation
+- **UserConfigOut**: Configuration response (excludes tokens)
+
+### Record Models
+- **RecordBase**: Problem submission data
+- **RecordCreate**: New record creation
+- **RecordOut**: Record response with metadata
+- **RecordStatsOut**: User statistics
+- **RecordDeleteResponse**: Deletion confirmation
+
+### Tag Models
+- **TagBase**: Algorithm tag data
+- **TagCreate**: New tag creation
+- **TagOut**: Tag response
+- **TagAssignRequest**: Tag assignment
+- **TagWikiUpdateRequest**: Wiki update
+
+### Review Models
+- **ReviewBase**: Review data
+- **ReviewCreate**: New review creation
+- **ReviewOut**: Review response
+
+### Sync Task Models
+- **SyncTaskCreate**: Task creation
+- **SyncTaskQuery**: Task filtering
+- **SyncTaskOut**: Task response
+
+### Integration Models
+
+#### GitHub
+- **GitHubConfig**: Repository settings
+- **GitHubSyncRequest**: Sync operation
+- **GitHubSyncResponse**: Sync results
+- **GitHubSyncTaskOut**: Task tracking
+- **GitHubConnectionTestOut**: Connection test
+- **GitHubPushRequest**: Code push
+- **GitHubPushResponse**: Push results
+
+#### LeetCode
+- **LeetCodeConfig**: Session settings
+- **LeetCodeConnectionTestOut**: Connection test
+- **LeetCodeProblemBase**: Problem data
+- **LeetCodeProblemCreate**: Problem creation
+- **LeetCodeProblemOut**: Problem response
+
+#### Notion
+- **NotionConfig**: Workspace settings
+- **NotionConnectionTestOut**: Connection test
+- **NotionSyncRequest**: Sync operation
+- **NotionSyncResponse**: Sync results
+
+#### Google
+- **GoogleConfig**: OAuth settings
+- **GoogleLoginRequest**: Login with token
+- **GoogleLoginResponse**: Login response
+- **GoogleAuthResponse**: Auth URL
+- **GoogleCallbackResponse**: OAuth callback
+- **GoogleStatusResponse**: Connection status
+- **GoogleDisconnectResponse**: Disconnect confirmation
+
+#### AI
+- **AIConfig**: OpenAI settings
+
+## Enums
+
+### OJType
+- `leetcode` - LeetCode platform
+- `nowcoder` - NowCoder platform
+- `other` - Other platforms
+
+### LanguageType
+- `python` - Python
+- `java` - Java
+- `cpp` - C++
+- `javascript` - JavaScript
+- `typescript` - TypeScript
+- `go` - Go
+- `rust` - Rust
+- `other` - Other languages
+
+### GitHubSyncStatus
+- `PENDING` - Waiting to sync
+- `SYNCING` - Currently syncing
+- `SYNCED` - Successfully synced
+- `FAILED` - Sync failed
+- `PAUSED` - Sync paused
+- `RETRY` - Retrying sync
+
+### GitHubSyncTaskStatus
+- `RUNNING` - Task executing
+- `COMPLETED` - Task finished
+- `FAILED` - Task failed
+- `PAUSED` - Task paused
+
+## Query Parameters
+
+### Record Filtering
+- `tag` - Single tag filter
+- `tags` - Multiple tags (comma-separated)
+- `status` - Execution status
+- `oj_type` - OJ platform
+- `language` - Programming language
+- `problem_title` - Title search
+- `problem_id` - Problem ID
+- `start_time` - Time range start
+- `end_time` - Time range end
+
+### Pagination
+- `limit` - Items per page (1-1000, default: 100)
+- `offset` - Items to skip (default: 0)
+
+### Sorting
+- `sort_by` - Sort field
+- `sort_order` - Sort direction (asc/desc)
+
+## Authentication
+
+### JWT Token
+- **Format**: Bearer token
+- **Header**: `Authorization: Bearer <token>`
+- **Expiration**: 30 minutes (configurable)
+- **Algorithm**: HS256
+
+### OAuth Integration
+- **Google OAuth**: For authentication and calendar
+- **GitHub OAuth**: For repository access
+- **Token Storage**: Encrypted in database
+
+## Error Handling
+
+### HTTP Status Codes
+- `200` - Success
+- `201` - Created
+- `400` - Bad Request
+- `401` - Unauthorized
+- `404` - Not Found
+- `422` - Validation Error
+- `500` - Internal Server Error
+
+### Error Response Format
+```json
+{
+  "detail": "Error message"
+}
+```
+
+## Rate Limiting
+
+- **Per User**: 100 requests/minute
+- **Per User**: 1000 requests/hour
+- **Burst**: 10 requests/second
+- **Headers**: X-RateLimit-*
+
+## CORS Configuration
+
+- **Origins**: `*` (configurable)
+- **Methods**: GET, POST, PUT, DELETE, OPTIONS
+- **Headers**: `*`
+- **Credentials**: true
 
 ## Development
 
-### Adding New OJ Platforms
-
-1. Create new service class inheriting from `BaseOJService`
-2. Implement required methods
-3. Update `ServiceFactory.oj_service` property
-4. Add platform-specific sync endpoints
-
-### Adding New Repository Services
-
-1. Create new service class inheriting from `BaseRepoService`
-2. Implement OAuth flow if needed
-3. Update `ServiceFactory.repo_service` property
-4. Add platform-specific push endpoints
-
-### OAuth Integration Pattern
-
-For new OAuth services, follow the GitHub pattern:
-
-1. **OAuth Service**: Handle authorization flow
-2. **Token Management**: Encrypt/decrypt tokens
-3. **Status Endpoint**: Check connection status
-4. **Frontend Component**: User-friendly interface
-5. **Success/Error Pages**: Beautiful feedback pages
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Port already in use**: Change ports in `docker-compose.yml`
-2. **Database connection failed**: Wait for PostgreSQL to start (check with `docker-compose logs postgres`)
-3. **OAuth callback errors**: Verify callback URL in GitHub OAuth app settings
-4. **Permission denied**: Run `chmod +x scripts/start.sh`
-
-### Logs
-
+### Running Locally
 ```bash
-# View all logs
-docker-compose logs
-
-# View specific service logs
-docker-compose logs backend
-docker-compose logs postgres
-
-# Follow logs in real-time
-docker-compose logs -f backend
+uvicorn app.main:app --reload
 ```
 
-## Contributing
+### Testing
+```bash
+pytest
+tox
+```
 
-1. Fork the repository
-2. Create feature branch
-3. Follow existing code style and patterns
-4. **Add tests for new functionality** - All new features must include unit tests
-5. **Ensure test coverage** - Maintain 80%+ overall coverage
-6. **Run tests locally** - Use `tox` or `tox -e coverage` before submitting
-7. **Install pre-commit hooks** - Run `pre-commit install` for automatic code quality checks
-8. Submit pull request
+### Documentation
+- **Interactive**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+- **OpenAPI**: http://localhost:8000/openapi.json
 
-### Development Guidelines
+## Security Features
 
-- **Test-Driven Development**: Write tests before implementing features
-- **Code Quality**: Follow PEP 8 style guidelines and use black for formatting
-- **Type Hints**: Use mypy for static type checking
-- **Documentation**: Update API docs and README for new features
-- **Security**: Ensure sensitive data is properly encrypted and validated
-- **Pre-commit**: Use pre-commit hooks for automatic code quality enforcement
+1. **JWT Authentication** - Secure token-based auth
+2. **Password Hashing** - bcrypt encryption
+3. **Token Encryption** - OAuth tokens encrypted
+4. **Input Validation** - Pydantic schemas
+5. **Rate Limiting** - Abuse prevention
+6. **CORS Protection** - Cross-origin security
+7. **SQL Injection Protection** - SQLAlchemy ORM
+8. **XSS Protection** - Input sanitization
+
+## Integration Capabilities
+
+### External Services
+- **LeetCode** - Problem synchronization
+- **GitHub** - Code repository management
+- **Notion** - Knowledge base integration
+- **Google** - OAuth authentication
+- **OpenAI** - AI code analysis
+
+### Data Synchronization
+- **Batch Sync** - Bulk operations
+- **Real-time Sync** - Live updates
+- **Error Handling** - Retry mechanisms
+- **Progress Tracking** - Task monitoring
+
+## Performance Considerations
+
+### Database
+- **Connection Pooling** - Efficient connections
+- **Indexing** - Optimized queries
+- **Pagination** - Large dataset handling
+
+### Caching
+- **Redis** - Session storage
+- **Query Caching** - Performance optimization
+
+### Background Tasks
+- **Celery** - Async processing
+- **Task Queues** - Scalable operations
+- **Progress Tracking** - Real-time updates
 
 ## License
 
-MIT License 
+This project is licensed under the MIT License.

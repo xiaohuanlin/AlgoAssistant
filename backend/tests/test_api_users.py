@@ -1,217 +1,345 @@
+from unittest.mock import patch
+
 import pytest
 from fastapi.testclient import TestClient
-from app.main import app
-from app.services.user_service import UserService
-from app.schemas import UserCreate
+
 
 class TestUsersAPI:
-    """Test users API endpoints."""
-    
-    def test_register_user_success(self, client, test_user_data):
+    """Test cases for users API endpoints."""
+
+    def test_register_user_success(self, client: TestClient):
         """Test successful user registration."""
-        response = client.post("/api/register", json=test_user_data)
-        
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "testpassword123",
+            "nickname": "Test User",
+        }
+
+        response = client.post("/api/users/register", json=user_data)
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["username"] == "testuser"
+        assert data["email"] == "test@example.com"
+        assert data["nickname"] == "Test User"
+        assert "id" in data
+        assert "password" not in data  # Password should not be returned
+
+    def test_register_user_duplicate_username(self, client: TestClient):
+        """Test user registration with duplicate username fails."""
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "testpassword123",
+            "nickname": "Test User",
+        }
+
+        # Register first user
+        response = client.post("/api/users/register", json=user_data)
+        assert response.status_code == 201
+
+        # Try to register second user with same username
+        duplicate_data = {
+            "username": "testuser",  # Same username
+            "email": "test2@example.com",
+            "password": "testpassword123",
+            "nickname": "Test User 2",
+        }
+
+        response = client.post("/api/users/register", json=duplicate_data)
+        assert response.status_code == 400
+        data = response.json()
+        assert "error" in data
+
+    def test_register_user_duplicate_email(self, client: TestClient):
+        """Test user registration with duplicate email fails."""
+        user_data = {
+            "username": "testuser1",
+            "email": "test@example.com",
+            "password": "testpassword123",
+            "nickname": "Test User 1",
+        }
+
+        # Register first user
+        response = client.post("/api/users/register", json=user_data)
+        assert response.status_code == 201
+
+        # Try to register second user with same email
+        duplicate_data = {
+            "username": "testuser2",
+            "email": "test@example.com",  # Same email
+            "password": "testpassword123",
+            "nickname": "Test User 2",
+        }
+
+        response = client.post("/api/users/register", json=duplicate_data)
+        assert response.status_code == 400
+        data = response.json()
+        assert "error" in data
+
+    def test_register_user_invalid_data(self, client: TestClient):
+        """Test user registration with invalid data."""
+        # Test missing required fields
+        invalid_data = {
+            "username": "testuser"
+            # Missing email, password, nickname
+        }
+
+        response = client.post("/api/users/register", json=invalid_data)
+        assert response.status_code == 422  # Validation error
+
+    def test_login_success(self, client: TestClient):
+        """Test successful user login."""
+        # Register a user first
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "testpassword123",
+            "nickname": "Test User",
+        }
+        client.post("/api/users/register", json=user_data)
+
+        # Login
+        login_data = {"username": "testuser", "password": "testpassword123"}
+
+        response = client.post("/api/users/login", data=login_data)
+
         assert response.status_code == 200
         data = response.json()
-        assert data["username"] == test_user_data["username"]
-        assert data["email"] == test_user_data["email"]
-        assert data["nickname"] == test_user_data["nickname"]
-        assert "password" not in data  # Password should not be returned
-        assert "id" in data
-        assert "created_at" in data
-    
-    def test_register_user_duplicate_username(self, client, test_user_data):
-        """Test registration with duplicate username."""
-        # Register first user
-        response1 = client.post("/api/register", json=test_user_data)
-        assert response1.status_code == 200
-        
-        # Try to register second user with same username
-        test_user_data["email"] = "different@example.com"
-        response2 = client.post("/api/register", json=test_user_data)
-        
-        assert response2.status_code == 400
-        assert "Username already registered" in response2.json()["detail"]
-    
-    def test_register_user_duplicate_email(self, client, test_user_data):
-        """Test registration with duplicate email."""
-        # Register first user
-        response1 = client.post("/api/register", json=test_user_data)
-        assert response1.status_code == 200
-        
-        # Try to register second user with same email
-        test_user_data["username"] = "differentuser"
-        response2 = client.post("/api/register", json=test_user_data)
-        
-        assert response2.status_code == 400
-        assert "Email already registered" in response2.json()["detail"]
-    
-    def test_register_user_invalid_email(self, client, test_user_data):
-        """Test registration with invalid email format."""
-        test_user_data["email"] = "invalid-email"
-        response = client.post("/api/register", json=test_user_data)
-        
-        assert response.status_code == 422  # Validation error
-    
-    def test_register_user_missing_fields(self, client):
-        """Test registration with missing required fields."""
-        incomplete_data = {"username": "testuser"}
-        response = client.post("/api/register", json=incomplete_data)
-        
-        assert response.status_code == 422  # Validation error
-    
-    def test_login_success(self, client, test_user_data):
-        """Test successful user login."""
-        # Register user first
-        register_response = client.post("/api/register", json=test_user_data)
-        assert register_response.status_code == 200
-        
-        # Login
-        login_data = {
-            "username": test_user_data["username"],
-            "password": test_user_data["password"]
-        }
-        login_response = client.post("/api/login", json=login_data)
-        
-        assert login_response.status_code == 200
-        data = login_response.json()
         assert "access_token" in data
+        assert "token_type" in data
         assert data["token_type"] == "bearer"
-        assert len(data["access_token"]) > 0
-    
-    def test_login_invalid_username(self, client, test_user_data):
-        """Test login with invalid username."""
-        # Register user first
-        register_response = client.post("/api/register", json=test_user_data)
-        assert register_response.status_code == 200
-        
-        # Try to login with wrong username
-        login_data = {
-            "username": "wronguser",
-            "password": test_user_data["password"]
+        assert "user" in data
+        assert data["user"]["username"] == "testuser"
+
+    def test_login_wrong_password(self, client: TestClient):
+        """Test login with wrong password."""
+        # Register a user first
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "testpassword123",
+            "nickname": "Test User",
         }
-        login_response = client.post("/api/login", json=login_data)
-        
-        assert login_response.status_code == 400
-        assert "Incorrect username or password" in login_response.json()["detail"]
-    
-    def test_login_invalid_password(self, client, test_user_data):
-        """Test login with invalid password."""
-        # Register user first
-        register_response = client.post("/api/register", json=test_user_data)
-        assert register_response.status_code == 200
-        
+        client.post("/api/users/register", json=user_data)
+
         # Try to login with wrong password
-        login_data = {
-            "username": test_user_data["username"],
-            "password": "wrongpassword"
-        }
-        login_response = client.post("/api/login", json=login_data)
-        
-        assert login_response.status_code == 400
-        assert "Incorrect username or password" in login_response.json()["detail"]
-    
-    def test_get_current_user_with_token(self, client, test_user_data):
+        login_data = {"username": "testuser", "password": "wrongpassword"}
+
+        response = client.post("/api/users/login", data=login_data)
+
+        assert response.status_code == 401
+        data = response.json()
+        assert "error" in data
+
+    def test_login_nonexistent_user(self, client: TestClient):
+        """Test login with non-existent user."""
+        login_data = {"username": "nonexistent", "password": "testpassword123"}
+
+        response = client.post("/api/users/login", data=login_data)
+
+        assert response.status_code == 401
+        data = response.json()
+        assert "error" in data
+
+    def test_get_current_user_success(self, client: TestClient):
         """Test getting current user with valid token."""
-        # Register and login user
-        register_response = client.post("/api/register", json=test_user_data)
-        assert register_response.status_code == 200
-        
-        login_data = {
-            "username": test_user_data["username"],
-            "password": test_user_data["password"]
+        # Register and login to get token
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "testpassword123",
+            "nickname": "Test User",
         }
-        login_response = client.post("/api/login", json=login_data)
-        assert login_response.status_code == 200
-        
+        client.post("/api/users/register", json=user_data)
+
+        login_data = {"username": "testuser", "password": "testpassword123"}
+        login_response = client.post("/api/users/login", data=login_data)
         token = login_response.json()["access_token"]
-        headers = {"Authorization": f"Bearer {token}"}
-        
+
         # Get current user
-        me_response = client.get("/api/me", headers=headers)
-        
-        assert me_response.status_code == 200
-        data = me_response.json()
-        assert data["username"] == test_user_data["username"]
-        assert data["email"] == test_user_data["email"]
+        headers = {"Authorization": f"Bearer {token}"}
+        response = client.get("/api/users/me", headers=headers)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["username"] == "testuser"
+        assert data["email"] == "test@example.com"
         assert "password" not in data
-    
-    def test_get_current_user_without_token(self, client):
-        """Test getting current user without token."""
-        response = client.get("/api/me")
-        
-        assert response.status_code == 401  # Unauthorized
-    
-    def test_get_current_user_invalid_token(self, client):
+
+    def test_get_current_user_invalid_token(self, client: TestClient):
         """Test getting current user with invalid token."""
         headers = {"Authorization": "Bearer invalid_token"}
-        response = client.get("/api/me", headers=headers)
-        
-        assert response.status_code == 401  # Unauthorized
-    
-    def test_create_user_config(self, client, test_user_data):
-        """Test creating user configuration."""
-        # Register and login user
-        register_response = client.post("/api/register", json=test_user_data)
-        assert register_response.status_code == 200
-        
-        login_data = {
-            "username": test_user_data["username"],
-            "password": test_user_data["password"]
+        response = client.get("/api/users/me", headers=headers)
+
+        assert response.status_code == 401
+
+    def test_get_current_user_no_token(self, client: TestClient):
+        """Test getting current user without token."""
+        response = client.get("/api/users/me")
+
+        assert response.status_code == 401
+
+    def test_update_user_success(self, client: TestClient):
+        """Test updating user information."""
+        # Register and login to get token
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "testpassword123",
+            "nickname": "Test User",
         }
-        login_response = client.post("/api/login", json=login_data)
-        assert login_response.status_code == 200
-        
+        client.post("/api/users/register", json=user_data)
+
+        login_data = {"username": "testuser", "password": "testpassword123"}
+        login_response = client.post("/api/users/login", data=login_data)
         token = login_response.json()["access_token"]
+
+        # Update user
+        update_data = {"nickname": "Updated User", "email": "updated@example.com"}
         headers = {"Authorization": f"Bearer {token}"}
-        
-        # Create user config
-        config_data = {
-            "leetcode_name": "leetcode_user",
-            "github_repo": "user/repo",
-            "notion_token": "notion_token_123",
-            "notion_db_id": "db_123",
-            "openai_key": "openai_key_123"
+        response = client.put("/api/users/me", json=update_data, headers=headers)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["nickname"] == "Updated User"
+        assert data["email"] == "updated@example.com"
+        assert data["username"] == "testuser"  # Should remain unchanged
+
+    def test_change_password_success(self, client: TestClient):
+        """Test changing user password."""
+        # Register and login to get token
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "testpassword123",
+            "nickname": "Test User",
         }
-        
-        config_response = client.post("/api/config", json=config_data, headers=headers)
-        
-        assert config_response.status_code == 200
-        data = config_response.json()
-        assert data["leetcode_name"] == "leetcode_user"
-        assert data["github_repo"] == "user/repo"
-        assert data["notion_db_id"] == "db_123"
-        # Sensitive data should not be returned
-        assert "notion_token" not in data
-        assert "openai_key" not in data
-    
-    def test_get_user_config(self, client, test_user_data):
-        """Test getting user configuration."""
-        # Register and login user
-        register_response = client.post("/api/register", json=test_user_data)
-        assert register_response.status_code == 200
-        
-        login_data = {
-            "username": test_user_data["username"],
-            "password": test_user_data["password"]
-        }
-        login_response = client.post("/api/login", json=login_data)
-        assert login_response.status_code == 200
-        
+        client.post("/api/users/register", json=user_data)
+
+        login_data = {"username": "testuser", "password": "testpassword123"}
+        login_response = client.post("/api/users/login", data=login_data)
         token = login_response.json()["access_token"]
-        headers = {"Authorization": f"Bearer {token}"}
-        
-        # Create user config first
-        config_data = {
-            "leetcode_name": "leetcode_user",
-            "github_repo": "user/repo"
+
+        # Change password
+        password_data = {
+            "current_password": "testpassword123",
+            "new_password": "newpassword123",
         }
-        client.post("/api/config", json=config_data, headers=headers)
-        
-        # Get user config
-        config_response = client.get("/api/config", headers=headers)
-        
-        assert config_response.status_code == 200
-        data = config_response.json()
-        assert data["leetcode_name"] == "leetcode_user"
-        assert data["github_repo"] == "user/repo" 
+        headers = {"Authorization": f"Bearer {token}"}
+        response = client.put(
+            "/api/users/change-password", json=password_data, headers=headers
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "message" in data
+
+        # Try to login with new password
+        new_login_data = {"username": "testuser", "password": "newpassword123"}
+        new_login_response = client.post("/api/users/login", data=new_login_data)
+        assert new_login_response.status_code == 200
+
+    def test_change_password_wrong_current_password(self, client: TestClient):
+        """Test changing password with wrong current password."""
+        # Register and login to get token
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "testpassword123",
+            "nickname": "Test User",
+        }
+        client.post("/api/users/register", json=user_data)
+
+        login_data = {"username": "testuser", "password": "testpassword123"}
+        login_response = client.post("/api/users/login", data=login_data)
+        token = login_response.json()["access_token"]
+
+        # Try to change password with wrong current password
+        password_data = {
+            "current_password": "wrongpassword",
+            "new_password": "newpassword123",
+        }
+        headers = {"Authorization": f"Bearer {token}"}
+        response = client.put(
+            "/api/users/change-password", json=password_data, headers=headers
+        )
+
+        assert response.status_code == 400
+        data = response.json()
+        assert "error" in data
+
+    def test_get_users_list(self, client: TestClient):
+        """Test getting list of users."""
+        # Register multiple users
+        for i in range(3):
+            user_data = {
+                "username": f"testuser{i}",
+                "email": f"test{i}@example.com",
+                "password": "testpassword123",
+                "nickname": f"Test User {i}",
+            }
+            client.post("/api/users/register", json=user_data)
+
+        # Login as first user to get token
+        login_data = {"username": "testuser0", "password": "testpassword123"}
+        login_response = client.post("/api/users/login", data=login_data)
+        token = login_response.json()["access_token"]
+
+        # Get users list
+        headers = {"Authorization": f"Bearer {token}"}
+        response = client.get("/api/users/", headers=headers)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) >= 3  # At least 3 users
+        assert all("password" not in user for user in data)  # No passwords in response
+
+    def test_get_user_by_id(self, client: TestClient):
+        """Test getting user by ID."""
+        # Register a user
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "testpassword123",
+            "nickname": "Test User",
+        }
+        register_response = client.post("/api/users/register", json=user_data)
+        user_id = register_response.json()["id"]
+
+        # Login to get token
+        login_data = {"username": "testuser", "password": "testpassword123"}
+        login_response = client.post("/api/users/login", data=login_data)
+        token = login_response.json()["access_token"]
+
+        # Get user by ID
+        headers = {"Authorization": f"Bearer {token}"}
+        response = client.get(f"/api/users/{user_id}", headers=headers)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["id"] == user_id
+        assert data["username"] == "testuser"
+        assert "password" not in data
+
+    def test_get_nonexistent_user(self, client: TestClient):
+        """Test getting non-existent user."""
+        # Register and login to get token
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "testpassword123",
+            "nickname": "Test User",
+        }
+        client.post("/api/users/register", json=user_data)
+
+        login_data = {"username": "testuser", "password": "testpassword123"}
+        login_response = client.post("/api/users/login", data=login_data)
+        token = login_response.json()["access_token"]
+
+        # Try to get non-existent user
+        headers = {"Authorization": f"Bearer {token}"}
+        response = client.get("/api/users/999", headers=headers)
+
+        assert response.status_code == 404

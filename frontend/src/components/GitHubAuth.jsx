@@ -40,7 +40,7 @@ const GitHubAuth = () => {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
             });
-            
+
             // Open GitHub OAuth in new window
             const authWindow = window.open(
                 response.data.auth_url,
@@ -81,7 +81,7 @@ const GitHubAuth = () => {
 
     const updateRepo = async () => {
         try {
-            await axios.put('/api/github/repo', 
+            await axios.put('/api/github/repo',
                 { repo },
                 {
                     headers: {
@@ -134,7 +134,7 @@ const GitHubAuth = () => {
                             <Text strong>GitHub 用户名</Text>
                             <div style={{ fontFamily: 'monospace', marginTop: '4px' }}>{status.username}</div>
                         </div>
-                        
+
                         <div style={{ backgroundColor: '#f5f5f5', padding: '16px', borderRadius: '6px' }}>
                             <Text strong>代码仓库</Text>
                             {showRepoInput ? (
@@ -157,9 +157,9 @@ const GitHubAuth = () => {
                             ) : (
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
                                     <div style={{ fontFamily: 'monospace' }}>{status.repo}</div>
-                                    <Button 
-                                        type="link" 
-                                        size="small" 
+                                    <Button
+                                        type="link"
+                                        size="small"
                                         icon={<EditOutlined />}
                                         onClick={() => {
                                             setRepo(status.repo);
@@ -174,14 +174,14 @@ const GitHubAuth = () => {
                     </div>
 
                     <Space>
-                        <Button 
-                            danger 
+                        <Button
+                            danger
                             icon={<DisconnectOutlined />}
                             onClick={disconnectGitHub}
                         >
                             断开连接
                         </Button>
-                        <Button 
+                        <Button
                             icon={<ReloadOutlined />}
                             onClick={checkGitHubStatus}
                         >
@@ -198,8 +198,8 @@ const GitHubAuth = () => {
                         showIcon
                     />
 
-                    <Button 
-                        type="primary" 
+                    <Button
+                        type="primary"
                         icon={<GithubOutlined />}
                         loading={connecting}
                         onClick={connectGitHub}
@@ -213,4 +213,4 @@ const GitHubAuth = () => {
     );
 };
 
-export default GitHubAuth; 
+export default GitHubAuth;

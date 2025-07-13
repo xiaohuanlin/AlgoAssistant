@@ -1,0 +1,60 @@
+---
+description: Global project rules for AlgoAssistant
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# Global Project Rules
+
+## Code Comments and Documentation
+- All code comments must be written in English
+- Only translation files (i18n, locale files) can use Chinese
+- No need to write change documentation for each modification
+- No need to create simple test files for basic changes
+
+## Code Style and Standards
+- Follow existing code style and patterns in each module
+- Maintain consistency with the current codebase architecture
+- Use meaningful variable and function names
+- Keep functions focused and single-purpose
+
+## File Organization
+- Place new files in appropriate directories based on their purpose
+- Follow existing naming conventions for files and directories
+- Maintain the current project structure
+
+## Error Handling
+- Implement proper error handling for all new code
+- Use existing error handling patterns in the codebase
+- Log errors appropriately using the existing logging system
+
+## Security
+- Follow security best practices for the respective technology stack
+- Validate all user inputs
+- Use existing authentication and authorization patterns
+
+## Code Architecture
+- Prefer object-oriented programming patterns where appropriate
+- Implement component-based architecture for better maintainability
+- Design code to be modular and reusable
+- Follow SOLID principles for better code organization
+- Create clear separation of concerns between components
+
+## Code Formatting
+- Always format code according to language-specific standards
+- Use appropriate linters and formatters for each language
+- Maintain consistent code formatting across the project
+- Follow language-specific style guides (PEP 8 for Python, ESLint for JavaScript, etc.)
+- Ensure code is properly indented and structured
+
+## Development Environment
+- The project uses Docker Compose for local development
+- Always start the development environment with `docker-compose up` before development
+- Ensure all services are running before making changes
+- Use the containerized environment for testing and debugging
+- Follow the existing Docker setup patterns and configurations
+
+## Documentation
+- Do not actively write README files unless specifically requested
+- Focus on code implementation rather than documentation creation
+---

@@ -15,9 +15,7 @@ const GoogleLogin = ({ onSuccess, onError }) => {
       try {
         // Login with backend using access token
         const result = await authService.googleLogin(response.access_token);
-        
-        message.success(t('auth.googleLoginSuccess'));
-        
+
         if (onSuccess) {
           onSuccess(result);
         } else {
@@ -58,4 +56,4 @@ const GoogleLogin = ({ onSuccess, onError }) => {
   );
 };
 
-export default GoogleLogin; 
+export default GoogleLogin;

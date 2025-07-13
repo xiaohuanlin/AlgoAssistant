@@ -1,291 +1,385 @@
+from datetime import datetime
+from unittest.mock import Mock, patch
+
 import pytest
+
+from app.models import User
 from app.services.user_service import UserService
-from app.schemas import UserCreate, UserConfigCreate
 from app.utils.security import get_password_hash
 
+
 class TestUserService:
-    """Test UserService functionality."""
-    
-    def test_create_user(self, db_session):
-        """Test user creation with password hashing."""
-        service = UserService(db_session)
-        user_data = UserCreate(
-            username="testuser",
-            email="test@example.com",
-            password="testpassword123",
-            nickname="Test User"
-        )
-        
-        user = service.create_user(user_data)
-        
+    """Test cases for UserService."""
+
+    def test_create_user_success(self, client):
+        """Test creating a new user successfully."""
+        # Get database session from dependency override
+        from app.deps import get_db
+
+        db = next(get_db())
+
+        service = UserService(db)
+
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "testpassword123",
+            "nickname": "Test User",
+        }
+
+        user = service.create_user(**user_data)
+
         assert user.id is not None
         assert user.username == "testuser"
         assert user.email == "test@example.com"
         assert user.nickname == "Test User"
-        assert user.password_hash != "testpassword123"  # Should be hashed
+        assert user.is_active is True
         assert user.created_at is not None
-    
-    def test_get_user_by_username(self, db_session):
-        """Test getting user by username."""
-        service = UserService(db_session)
-        
-        # Create user first
-        user_data = UserCreate(
-            username="testuser",
-            email="test@example.com",
-            password="testpassword123"
-        )
-        created_user = service.create_user(user_data)
-        
-        # Get user by username
-        found_user = service.get_user_by_username("testuser")
-        
-        assert found_user is not None
-        assert found_user.id == created_user.id
-        assert found_user.username == "testuser"
-    
-    def test_get_user_by_username_not_found(self, db_session):
-        """Test getting non-existent user by username."""
-        service = UserService(db_session)
-        user = service.get_user_by_username("nonexistent")
-        assert user is None
-    
-    def test_get_user_by_email(self, db_session):
-        """Test getting user by email."""
-        service = UserService(db_session)
-        
-        # Create user first
-        user_data = UserCreate(
-            username="testuser",
-            email="test@example.com",
-            password="testpassword123"
-        )
-        created_user = service.create_user(user_data)
-        
-        # Get user by email
-        found_user = service.get_user_by_email("test@example.com")
-        
-        assert found_user is not None
-        assert found_user.id == created_user.id
-        assert found_user.email == "test@example.com"
-    
-    def test_get_user_by_email_not_found(self, db_session):
-        """Test getting non-existent user by email."""
-        service = UserService(db_session)
-        user = service.get_user_by_email("nonexistent@example.com")
-        assert user is None
-    
-    def test_create_user_config(self, db_session):
-        """Test user configuration creation with encryption."""
-        service = UserService(db_session)
-        
-        # Create user first
-        user_data = UserCreate(
-            username="testuser",
-            email="test@example.com",
-            password="testpassword123"
-        )
-        user = service.create_user(user_data)
-        
-        # Create user config
-        config_data = UserConfigCreate(
-            leetcode_name="leetcode_user",
-            github_repo="user/repo",
-            notion_token="notion_token_123",
-            notion_db_id="db_123",
-            openai_key="openai_key_123"
-        )
-        
-        config = service.create_user_config(user.id, config_data)
-        
-        assert config.id is not None
-        assert config.user_id == user.id
-        assert config.leetcode_name == "leetcode_user"
-        assert config.github_repo == "user/repo"
-        assert config.notion_token != "notion_token_123"  # Should be encrypted
-        assert config.notion_db_id == "db_123"
-        assert config.openai_key != "openai_key_123"  # Should be encrypted
-    
-    def test_create_user_config_without_sensitive_data(self, db_session):
-        """Test user configuration creation without sensitive data."""
-        service = UserService(db_session)
-        
-        # Create user first
-        user_data = UserCreate(
-            username="testuser",
-            email="test@example.com",
-            password="testpassword123"
-        )
-        user = service.create_user(user_data)
-        
-        # Create user config without sensitive data
-        config_data = UserConfigCreate(
-            leetcode_name="leetcode_user",
-            github_repo="user/repo"
-        )
-        
-        config = service.create_user_config(user.id, config_data)
-        
-        assert config.id is not None
-        assert config.user_id == user.id
-        assert config.leetcode_name == "leetcode_user"
-        assert config.github_repo == "user/repo"
-        assert config.notion_token is None
-        assert config.notion_db_id is None
-        assert config.openai_key is None
-    
-    def test_duplicate_username_creation(self, db_session):
-        """Test that creating user with duplicate username raises error."""
-        service = UserService(db_session)
-        
+        # Password should be hashed
+        assert user.hashed_password != "testpassword123"
+        assert service.verify_password("testpassword123", user.hashed_password)
+
+    def test_create_user_duplicate_username(self, client):
+        """Test creating user with duplicate username fails."""
+        from app.deps import get_db
+
+        db = next(get_db())
+
+        service = UserService(db)
+
         # Create first user
-        user_data1 = UserCreate(
-            username="testuser1",
-            email="test1@example.com",
-            password="testpassword123"
-        )
-        service.create_user(user_data1)
-        
+        user_data = {
+            "username": "testuser",
+            "email": "test1@example.com",
+            "password": "testpassword123",
+            "nickname": "Test User 1",
+        }
+        service.create_user(**user_data)
+
         # Try to create second user with same username
-        user_data2 = UserCreate(
-            username="testuser1",  # Same username
-            email="test2@example.com",
-            password="testpassword123"
-        )
-        
-        # This should raise an IntegrityError due to unique constraint
-        with pytest.raises(Exception):  # SQLAlchemy IntegrityError
-            service.create_user(user_data2)
-    
-    def test_duplicate_email_creation(self, db_session):
-        """Test that creating user with duplicate email raises error."""
-        service = UserService(db_session)
-        
+        duplicate_data = {
+            "username": "testuser",
+            "email": "test2@example.com",
+            "password": "testpassword123",
+            "nickname": "Test User 2",
+        }
+
+        with pytest.raises(Exception):
+            service.create_user(**duplicate_data)
+
+    def test_create_user_duplicate_email(self, client):
+        """Test creating user with duplicate email fails."""
+        from app.deps import get_db
+
+        db = next(get_db())
+
+        service = UserService(db)
+
         # Create first user
-        user_data1 = UserCreate(
-            username="testuser1",
-            email="test@example.com",
-            password="testpassword123"
-        )
-        service.create_user(user_data1)
-        
+        user_data = {
+            "username": "testuser1",
+            "email": "test@example.com",
+            "password": "testpassword123",
+            "nickname": "Test User 1",
+        }
+        service.create_user(**user_data)
+
         # Try to create second user with same email
-        user_data2 = UserCreate(
-            username="testuser2",
-            email="test@example.com",  # Same email
-            password="testpassword123"
+        duplicate_data = {
+            "username": "testuser2",
+            "email": "test@example.com",
+            "password": "testpassword123",
+            "nickname": "Test User 2",
+        }
+
+        with pytest.raises(Exception):
+            service.create_user(**duplicate_data)
+
+    def test_get_user_by_id(self, client):
+        """Test getting user by ID."""
+        from app.deps import get_db
+
+        db = next(get_db())
+
+        service = UserService(db)
+
+        # Create a user first
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "testpassword123",
+            "nickname": "Test User",
+        }
+        created_user = service.create_user(**user_data)
+
+        # Get user by ID
+        retrieved_user = service.get_user_by_id(created_user.id)
+
+        assert retrieved_user is not None
+        assert retrieved_user.id == created_user.id
+        assert retrieved_user.username == "testuser"
+
+    def test_get_user_by_username(self, client):
+        """Test getting user by username."""
+        from app.deps import get_db
+
+        db = next(get_db())
+
+        service = UserService(db)
+
+        # Create a user first
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "testpassword123",
+            "nickname": "Test User",
+        }
+        service.create_user(**user_data)
+
+        # Get user by username
+        retrieved_user = service.get_user_by_username("testuser")
+
+        assert retrieved_user is not None
+        assert retrieved_user.username == "testuser"
+        assert retrieved_user.email == "test@example.com"
+
+    def test_get_user_by_email(self, client):
+        """Test getting user by email."""
+        from app.deps import get_db
+
+        db = next(get_db())
+
+        service = UserService(db)
+
+        # Create a user first
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "testpassword123",
+            "nickname": "Test User",
+        }
+        service.create_user(**user_data)
+
+        # Get user by email
+        retrieved_user = service.get_user_by_email("test@example.com")
+
+        assert retrieved_user is not None
+        assert retrieved_user.email == "test@example.com"
+        assert retrieved_user.username == "testuser"
+
+    def test_authenticate_user_success(self, client):
+        """Test successful user authentication."""
+        from app.deps import get_db
+
+        db = next(get_db())
+
+        service = UserService(db)
+
+        # Create a user first
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "testpassword123",
+            "nickname": "Test User",
+        }
+        service.create_user(**user_data)
+
+        # Authenticate user
+        authenticated_user = service.authenticate_user("testuser", "testpassword123")
+
+        assert authenticated_user is not None
+        assert authenticated_user.username == "testuser"
+
+    def test_authenticate_user_wrong_password(self, client):
+        """Test user authentication with wrong password."""
+        from app.deps import get_db
+
+        db = next(get_db())
+
+        service = UserService(db)
+
+        # Create a user first
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "testpassword123",
+            "nickname": "Test User",
+        }
+        service.create_user(**user_data)
+
+        # Try to authenticate with wrong password
+        authenticated_user = service.authenticate_user("testuser", "wrongpassword")
+
+        assert authenticated_user is None
+
+    def test_authenticate_user_nonexistent(self, client):
+        """Test authentication with non-existent user."""
+        from app.deps import get_db
+
+        db = next(get_db())
+
+        service = UserService(db)
+
+        # Try to authenticate non-existent user
+        authenticated_user = service.authenticate_user("nonexistent", "password")
+
+        assert authenticated_user is None
+
+    def test_update_user(self, client):
+        """Test updating user information."""
+        from app.deps import get_db
+
+        db = next(get_db())
+
+        service = UserService(db)
+
+        # Create a user first
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "testpassword123",
+            "nickname": "Test User",
+        }
+        created_user = service.create_user(**user_data)
+
+        # Update user
+        update_data = {"nickname": "Updated User", "email": "updated@example.com"}
+        updated_user = service.update_user(created_user.id, update_data)
+
+        assert updated_user.nickname == "Updated User"
+        assert updated_user.email == "updated@example.com"
+        assert updated_user.username == "testuser"  # Should remain unchanged
+
+    def test_deactivate_user(self, client):
+        """Test deactivating a user."""
+        from app.deps import get_db
+
+        db = next(get_db())
+
+        service = UserService(db)
+
+        # Create a user first
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "testpassword123",
+            "nickname": "Test User",
+        }
+        created_user = service.create_user(**user_data)
+
+        # Deactivate user
+        deactivated_user = service.deactivate_user(created_user.id)
+
+        assert deactivated_user.is_active is False
+
+    def test_activate_user(self, client):
+        """Test activating a user."""
+        from app.deps import get_db
+
+        db = next(get_db())
+
+        service = UserService(db)
+
+        # Create a user first
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "testpassword123",
+            "nickname": "Test User",
+        }
+        created_user = service.create_user(**user_data)
+
+        # Deactivate user first
+        service.deactivate_user(created_user.id)
+
+        # Activate user
+        activated_user = service.activate_user(created_user.id)
+
+        assert activated_user.is_active is True
+
+    def test_change_password(self, client):
+        """Test changing user password."""
+        from app.deps import get_db
+
+        db = next(get_db())
+
+        service = UserService(db)
+
+        # Create a user first
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "testpassword123",
+            "nickname": "Test User",
+        }
+        created_user = service.create_user(**user_data)
+
+        # Change password
+        new_password = "newpassword123"
+        updated_user = service.change_password(created_user.id, new_password)
+
+        # Verify old password doesn't work
+        assert not service.verify_password(
+            "testpassword123", updated_user.hashed_password
         )
-        
-        # This should raise an IntegrityError due to unique constraint
-        with pytest.raises(Exception):  # SQLAlchemy IntegrityError
-            service.create_user(user_data2)
-    
-    def test_update_user_config_success(self, db_session):
-        """Test successful user config update."""
-        service = UserService(db_session)
-        
-        # Create user first
-        user_data = UserCreate(
-            username="testuser",
-            email="test@example.com",
-            password="testpassword123"
-        )
-        user = service.create_user(user_data)
-        
-        # Create initial config
-        config_data = UserConfigCreate(
-            leetcode_name="old_leetcode",
-            github_repo="old/repo"
-        )
-        service.create_user_config(user.id, config_data)
-        
-        # Update config
-        update_data = UserConfigCreate(
-            leetcode_name="new_leetcode",
-            github_repo="new/repo",
-            notion_token="new_token",
-            openai_key="new_key"
-        )
-        
-        updated = service.update_user_config(user.id, update_data)
-        
-        assert updated is not None
-        assert updated.leetcode_name == "new_leetcode"
-        assert updated.github_repo == "new/repo"
-        assert updated.notion_token != "new_token"  # Should be encrypted
-        assert updated.openai_key != "new_key"  # Should be encrypted
-    
-    def test_update_user_config_not_found(self, db_session):
-        """Test updating non-existent user config."""
-        service = UserService(db_session)
-        
-        config_data = UserConfigCreate(
-            leetcode_name="test_leetcode",
-            github_repo="test/repo"
-        )
-        
-        updated = service.update_user_config(999, config_data)
-        
-        assert updated is None
-    
-    def test_get_user_config_not_found(self, db_session):
-        """Test getting non-existent user config."""
-        service = UserService(db_session)
-        
-        config = service.get_user_config(999)
-        
-        assert config is None
-    
-    def test_create_user_config_encryption(self, db_session):
-        """Test that sensitive data is properly encrypted."""
-        service = UserService(db_session)
-        
-        # Create user first
-        user_data = UserCreate(
-            username="testuser",
-            email="test@example.com",
-            password="testpassword123"
-        )
-        user = service.create_user(user_data)
-        
-        # Create config with sensitive data
-        config_data = UserConfigCreate(
-            leetcode_name="test_leetcode",
-            notion_token="sensitive_notion_token",
-            openai_key="sensitive_openai_key"
-        )
-        
-        config = service.create_user_config(user.id, config_data)
-        
-        # Sensitive data should be encrypted
-        assert config.notion_token != "sensitive_notion_token"
-        assert config.openai_key != "sensitive_openai_key"
-        assert config.notion_token is not None
-        assert config.openai_key is not None
-    
-    def test_create_user_config_without_sensitive_data(self, db_session):
-        """Test creating config without sensitive data."""
-        service = UserService(db_session)
-        
-        # Create user first
-        user_data = UserCreate(
-            username="testuser",
-            email="test@example.com",
-            password="testpassword123"
-        )
-        user = service.create_user(user_data)
-        
-        # Create config without sensitive data
-        config_data = UserConfigCreate(
-            leetcode_name="test_leetcode",
-            github_repo="test/repo"
-        )
-        
-        config = service.create_user_config(user.id, config_data)
-        
-        # Non-sensitive data should be stored as-is
-        assert config.leetcode_name == "test_leetcode"
-        assert config.github_repo == "test/repo"
-        # Sensitive data should be None
-        assert config.notion_token is None
-        assert config.openai_key is None 
+
+        # Verify new password works
+        assert service.verify_password(new_password, updated_user.hashed_password)
+
+    def test_get_users_pagination(self, client):
+        """Test getting users with pagination."""
+        from app.deps import get_db
+
+        db = next(get_db())
+
+        service = UserService(db)
+
+        # Create multiple users
+        for i in range(5):
+            user_data = {
+                "username": f"testuser{i}",
+                "email": f"test{i}@example.com",
+                "password": "testpassword123",
+                "nickname": f"Test User {i}",
+            }
+            service.create_user(**user_data)
+
+        # Get users with pagination
+        users = service.get_users(skip=0, limit=3)
+        assert len(users) == 3
+
+        users = service.get_users(skip=3, limit=3)
+        assert len(users) == 2  # Only 2 users remaining
+
+    def test_search_users(self, client):
+        """Test searching users."""
+        from app.deps import get_db
+
+        db = next(get_db())
+
+        service = UserService(db)
+
+        # Create users with different usernames
+        user_data1 = {
+            "username": "alice_user",
+            "email": "alice@example.com",
+            "password": "testpassword123",
+            "nickname": "Alice",
+        }
+        user_data2 = {
+            "username": "bob_user",
+            "email": "bob@example.com",
+            "password": "testpassword123",
+            "nickname": "Bob",
+        }
+        service.create_user(**user_data1)
+        service.create_user(**user_data2)
+
+        # Search for users with "alice"
+        results = service.search_users("alice")
+        assert len(results) == 1
+        assert results[0].username == "alice_user"
+
+        # Search for users with "user"
+        results = service.search_users("user")
+        assert len(results) == 2
