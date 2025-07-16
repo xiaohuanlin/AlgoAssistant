@@ -4,6 +4,7 @@ Uses object-oriented design and reuses existing service components.
 """
 
 from app.models import SyncTask, SyncTaskType
+from app.tasks.gemini_sync import gemini_sync_task
 from app.tasks.github_sync import github_sync_task
 from app.tasks.leetcode_batch_sync import leetcode_batch_sync_task
 from app.tasks.leetcode_detail_sync import leetcode_detail_sync_task
@@ -23,5 +24,9 @@ class TaskManager:
         elif task.type == SyncTaskType.LEETCODE_DETAIL_SYNC.value:
             return leetcode_detail_sync_task.apply_async(
                 args=[task.id], queue="leetcode_sync_queue"
+            )
+        elif task.type == SyncTaskType.GEMINI_SYNC.value:
+            return gemini_sync_task.apply_async(
+                args=[task.id], queue="gemini_sync_queue"
             )
         return False

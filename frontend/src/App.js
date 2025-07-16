@@ -16,6 +16,8 @@ import PrivateRoute from './components/PrivateRoute';
 import { GitSyncProvider } from './contexts/GitSyncContext';
 import './i18n';
 import './styles/App.css';
+import GeminiIntegration from './pages/GeminiIntegration';
+import RecordDetail from './pages/RecordDetail.jsx';
 
 // Google OAuth Client ID from environment variable
 const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || "your-google-client-id.apps.googleusercontent.com";
@@ -49,6 +51,16 @@ function App() {
                   <PrivateRoute>
                     <Layout>
                       <Records />
+                    </Layout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/records/:id"
+                element={
+                  <PrivateRoute>
+                    <Layout>
+                      <RecordDetail />
                     </Layout>
                   </PrivateRoute>
                 }
@@ -89,6 +101,16 @@ function App() {
                   <PrivateRoute>
                     <Layout>
                       <Settings />
+                    </Layout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/gemini"
+                element={
+                  <PrivateRoute>
+                    <Layout>
+                      <GeminiIntegration />
                     </Layout>
                   </PrivateRoute>
                 }

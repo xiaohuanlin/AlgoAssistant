@@ -4,6 +4,17 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.gemini import GeminiAIAnalysisSchema
+
+
+class SyncStatus(str, Enum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    PAUSED = "paused"
+    RETRY = "retry"
+
 
 class OJType(str, Enum):
     """Online Judge platform types for problem submission tracking."""
@@ -27,150 +38,212 @@ class LanguageType(str, Enum):
     other = "other"
 
 
-class RecordBase(BaseModel):
-    """Base record model for problem solving submissions with comprehensive metadata."""
+class SyncTaskType(str, Enum):
+    GITHUB_SYNC = "github_sync"
+    LEETCODE_BATCH_SYNC = "leetcode_batch_sync"
+    LEETCODE_DETAIL_SYNC = "leetcode_detail_sync"
+    NOTION_SYNC = "notion_sync"
+    AI_ANALYSIS = "ai_analysis"
+    GEMINI_SYNC = "gemini_sync"
+    OTHER = "other"
 
-    problem_id: Optional[int] = Field(
-        None,
-        description="Associated problem ID from the online judge platform. Used for linking with problem metadata.",
-    )
-    oj_type: OJType = Field(
-        ...,
-        description="Online Judge platform where the problem was submitted. Supports LeetCode, NowCoder, and other platforms.",
-    )
-    id: Optional[int] = Field(
-        None,
-        description="Unique record identifier in the database. Auto-generated sequential integer for tracking submissions.",
-    )
+
+class RecordCreate(BaseModel):
+    problem_id: int = Field(..., description="The ID of the problem")
+    oj_type: str = Field(..., description="The type of the online judge platform")
     execution_result: str = Field(
         ...,
-        max_length=50,
-        description="Execution result from the online judge. Common values: 'Accepted', 'Wrong Answer', 'Time Limit Exceeded', 'Memory Limit Exceeded', 'Runtime Error', 'Compilation Error'.",
+        description="The result of the solution, e.g., Accepted, Wrong Answer, Time Limit Exceeded, etc.",
     )
-    oj_status: Optional[str] = Field(
-        default="pending",
-        max_length=20,
-        description="Synchronization status with the online judge platform. Values: 'pending', 'syncing', 'synced', 'failed'.",
+    language: str = Field(
+        ..., description="The language of the solution, e.g., Python, Java, C++, etc."
     )
-    language: LanguageType = Field(
-        ...,
-        description="Programming language used for the solution. Supports Python, Java, C++, JavaScript, TypeScript, Go, Rust, and others.",
-    )
-    code: str = Field(
-        ...,
-        max_length=10000,
-        description="Complete source code of the solution. Includes all imports, functions, and main logic. Maximum 10,000 characters.",
-    )
-    submit_time: Optional[datetime] = Field(
-        None,
-        description="Timestamp when the solution was submitted to the online judge. In ISO 8601 format (UTC timezone).",
-    )
-    submission_url: Optional[str] = Field(
-        None,
-        max_length=500,
-        description="Direct URL to the submission on the online judge platform. Used for verification and reference.",
+    code: Optional[str] = Field(None, description="The code of the solution")
+    submit_time: datetime = Field(
+        ..., description="The time when the solution was submitted"
     )
     runtime: Optional[str] = Field(
-        None,
-        max_length=20,
-        description="Runtime performance of the solution. Format varies by platform (e.g., '4 ms', '1.2 s', '0.008s').",
+        None, description="The runtime of the solution, e.g., 100ms, 1s, etc."
     )
     memory: Optional[str] = Field(
-        None,
-        max_length=20,
-        description="Memory usage of the solution. Format varies by platform (e.g., '14.2 MB', '45.6 KB', '38.7MB').",
+        None, description="The memory of the solution, e.g., 100MB, 1GB, etc."
     )
     runtime_percentile: Optional[float] = Field(
-        None,
-        ge=0,
-        le=100,
-        description="Runtime percentile compared to other submissions. Value between 0-100, where higher is better.",
+        None, description="The runtime percentile of the solution, e.g., 50%, 90%, etc."
     )
     memory_percentile: Optional[float] = Field(
-        None,
-        ge=0,
-        le=100,
-        description="Memory usage percentile compared to other submissions. Value between 0-100, where higher is better.",
+        None, description="The memory percentile of the solution, e.g., 50%, 90%, etc."
     )
     total_correct: Optional[int] = Field(
-        None,
-        ge=0,
-        description="Number of test cases that passed successfully. Must be non-negative integer.",
+        None, description="The total number of correct submissions"
     )
     total_testcases: Optional[int] = Field(
-        None,
-        ge=0,
-        description="Total number of test cases for the problem. Must be non-negative integer.",
+        None, description="The total number of test cases"
     )
-    topic_tags: Optional[List[str]] = Field(
-        None,
-        max_items=20,
-        description="Algorithm and data structure tags for the problem. Examples: ['Array', 'Hash Table', 'Two Pointers', 'Dynamic Programming']. Maximum 20 tags.",
+    topic_tags: Optional[List[str]] = Field(None, description="The tags of the problem")
+    ai_analysis: Optional[GeminiAIAnalysisSchema] = Field(
+        None, description="The analysis of the solution"
     )
-
-
-class RecordCreate(RecordBase):
-    """Schema for creating a new problem record with validation."""
-
-    pass
-
-
-class RecordOut(RecordBase):
-    """Response schema for record data with additional metadata and synchronization status."""
-
-    user_id: int = Field(
-        ...,
-        description="User ID who owns this record. Links to the User table for data isolation.",
+    oj_sync_status: SyncStatus = Field(
+        default=SyncStatus.PENDING, description="The status of the OJ synchronization"
     )
-    problem_id: Optional[int] = Field(
-        None,
-        description="Associated problem ID from the online judge platform. Used for linking with problem metadata.",
+    github_sync_status: SyncStatus = Field(
+        default=SyncStatus.PENDING,
+        description="The status of the GitHub synchronization",
+    )
+    ai_sync_status: SyncStatus = Field(
+        default=SyncStatus.PENDING, description="The status of the AI synchronization"
+    )
+    submission_id: int = Field(..., description="The ID of the submission")
+    submission_url: str = Field(..., description="The URL of the submission")
+    notion_url: Optional[str] = Field(
+        None, description="The URL of the problem in Notion"
     )
     git_file_path: Optional[str] = Field(
-        None,
-        max_length=500,
-        description="Path to the solution file in the connected Git repository. Format: 'solutions/{platform}/{problem_name}.{extension}'.",
-    )
-    execution_result: str = Field(
-        ...,
-        max_length=50,
-        description="Execution result from the online judge. Common values: 'Accepted', 'Wrong Answer', 'Time Limit Exceeded', 'Memory Limit Exceeded', 'Runtime Error', 'Compilation Error'.",
-    )
-    ai_analysis: Optional[Dict[str, Any]] = Field(
-        None,
-        description="AI analysis results including time complexity, space complexity, and improvement suggestions. Generated by OpenAI API.",
-    )
-    oj_sync_status: Optional[str] = Field(
-        None,
-        max_length=20,
-        description="Online judge synchronization status. Tracks whether the record has been synced back to the platform.",
-    )
-    github_sync_status: Optional[str] = Field(
-        None,
-        max_length=20,
-        description="GitHub synchronization status. Tracks whether the code has been pushed to the connected repository.",
-    )
-    ai_analysis_status: Optional[str] = Field(
-        None,
-        max_length=20,
-        description="AI analysis status. Tracks whether the AI analysis has been performed on this record.",
-    )
-    notion_url: Optional[str] = Field(
-        None,
-        max_length=500,
-        description="URL to the corresponding page in the connected Notion database. Used for knowledge base integration.",
-    )
-    created_at: datetime = Field(
-        ...,
-        description="Record creation timestamp in ISO 8601 format (UTC timezone). When the record was first saved to the database.",
-    )
-    updated_at: datetime = Field(
-        ...,
-        description="Last record update timestamp in ISO 8601 format (UTC timezone). Updated whenever the record is modified.",
+        None, description="The path of the solution in the git repository"
     )
 
-    class Config:
-        from_attributes = True
+
+class RecordListOut(BaseModel):
+    """Response schema for record data with additional metadata and synchronization status."""
+
+    id: int = Field(..., description="The ID of the record")
+    problem_title: str = Field(..., description="The title of the problem")
+    problem_number: int = Field(..., description="The number of the problem")
+    execution_result: str = Field(
+        ...,
+        description="The result of the solution, e.g., Accepted, Wrong Answer, Time Limit Exceeded, etc.",
+    )
+    oj_type: str = Field(..., description="The type of the online judge platform")
+    language: str = Field(
+        ..., description="The language of the solution, e.g., Python, Java, C++, etc."
+    )
+    oj_sync_status: SyncStatus = Field(
+        ..., description="The status of the OJ synchronization"
+    )
+    github_sync_status: SyncStatus = Field(
+        ..., description="The status of the GitHub synchronization"
+    )
+    ai_sync_status: SyncStatus = Field(
+        ..., description="The status of the AI synchronization"
+    )
+    submit_time: datetime = Field(
+        ..., description="The time when the solution was submitted"
+    )
+    topic_tags: Optional[List[str]] = Field(None, description="The tags of the problem")
+    git_file_path: Optional[str] = Field(
+        None, description="The path of the solution in the git repository"
+    )
+    notion_url: Optional[str] = Field(
+        None, description="The URL of the problem in Notion"
+    )
+    submission_url: str = Field(..., description="The URL of the submission")
+
+
+class RecordDetailOut(BaseModel):
+    id: int = Field(..., description="The ID of the record")
+    user_id: int = Field(..., description="The ID of the user")
+    problem_id: int = Field(..., description="The ID of the problem")
+    problem_title: str = Field(..., description="The title of the problem")
+    problem_number: int = Field(..., description="The number of the problem")
+    oj_type: str = Field(..., description="The type of the online judge platform")
+    execution_result: str = Field(
+        ...,
+        description="The result of the solution, e.g., Accepted, Wrong Answer, Time Limit Exceeded, etc.",
+    )
+    language: str = Field(
+        ..., description="The language of the solution, e.g., Python, Java, C++, etc."
+    )
+    code: str = Field(..., description="The code of the solution")
+    submit_time: datetime = Field(
+        ..., description="The time when the solution was submitted"
+    )
+    runtime: str = Field(
+        ..., description="The runtime of the solution, e.g., 100ms, 1s, etc."
+    )
+    memory: str = Field(
+        ..., description="The memory of the solution, e.g., 100MB, 1GB, etc."
+    )
+    runtime_percentile: float = Field(
+        ..., description="The runtime percentile of the solution, e.g., 50%, 90%, etc."
+    )
+    memory_percentile: float = Field(
+        ..., description="The memory percentile of the solution, e.g., 50%, 90%, etc."
+    )
+    total_correct: int = Field(
+        ..., description="The total number of correct submissions"
+    )
+    total_testcases: int = Field(..., description="The total number of test cases")
+    topic_tags: List[str] = Field(..., description="The tags of the problem")
+    ai_analysis: GeminiAIAnalysisSchema = Field(
+        ..., description="The analysis of the solution"
+    )
+    oj_sync_status: SyncStatus = Field(
+        ..., description="The status of the OJ synchronization"
+    )
+    github_sync_status: SyncStatus = Field(
+        ..., description="The status of the GitHub synchronization"
+    )
+    ai_sync_status: SyncStatus = Field(
+        ..., description="The status of the AI synchronization"
+    )
+    submission_url: str = Field(..., description="The URL of the submission")
+    notion_url: Optional[str] = Field(
+        None, description="The URL of the problem in Notion"
+    )
+    git_file_path: Optional[str] = Field(
+        None, description="The path of the solution in the git repository"
+    )
+    created_at: datetime = Field(
+        ..., description="The time when the record was created"
+    )
+    updated_at: datetime = Field(
+        ..., description="The time when the record was updated"
+    )
+
+
+class RecordUpdate(BaseModel):
+    """Schema for updating a problem record."""
+
+    code: Optional[str] = Field(None, description="The code of the solution")
+    runtime: Optional[str] = Field(
+        None, description="The runtime of the solution, e.g., 100ms, 1s, etc."
+    )
+    memory: Optional[str] = Field(
+        None, description="The memory of the solution, e.g., 100MB, 1GB, etc."
+    )
+    runtime_percentile: Optional[float] = Field(
+        None, description="The runtime percentile of the solution, e.g., 50%, 90%, etc."
+    )
+    memory_percentile: Optional[float] = Field(
+        None, description="The memory percentile of the solution, e.g., 50%, 90%, etc."
+    )
+    total_correct: Optional[int] = Field(
+        None, description="The total number of correct submissions"
+    )
+    total_testcases: Optional[int] = Field(
+        None, description="The total number of test cases"
+    )
+    topic_tags: Optional[List[str]] = Field(None, description="The tags of the problem")
+    ai_analysis: Optional[GeminiAIAnalysisSchema] = Field(
+        None, description="The analysis of the solution"
+    )
+    oj_sync_status: Optional[SyncStatus] = Field(
+        None, description="The status of the OJ synchronization"
+    )
+    github_sync_status: Optional[SyncStatus] = Field(
+        None, description="The status of the GitHub synchronization"
+    )
+    ai_sync_status: Optional[SyncStatus] = Field(
+        None, description="The status of the AI synchronization"
+    )
+    submission_url: Optional[str] = Field(None, description="The URL of the submission")
+    notion_url: Optional[str] = Field(
+        None, description="The URL of the problem in Notion"
+    )
+    git_file_path: Optional[str] = Field(
+        None, description="The path of the solution in the git repository"
+    )
 
 
 class TagBase(BaseModel):
@@ -266,12 +339,16 @@ class SyncTaskCreate(BaseModel):
     type: str = Field(
         ...,
         max_length=50,
-        description="Task type for synchronization. Valid values: 'github_sync', 'leetcode_batch_sync', 'leetcode_detail_sync', 'notion_sync', 'ai_analysis'.",
+        description="Task type for synchronization. Valid values: 'github_sync', 'leetcode_batch_sync', 'leetcode_detail_sync', 'notion_sync', 'gemini_sync'.",
     )
     record_ids: Optional[List[int]] = Field(
         None,
-        max_items=1000,
-        description="List of specific record IDs to process. If not provided, all pending records of the specified type will be processed.",
+        description="List of record IDs to be processed by this task. If empty, all records will be processed.",
+    )
+    total_records: Optional[int] = Field(
+        None,
+        ge=0,
+        description="Total number of records to sync for this task. Used for batch sync tasks.",
     )
 
 
@@ -281,7 +358,7 @@ class SyncTaskQuery(BaseModel):
     type: Optional[str] = Field(
         None,
         max_length=50,
-        description="Filter by task type. Valid values: 'github_sync', 'leetcode_batch_sync', 'leetcode_detail_sync', 'notion_sync', 'ai_analysis'.",
+        description="Filter by task type. Valid values: 'github_sync,leetcode_batch_sync', leetcode_detail_sync', notion_sync', 'gemini_sync'.",
     )
     status: Optional[str] = Field(
         None,
@@ -325,6 +402,11 @@ class SyncTaskOut(BaseModel):
     record_ids: Optional[List[int]] = Field(
         None,
         description="List of record IDs being processed by this task. Empty list if processing all records.",
+    )
+    total_records: Optional[int] = Field(
+        None,
+        ge=0,
+        description="Total number of records to sync for this task. Used for batch sync tasks.",
     )
     synced_records: Optional[int] = Field(
         None,

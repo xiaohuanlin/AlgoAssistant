@@ -3,8 +3,7 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
-from app import models
-from app.models import SyncStatus, SyncTask, SyncTaskType
+from app.models import SyncStatus, SyncTask
 
 
 class SyncTaskService:
@@ -13,8 +12,10 @@ class SyncTaskService:
     def __init__(self, db: Session):
         self.db = db
 
-    def create(self, user_id: int, type: str, **kwargs) -> SyncTask:
-        sync_task = SyncTask(user_id=user_id, type=type, **kwargs)
+    def create(self, user_id: int, type: str, total_records: int, **kwargs) -> SyncTask:
+        sync_task = SyncTask(
+            user_id=user_id, type=type, total_records=total_records, **kwargs
+        )
         self.db.add(sync_task)
         self.db.commit()
         self.db.refresh(sync_task)
@@ -39,8 +40,10 @@ class SyncTaskService:
         sync_task = self.get(task_id)
         if not sync_task:
             return None
+        column_names = sync_task.__table__.columns.keys()
         for k, v in kwargs.items():
-            setattr(sync_task, k, v)
+            if k in column_names:
+                setattr(sync_task, k, v)
         self.db.commit()
         self.db.refresh(sync_task)
         return sync_task

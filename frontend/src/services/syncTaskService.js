@@ -2,11 +2,11 @@ import api, { API_ENDPOINTS, handleApiError, handleApiSuccess } from './api';
 
 class SyncTaskService {
   /**
-   * 创建同步任务
-   * @param {Object} taskData - 任务数据
-   * @param {string} taskData.type - 任务类型 (github_sync, leetcode_batch_sync, leetcode_detail_sync, notion_sync, ai_analysis)
-   * @param {Array<number>} taskData.record_ids - 记录ID列表
-   * @returns {Promise<Object>} 创建的任务
+   * Create a sync task
+   * @param[object Object]Object} taskData - Task data
+   * @param {string} taskData.type - Task type (github_sync, leetcode_batch_sync, leetcode_detail_sync, notion_sync, ai_analysis)
+   * @param {Array<number>} taskData.record_ids - Record ID list
+   * @returns {Promise<Object>} Created task
    */
   async createTask(taskData) {
     try {
@@ -18,13 +18,13 @@ class SyncTaskService {
   }
 
   /**
-   * 获取同步任务列表
-   * @param {Object} params - 查询参数
-   * @param {string} params.type - 任务类型过滤
-   * @param {string} params.status - 任务状态过滤
-   * @param {number} params.limit - 限制数量
-   * @param {number} params.offset - 偏移量
-   * @returns {Promise<Array>} 任务列表
+   * Get sync task list
+   * @param {Object} params - Query parameters
+   * @param {string} params.type - Task type filter
+   * @param {string} params.status - Task status filter
+   * @param {number} params.limit - Limit count
+   * @param {number} params.offset - Offset
+   * @returns {Promise<Array>} Task list
    */
   async getTasks(params = {}) {
     try {
@@ -36,9 +36,9 @@ class SyncTaskService {
   }
 
   /**
-   * 获取特定任务详情
-   * @param {number} taskId - 任务ID
-   * @returns {Promise<Object>} 任务详情
+   * Get specific task details
+   * @param {number} taskId - Task ID
+   * @returns {Promise<Object>} Task details
    */
   async getTask(taskId) {
     try {
@@ -50,9 +50,9 @@ class SyncTaskService {
   }
 
   /**
-   * 删除同步任务
-   * @param {number} taskId - 任务ID
-   * @returns {Promise<boolean>} 删除结果
+   * Delete sync task
+   * @param {number} taskId - Task ID
+   * @returns {Promise<boolean>} Delete result
    */
   async deleteTask(taskId) {
     try {
@@ -64,8 +64,8 @@ class SyncTaskService {
   }
 
   /**
-   * 获取任务统计信息
-   * @returns {Promise<Object>} 任务统计
+   * Get task statistics
+   * @returns {Promise<Object>} Task statistics
    */
   async getTaskStats() {
     try {
@@ -93,9 +93,9 @@ class SyncTaskService {
   }
 
   /**
-   * 创建GitHub同步任务
-   * @param {Array<number>} recordIds - 记录ID列表
-   * @returns {Promise<Object>} 创建的任务
+   * Create GitHub sync task
+   * @param {Array<number>} recordIds - Record ID list
+   * @returns {Promise<Object>} Created task
    */
   async createGitHubSyncTask(recordIds) {
     return this.createTask({
@@ -105,9 +105,9 @@ class SyncTaskService {
   }
 
   /**
-   * 创建LeetCode批量同步任务
-   * @param {Object} params - 同步参数
-   * @returns {Promise<Object>} 创建的任务
+   * Create LeetCode batch sync task
+   * @param {Object} params - Sync parameters
+   * @returns {Promise<Object>} Created task
    */
   async createLeetCodeBatchSyncTask(params = {}) {
     return this.createTask({
@@ -117,9 +117,9 @@ class SyncTaskService {
   }
 
   /**
-   * 创建LeetCode详细同步任务
-   * @param {Array<number>} recordIds - 记录ID列表
-   * @returns {Promise<Object>} 创建的任务
+   * Create LeetCode detail sync task
+   * @param {Array<number>} recordIds - Record ID list
+   * @returns {Promise<Object>} Created task
    */
   async createLeetCodeDetailSyncTask(recordIds) {
     return this.createTask({
@@ -129,9 +129,9 @@ class SyncTaskService {
   }
 
   /**
-   * 创建Notion同步任务
-   * @param {Array<number>} recordIds - 记录ID列表
-   * @returns {Promise<Object>} 创建的任务
+   * Create Notion sync task
+   * @param {Array<number>} recordIds - Record ID list
+   * @returns {Promise<Object>} Created task
    */
   async createNotionSyncTask(recordIds) {
     return this.createTask({
@@ -141,9 +141,9 @@ class SyncTaskService {
   }
 
   /**
-   * 创建AI分析任务
-   * @param {Array<number>} recordIds - 记录ID列表
-   * @returns {Promise<Object>} 创建的任务
+   * Create AI analysis task
+   * @param {Array<number>} recordIds - Record ID list
+   * @returns {Promise<Object>} Created task
    */
   async createAIAnalysisTask(recordIds) {
     return this.createTask({
@@ -153,25 +153,38 @@ class SyncTaskService {
   }
 
   /**
-   * 获取任务状态文本
-   * @param {string} status - 任务状态
-   * @returns {string} 状态文本
+   * Create Gemini sync task
+   * @param {Array<number>} recordIds - Record ID list
+   * @returns {Promise<Object>} Created task
    */
-  getStatusText(status) {
+  async createGeminiSyncTask(recordIds) {
+    return this.createTask({
+      type: 'gemini_sync',
+      record_ids: recordIds,
+    });
+  }
+
+  /**
+   * Get status text
+   * @param {string} status - Task status
+   * @param {function} t - i18n translate function
+   * @returns {string} Status text
+   */
+  getStatusText(status, t) {
     const statusMap = {
-      'pending': '等待中',
-      'running': '运行中',
-      'completed': '已完成',
-      'failed': '失败',
-      'paused': '已暂停',
+      'pending': t ? t('syncTasks.status.pending') : 'Pending',
+      'running': t ? t('syncTasks.status.running') : 'Running',
+      'completed': t ? t('syncTasks.status.completed') : 'Completed',
+      'failed': t ? t('syncTasks.status.failed') : 'Failed',
+      'paused': t ? t('syncTasks.status.paused') : 'Paused',
     };
     return statusMap[status] || status;
   }
 
   /**
-   * 获取任务状态颜色
-   * @param {string} status - 任务状态
-   * @returns {string} 状态颜色
+   * Get task status color
+   * @param {string} status - Task status
+   * @returns {string} Status color
    */
   getStatusColor(status) {
     const colorMap = {
@@ -185,37 +198,99 @@ class SyncTaskService {
   }
 
   /**
-   * 获取任务类型文本
-   * @param {string} type - 任务类型
-   * @returns {string} 类型文本
+   * Get task type text
+   * @param {string} type - Task type
+   * @param {function} t - i18n translate function
+   * @returns {string} Type text
    */
-  getTypeText(type) {
+  getTypeText(type, t) {
     const typeMap = {
-      'github_sync': 'GitHub同步',
-      'leetcode_batch_sync': 'LeetCode批量同步',
-      'leetcode_detail_sync': 'LeetCode详细同步',
-      'notion_sync': 'Notion同步',
-      'ai_analysis': 'AI分析',
+      'github_sync': t ? t('syncTasks.taskTypes.github_sync') : 'GitHub Sync',
+      'leetcode_batch_sync': t ? t('syncTasks.taskTypes.leetcode_batch_sync') : 'LeetCode Batch Sync',
+      'leetcode_detail_sync': t ? t('syncTasks.taskTypes.leetcode_detail_sync') : 'LeetCode Detail Sync',
+      'notion_sync': t ? t('syncTasks.taskTypes.notion_sync') : 'Notion Sync',
+      'ai_analysis': t ? t('syncTasks.taskTypes.ai_analysis') : 'AI Analysis',
+      'gemini_sync': t ? t('syncTasks.taskTypes.gemini_sync') : 'Gemini Sync',
     };
     return typeMap[type] || type;
   }
 
   /**
-   * 检查任务是否可以取消
-   * @param {string} status - 任务状态
-   * @returns {boolean} 是否可以取消
+   * Check if task can be cancelled
+   * @param {string} status - Task status
+   * @returns {boolean} Whether task can be cancelled
    */
   canCancel(status) {
     return ['pending', 'running'].includes(status);
   }
 
   /**
-   * 检查任务是否可以重试
-   * @param {string} status - 任务状态
-   * @returns {boolean} 是否可以重试
+   * Check if task can be retried
+   * @param {string} status - Task status
+   * @returns {boolean} Whether task can be retried
    */
   canRetry(status) {
     return ['failed', 'paused'].includes(status);
+  }
+
+  /**
+   * Retry a task
+   * @param {number} taskId - Task ID
+   * @returns {Promise<Object>} Retry result
+   */
+  async retryTask(taskId) {
+    try {
+      const response = await api.post(API_ENDPOINTS.SYNC_TASKS.RETRY(taskId));
+      return handleApiSuccess(response);
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
+
+  /**
+   * Pause a task
+   * @param {number} taskId - Task ID
+   * @returns {Promise<Object>} Pause result
+   */
+  async pauseTask(taskId) {
+    try {
+      const response = await api.post(API_ENDPOINTS.SYNC_TASKS.PAUSE(taskId));
+      return handleApiSuccess(response);
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
+
+  /**
+   * Resume a task
+   * @param {number} taskId - Task ID
+   * @returns {Promise<Object>} Resume result
+   */
+  async resumeTask(taskId) {
+    try {
+      const response = await api.post(API_ENDPOINTS.SYNC_TASKS.RESUME(taskId));
+      return handleApiSuccess(response);
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
+
+  /**
+   * Check if task can be paused
+   * @param {string} status - Task status
+   * @returns {boolean} Whether task can be paused
+   */
+  canPause(status) {
+    return ['running'].includes(status);
+  }
+
+  /**
+   * Check if task can be resumed
+   * @param {string} status - Task status
+   * @returns {boolean} Whether task can be resumed
+   */
+  canResume(status) {
+    return ['paused'].includes(status);
   }
 }
 

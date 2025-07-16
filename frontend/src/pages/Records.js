@@ -8,7 +8,6 @@ import {
   Tag,
   Typography,
   Space,
-  Modal,
   Row,
   Col,
   Statistic,
@@ -30,12 +29,14 @@ import {
   ClearOutlined
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
+
 import recordsService from '../services/recordsService';
 import gitSyncService from '../services/gitSyncService';
 import GitSyncAction from '../components/GitSyncAction';
-import GitSyncStatusPage from '../components/GitSyncStatusPage';
+import GeminiSyncAction from '../components/GeminiSyncAction';
+import configService from '../services/configService';
+import { useNavigate } from 'react-router-dom';
+
 import dayjs from 'dayjs';
 
 const { RangePicker } = DatePicker;
@@ -46,14 +47,13 @@ const Records = () => {
   const [loading, setLoading] = useState(false);
   const [records, setRecords] = useState([]);
   const [stats, setStats] = useState({});
-  const [viewModalVisible, setViewModalVisible] = useState(false);
-  const [currentRecord, setCurrentRecord] = useState(null);
 
   // Batch sync states
   const [selectedRecords, setSelectedRecords] = useState([]);
   const [syncOrder, setSyncOrder] = useState('asc');
   const [batchSyncLoading, setBatchSyncLoading] = useState(false);
   const [configStatus, setConfigStatus] = useState(null);
+  const [geminiConfig, setGeminiConfig] = useState(null);
 
   // Filter states
   const [filters, setFilters] = useState({});
@@ -62,32 +62,19 @@ const Records = () => {
   const loadRecords = useCallback(async (filterParams = {}) => {
     setLoading(true);
     try {
-      console.log('Loading records with filters:', filterParams);
-      console.log('Current token:', localStorage.getItem('token'));
-
       const [recordsData, statsData] = await Promise.all([
         recordsService.getRecords(filterParams),
         recordsService.getStats()
       ]);
-      console.log('Records data:', recordsData);
-      console.log('Stats data:', statsData);
 
       // Ensure we have valid arrays/objects
       const validRecords = Array.isArray(recordsData) ? recordsData : [];
       const validStats = statsData && typeof statsData === 'object' ? statsData : {};
 
-      console.log('Valid records:', validRecords);
-      console.log('Valid stats:', validStats);
-
       setRecords(validRecords);
       setStats(validStats);
     } catch (error) {
       console.error('Error loading records:', error);
-      console.error('Error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      });
 
       if (error.response?.status === 401) {
         message.error('Authentication required. Please login again.');
@@ -125,25 +112,23 @@ const Records = () => {
     const initializeData = async () => {
       setLoading(true);
       try {
-        // Parallel requests for all data
-        const [recordsData, statsData, configData] = await Promise.all([
+        const [recordsData, statsData, configData, geminiCfg] = await Promise.all([
           recordsService.getRecords(filters),
           recordsService.getStats(),
           gitSyncService.getConfigurationStatus().catch(err => ({
             configured: false,
-            message: 'Failed to check configuration',
+            message: 'GitHub not configured',
             action: 'configure',
-            actionText: 'Configure Git Repository'
-          }))
+            actionText: 'Configure GitHub'
+          })),
+          configService.getGeminiConfig().catch(() => null)
         ]);
-
-        // Set data
         const validRecords = Array.isArray(recordsData) ? recordsData : [];
         const validStats = statsData && typeof statsData === 'object' ? statsData : {};
-
         setRecords(validRecords);
         setStats(validStats);
         setConfigStatus(configData);
+        setGeminiConfig(geminiCfg);
       } catch (error) {
         console.error('Error initializing data:', error);
         if (error.response?.status === 401) {
@@ -156,11 +141,11 @@ const Records = () => {
         }
         setRecords([]);
         setStats({});
+        setGeminiConfig(null);
       } finally {
         setLoading(false);
       }
     };
-
     initializeData();
   }, [filters, t]);
 
@@ -219,14 +204,46 @@ const Records = () => {
     }
   };
 
+  const navigate = useNavigate();
+
+  const canViewRecord = (record) => {
+    if (!record) return false;
+    const ojStatus = record.oj_sync_status?.toLowerCase();
+    return ojStatus === 'completed';
+  };
+
   const handleViewRecord = (record) => {
     if (!record) {
       message.error('Invalid record');
       return;
     }
-    setCurrentRecord(record);
-    setViewModalVisible(true);
+
+    if (!canViewRecord(record)) {
+      message.warning(t('records.viewNotAllowed'));
+      return;
+    }
+
+    navigate(`/records/${record.id}`);
   };
+
+  const handleOJSync = async (record) => {
+    if (!record || !record.id) {
+      message.error(t('invalidRecord'));
+      return;
+    }
+    try {
+      const syncService = require('../services/gitSyncService').default;
+      await syncService.createSyncTask({
+        type: 'leetcode_detail_sync',
+        record_ids: [record.id]
+      });
+      message.success(t('records.syncTaskCreated'));
+      loadRecords();
+    } catch (error) {
+      message.error(t('records.syncTaskCreateFailed') + ': ' + (error.message || error));
+    }
+  };
+
 
   const getStatusColor = (execution_result) => {
     if (!execution_result || typeof execution_result !== 'string') return 'default';
@@ -260,68 +277,33 @@ const Records = () => {
     return colors[lowerLanguage] || 'default';
   };
 
-  const getLeetCodeUrl = (record) => {
-    if (!record) return '#';
-    // Use submission_url if available
-    if (record.submission_url) {
-      return record.submission_url;
-    }
-    // Fallback to problem title slug if available
-    if (record.title_slug) {
-      return `https://leetcode.com/problems/${record.title_slug}/`;
-    }
-    // If no direct link available, use problem title for search
-    const problemTitle = record.problem_title || '';
-    return `https://leetcode.com/problemset/all/?search=${encodeURIComponent(problemTitle)}`;
-  };
-
-  const getProblemDisplay = (record) => {
-    if (!record) return 'Unknown Problem';
-    if (record.problem && record.problem.title) {
-      return `${record.id}. ${record.problem.title}`;
-    }
-    return `#${record.id}`;
-  };
-
-  const getLanguageForHighlight = (language) => {
-    if (!language || typeof language !== 'string') return 'plaintext';
-    const lowerLanguage = language.toLowerCase();
-    if (lowerLanguage.includes('python')) return 'python';
-    if (lowerLanguage.includes('java')) return 'java';
-    if (lowerLanguage.includes('cpp')) return 'cpp';
-    if (lowerLanguage.includes('c')) return 'c';
-    if (lowerLanguage.includes('javascript')) return 'javascript';
-    if (lowerLanguage.includes('typescript')) return 'typescript';
-    if (lowerLanguage.includes('go')) return 'go';
-    if (lowerLanguage.includes('rust')) return 'rust';
-    return 'plaintext';
+  const isSyncActionEnabled = (record) => {
+    const status = (record.oj_sync_status || '').toLowerCase();
+    return status === 'completed';
   };
 
   const columns = [
     {
       title: t('records.problemNumber'),
-      dataIndex: 'problem_id',
-      key: 'problem_id',
+      dataIndex: 'problem_number',
+      key: 'problem_number',
       width: 80,
-      render: (problemId) => {
-        if (!problemId) return <Text type="secondary">-</Text>;
-        return <Text strong>{problemId}</Text>;
-      }
+      render: (problemNumber) => problemNumber ? <Text strong>{problemNumber}</Text> : <Text type="secondary">-</Text>
     },
     {
       title: t('records.problem'),
-      key: 'problem',
+      key: 'problem_title',
       width: 300,
       render: (_, record) => (
         <Tooltip title={t('records.openInLeetCode')}>
           <Link
-            href={getLeetCodeUrl(record)}
+            href={record.submission_url || '#'}
             target="_blank"
             rel="noopener noreferrer"
             style={{ color: '#1890ff' }}
           >
             <Text strong style={{ fontSize: '14px' }}>
-              {getProblemDisplay(record)}
+              {record.problem_title || `#${record.id}`}
             </Text>
           </Link>
         </Tooltip>
@@ -374,12 +356,12 @@ const Records = () => {
       }
     },
     {
-      title: t('records.syncStatus'),
-      dataIndex: 'oj_status',
-      key: 'oj_status',
+      title: t('records.ojSyncStatus'),
+      dataIndex: 'oj_sync_status',
+      key: 'oj_sync_status',
       width: 100,
-      render: (oj_status) => {
-        const safeSyncStatus = oj_status && typeof oj_status === 'string' ? oj_status : 'pending';
+      render: (oj_sync_status) => {
+        const safeSyncStatus = oj_sync_status && typeof oj_sync_status === 'string' ? oj_sync_status : 'pending';
         const colorMap = {
           'synced': 'success',
           'syncing': 'processing',
@@ -405,11 +387,11 @@ const Records = () => {
     },
     {
       title: t('records.githubSyncStatus'),
-      dataIndex: 'git_sync_status',
-      key: 'git_sync_status',
+      dataIndex: 'github_sync_status',
+      key: 'github_sync_status',
       width: 120,
-      render: (gitSyncStatus) => {
-        const safeGitSyncStatus = gitSyncStatus && typeof gitSyncStatus === 'string' ? gitSyncStatus : 'pending';
+      render: (githubSyncStatus) => {
+        const safeGitSyncStatus = githubSyncStatus && typeof githubSyncStatus === 'string' ? githubSyncStatus : 'pending';
         const colorMap = {
           'synced': 'success',
           'syncing': 'processing',
@@ -434,21 +416,31 @@ const Records = () => {
       }
     },
     {
-      title: t('records.aiAnalysisStatus'),
-      dataIndex: 'ai_analysis',
-      key: 'ai_analysis',
-      width: 100,
-      render: (aiAnalysis) => {
-        if (aiAnalysis && typeof aiAnalysis === 'object') {
-          return (
-            <Tag color="green" icon={<CheckCircleOutlined />}>
-              {t('records.analyzed')}
-            </Tag>
-          );
-        }
+      title: t('records.aiSyncStatus'),
+      dataIndex: 'ai_sync_status',
+      key: 'ai_sync_status',
+      width: 120,
+      render: (aiSyncStatus) => {
+        const safeAiSyncStatus = aiSyncStatus && typeof aiSyncStatus === 'string' ? aiSyncStatus : 'pending';
+        const colorMap = {
+          'synced': 'success',
+          'syncing': 'processing',
+          'failed': 'error',
+          'pending': 'default',
+          'paused': 'default',
+          'retry': 'default'
+        };
+        const textMap = {
+          'pending': t('records.gitSyncStatusPending'),
+          'syncing': t('records.gitSyncStatusSyncing'),
+          'synced': t('records.gitSyncStatusSynced'),
+          'failed': t('records.gitSyncStatusFailed'),
+          'paused': t('records.gitSyncStatusPaused'),
+          'retry': t('records.gitSyncStatusRetry')
+        };
         return (
-          <Tag color="default">
-            {t('records.notAnalyzed')}
+          <Tag color={colorMap[safeAiSyncStatus] || 'default'}>
+            {textMap[safeAiSyncStatus] || safeAiSyncStatus}
           </Tag>
         );
       }
@@ -479,32 +471,6 @@ const Records = () => {
       }
     },
     {
-      title: t('records.externalServices'),
-      key: 'external_services',
-      width: 120,
-      render: (_, record) => {
-        const services = [];
-        if (record.notion_url) {
-          services.push(
-            <Tag key="notion" color="green" style={{ fontSize: '10px', marginBottom: 2 }}>
-              Notion
-            </Tag>
-          );
-        }
-        if (record.github_pushed) {
-          services.push(
-            <Tag key="github" color="purple" style={{ fontSize: '10px', marginBottom: 2 }}>
-              GitHub
-            </Tag>
-          );
-        }
-        if (services.length > 0) {
-          return <div>{services}</div>;
-        }
-        return <Text type="secondary">-</Text>;
-      }
-    },
-    {
       title: t('records.submitTime'),
       dataIndex: 'submit_time',
       key: 'submit_time',
@@ -528,25 +494,65 @@ const Records = () => {
       defaultSortOrder: 'descend'
     },
     {
+      title: t('records.gitFilePath'),
+      dataIndex: 'git_file_path',
+      key: 'git_file_path',
+      width: 180,
+      render: (val) => {
+        if (!val) return <Text type="secondary">-</Text>;
+
+        if (val.startsWith('http://') || val.startsWith('https://')) {
+          return (
+            <Link href={val} target="_blank" rel="noopener noreferrer">
+              {t('records.viewInGit')}
+            </Link>
+          );
+        }
+
+        return <Text copyable>{val}</Text>;
+      }
+    },
+    {
+      title: t('records.notionUrl'),
+      dataIndex: 'notion_url',
+      key: 'notion_url',
+      width: 180,
+      render: (val) => val ? <Link href={val} target="_blank" rel="noopener noreferrer">{t('records.viewInNotion')}</Link> : <Text type="secondary">-</Text>
+    },
+    {
       title: t('records.actions'),
       key: 'actions',
-      width: 120,
-      render: (_, record) => (
-        <Space>
-          <Tooltip title={t('records.view')}>
-            <Button
-              type="text"
-              icon={<EyeOutlined />}
-              onClick={() => handleViewRecord(record)}
-            />
-          </Tooltip>
-          <GitSyncAction
-            record={record}
-            onSync={loadRecords}
-          />
-        </Space>
-      )
-    }
+      width: 200,
+      fixed: 'right',
+      render: (_, record) => {
+        const actionEnabled = isSyncActionEnabled(record);
+        return (
+          <Space>
+            <Tooltip title={actionEnabled ? t('records.view') : t('records.pleaseSyncOJFirst')}>
+              <Button
+                icon={<EyeOutlined />}
+                size="small"
+                onClick={() => handleViewRecord(record)}
+                disabled={!actionEnabled}
+              >
+                {t('records.view')}
+              </Button>
+            </Tooltip>
+            <Tooltip title={t('records.syncToOJ')}>
+              <Button
+                icon={<SyncOutlined />}
+                size="small"
+                onClick={() => handleOJSync(record)}
+              >
+                {t('records.syncToOJ')}
+              </Button>
+            </Tooltip>
+            <GitSyncAction record={record} onSync={() => loadRecords()} disabled={!actionEnabled} />
+            <GeminiSyncAction record={record} onSync={() => loadRecords()} geminiConfig={geminiConfig} disabled={!actionEnabled} />
+          </Space>
+        );
+      }
+    },
   ];
 
   const items = [
@@ -648,8 +654,8 @@ const Records = () => {
                     </Form.Item>
                   </Col>
                   <Col span={6} style={{ minWidth: 180 }}>
-                    <Form.Item name="git_sync_status" label={t('records.gitSyncStatus')}>
-                      <Select placeholder={t('records.selectGitSyncStatus')} allowClear>
+                    <Form.Item name="oj_sync_status" label={t('records.ojSyncStatus')}>
+                      <Select placeholder={t('records.selectOjSyncStatus')} allowClear>
                         <Select.Option value="pending">{t('records.gitSyncStatusPending')}</Select.Option>
                         <Select.Option value="syncing">{t('records.gitSyncStatusSyncing')}</Select.Option>
                         <Select.Option value="synced">{t('records.gitSyncStatusSynced')}</Select.Option>
@@ -659,10 +665,15 @@ const Records = () => {
                       </Select>
                     </Form.Item>
                   </Col>
-                  <Col span={6} style={{ minWidth: 140 }}>
-                    <Form.Item name="oj_type" label={t('records.ojType')}>
-                      <Select placeholder={t('records.selectOjType')} allowClear>
-                        <Select.Option value="leetcode">LeetCode</Select.Option>
+                  <Col span={6} style={{ minWidth: 180 }}>
+                    <Form.Item name="ai_sync_status" label={t('records.aiSyncStatus')}>
+                      <Select placeholder={t('records.selectAiSyncStatus')} allowClear>
+                        <Select.Option value="pending">{t('records.gitSyncStatusPending')}</Select.Option>
+                        <Select.Option value="syncing">{t('records.gitSyncStatusSyncing')}</Select.Option>
+                        <Select.Option value="synced">{t('records.gitSyncStatusSynced')}</Select.Option>
+                        <Select.Option value="failed">{t('records.gitSyncStatusFailed')}</Select.Option>
+                        <Select.Option value="paused">{t('records.gitSyncStatusPaused')}</Select.Option>
+                        <Select.Option value="retry">{t('records.gitSyncStatusRetry')}</Select.Option>
                       </Select>
                     </Form.Item>
                   </Col>
@@ -686,7 +697,20 @@ const Records = () => {
             {configStatus && !configStatus.configured && (
               <Alert
                 message={t('git.configRequired')}
-                description={configStatus.message}
+                description={t('git.configRequiredDesc') || configStatus.message}
+                type="warning"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+            )}
+
+            {/* LeetCode Configuration Status */}
+            {/* Removed LeetCode configuration status alert */}
+
+            {(geminiConfig === null && configStatus) && (
+              <Alert
+                message={t('records.geminiConfigRequired')}
+                description={t('records.geminiConfigRequiredDesc')}
                 type="warning"
                 showIcon
                 style={{ marginBottom: 16 }}
@@ -727,7 +751,7 @@ const Records = () => {
               <Table
                 columns={columns}
                 dataSource={records}
-                rowKey={(record) => record?.submission_id || Math.random().toString()}
+                rowKey={(record) => record?.id || Math.random().toString()}
                 scroll={{ x: 2100 }}
                 rowSelection={{
                   selectedRowKeys: selectedRecords,
@@ -735,8 +759,8 @@ const Records = () => {
                     setSelectedRecords(selectedRowKeys);
                   },
                   getCheckboxProps: (record) => ({
-                    disabled: record.oj_status === 'syncing',
-                    name: record.submission_id || record.id,
+                    disabled: record.oj_sync_status === 'syncing',
+                    name: record?.submission_id || record?.id,
                   }),
                 }}
                 pagination={{
@@ -766,282 +790,7 @@ const Records = () => {
       <Tabs items={items} />
 
       {/* View Record Modal */}
-      <Modal
-        title={t('records.viewRecord')}
-        open={viewModalVisible}
-        onCancel={() => setViewModalVisible(false)}
-        footer={[
-          <Button key="close" onClick={() => setViewModalVisible(false)}>
-            {t('common.close')}
-          </Button>
-        ]}
-        width={800}
-      >
-        {currentRecord && (
-          <div>
-            <Row gutter={16} style={{ marginBottom: 16 }}>
-              <Col span={12}>
-                <Text strong>{t('records.language')}:</Text>
-                <Tag color={getLanguageColor(currentRecord.language && typeof currentRecord.language === 'string' ? currentRecord.language : '')} style={{ marginLeft: 8 }}>
-                  {currentRecord.language || 'Unknown'}
-                </Tag>
-              </Col>
-              <Col span={12}>
-                <Text strong>{t('records.status')}:</Text>
-                <Tag
-                  color={getStatusColor(currentRecord.execution_result && typeof currentRecord.execution_result === 'string' ? currentRecord.execution_result : '')}
-                  style={{ marginLeft: 8 }}
-                >
-                  {currentRecord.execution_result || 'Unknown'}
-                </Tag>
-              </Col>
-            </Row>
-
-            <Row gutter={16} style={{ marginBottom: 16 }}>
-              <Col span={8}>
-                <Text strong>{t('records.ojType')}:</Text>
-                <Tag color="blue" style={{ marginLeft: 8 }}>
-                  {currentRecord.oj_type || 'leetcode'}
-                </Tag>
-              </Col>
-              <Col span={8}>
-                <Text strong>{t('records.syncStatus')}:</Text>
-                <Tag
-                  color={currentRecord.oj_status === 'synced' ? 'success' :
-                         currentRecord.oj_status === 'failed' ? 'error' :
-                         currentRecord.oj_status === 'syncing' ? 'processing' : 'default'}
-                  style={{ marginLeft: 8 }}
-                >
-                  {currentRecord.oj_status || 'pending'}
-                </Tag>
-              </Col>
-              <Col span={8}>
-                <Text strong>{t('records.submitTime')}:</Text>
-                <Text style={{ marginLeft: 8, fontSize: '12px' }}>
-                  {(() => {
-                    try {
-                      if (!currentRecord.submit_time) return '-';
-                      const dayjsTime = dayjs(currentRecord.submit_time);
-                      if (!dayjsTime.isValid()) return '-';
-                      return dayjsTime.format('MM-DD HH:mm');
-                    } catch (error) {
-                      console.error('Error formatting submit_time in modal:', error, currentRecord.submit_time);
-                      return '-';
-                    }
-                  })()}
-                </Text>
-              </Col>
-            </Row>
-
-            <Row gutter={16} style={{ marginBottom: 16 }}>
-              <Col span={12}>
-                <Text strong>{t('records.createdAt')}:</Text>
-                <Text style={{ marginLeft: 8, fontSize: '12px' }}>
-                  {(() => {
-                    try {
-                      if (!currentRecord.created_at) return '-';
-                      const dayjsTime = dayjs(currentRecord.created_at);
-                      if (!dayjsTime.isValid()) return '-';
-                      return dayjsTime.format('YYYY-MM-DD HH:mm');
-                    } catch (error) {
-                      console.error('Error formatting created_at in modal:', error, currentRecord.created_at);
-                      return '-';
-                    }
-                  })()}
-                </Text>
-              </Col>
-              <Col span={12}>
-                <Text strong>{t('records.updatedAt')}:</Text>
-                <Text style={{ marginLeft: 8, fontSize: '12px' }}>
-                  {(() => {
-                    try {
-                      if (!currentRecord.updated_at) return '-';
-                      const dayjsTime = dayjs(currentRecord.updated_at);
-                      if (!dayjsTime.isValid()) return '-';
-                      return dayjsTime.format('YYYY-MM-DD HH:mm');
-                    } catch (error) {
-                      console.error('Error formatting updated_at in modal:', error, currentRecord.updated_at);
-                      return '-';
-                    }
-                  })()}
-                </Text>
-              </Col>
-            </Row>
-
-
-
-            {/* Error Information */}
-            {(currentRecord.runtime_error || currentRecord.compile_error) && (
-              <div style={{ marginBottom: 16 }}>
-                <Text strong>{t('records.errorInformation')}:</Text>
-                <div style={{ marginTop: 8 }}>
-                  {currentRecord.runtime_error && (
-                    <div style={{ marginBottom: 8 }}>
-                      <Text type="danger" strong>{t('records.runtimeError')}:</Text>
-                      <div style={{
-                        marginTop: 4,
-                        padding: 8,
-                        backgroundColor: '#fff2f0',
-                        border: '1px solid #ffccc7',
-                        borderRadius: 4,
-                        fontFamily: 'monospace',
-                        fontSize: '12px',
-                        whiteSpace: 'pre-wrap'
-                      }}>
-                        {currentRecord.runtime_error}
-                      </div>
-                    </div>
-                  )}
-                  {currentRecord.compile_error && (
-                    <div style={{ marginBottom: 8 }}>
-                      <Text type="danger" strong>{t('records.compileError')}:</Text>
-                      <div style={{
-                        marginTop: 4,
-                        padding: 8,
-                        backgroundColor: '#fff2f0',
-                        border: '1px solid #ffccc7',
-                        borderRadius: 4,
-                        fontFamily: 'monospace',
-                        fontSize: '12px',
-                        whiteSpace: 'pre-wrap'
-                      }}>
-                        {currentRecord.compile_error}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-
-
-
-
-            <div style={{ marginBottom: 16 }}>
-              <Text strong>{t('records.problemTitle')}:</Text>
-              <Link
-                href={getLeetCodeUrl(currentRecord)}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ marginLeft: 8, color: '#1890ff' }}
-              >
-                {currentRecord.problem_title}
-              </Link>
-            </div>
-
-            {currentRecord.topic_tags && Array.isArray(currentRecord.topic_tags) && currentRecord.topic_tags.length > 0 && (
-              <div style={{ marginBottom: 16 }}>
-                <Text strong>{t('records.topicTags')}:</Text>
-                <div style={{ marginTop: 8 }}>
-                  {currentRecord.topic_tags.map((tag, index) => (
-                    <Tag key={index} color="blue" style={{ marginBottom: 4 }}>
-                      {tag || 'Unknown Tag'}
-                    </Tag>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {currentRecord.submission_url && (
-              <div style={{ marginBottom: 16 }}>
-                <Text strong>{t('records.submissionUrl')}:</Text>
-                <Link
-                  href={currentRecord.submission_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ marginLeft: 8, color: '#1890ff' }}
-                >
-                  {t('records.viewSubmission')}
-                </Link>
-              </div>
-            )}
-
-            {/* AI Analysis Information */}
-            {currentRecord.ai_analysis && (
-              <div style={{ marginBottom: 16 }}>
-                <Text strong>{t('records.aiAnalysis')}:</Text>
-                <Tag color="green" style={{ marginLeft: 8 }}>
-                  {t('records.analyzed')}
-                </Tag>
-                <div style={{
-                  marginTop: 8,
-                  padding: 8,
-                  backgroundColor: '#f0f9ff',
-                  border: '1px solid #91d5ff',
-                  borderRadius: 4,
-                  fontSize: '12px'
-                }}>
-                  <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
-                    {JSON.stringify(currentRecord.ai_analysis, null, 2)}
-                  </pre>
-                </div>
-              </div>
-            )}
-
-            {/* External Service Information */}
-            {(currentRecord.notion_url || currentRecord.github_pushed) && (
-              <div style={{ marginBottom: 16 }}>
-                <Text strong>{t('records.externalServices')}:</Text>
-                <div style={{ marginTop: 8 }}>
-                  {currentRecord.notion_url && (
-                    <div style={{ marginBottom: 4 }}>
-                      <Text type="secondary">{t('records.notionUrl')}:</Text>
-                      <Link
-                        href={currentRecord.notion_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ marginLeft: 8, color: '#1890ff' }}
-                      >
-                        {t('records.viewInNotion')}
-                      </Link>
-                    </div>
-                  )}
-                  {currentRecord.github_pushed && (
-                    <div style={{ marginBottom: 4 }}>
-                      <Text type="secondary">{t('records.githubPushed')}:</Text>
-                      <Text style={{ marginLeft: 8 }}>
-                        {(() => {
-                          try {
-                            const dayjsTime = dayjs(currentRecord.github_pushed);
-                            if (!dayjsTime.isValid()) return '-';
-                            return dayjsTime.format('YYYY-MM-DD HH:mm:ss');
-                          } catch (error) {
-                            console.error('Error formatting github_pushed:', error, currentRecord.github_pushed);
-                            return '-';
-                          }
-                        })()}
-                      </Text>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <div>
-              <Text strong>{t('records.code')}:</Text>
-              <div style={{
-                marginTop: 8,
-                borderRadius: 4,
-                overflow: 'auto',
-                maxHeight: 400
-              }}>
-                <SyntaxHighlighter
-                  language={getLanguageForHighlight(currentRecord.language)}
-                  style={tomorrow}
-                  customStyle={{
-                    margin: 0,
-                    borderRadius: 4,
-                    fontSize: '12px',
-                    lineHeight: '1.4'
-                  }}
-                >
-                  {currentRecord.code || ''}
-                </SyntaxHighlighter>
-              </div>
-            </div>
-          </div>
-        )}
-      </Modal>
+      {/* Removed Modal 相关代码 */}
     </div>
   );
 };

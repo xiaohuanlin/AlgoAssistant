@@ -17,6 +17,8 @@ import {
   Popconfirm,
   Progress,
   Badge,
+  DatePicker,
+  Alert,
 } from 'antd';
 import {
   SyncOutlined,
@@ -25,11 +27,20 @@ import {
   DeleteOutlined,
   ReloadOutlined,
   PlusOutlined,
+  FilterOutlined,
+  ClearOutlined,
+  PauseCircleOutlined,
+  PlayCircleOutlined,
+  RedoOutlined,
 } from '@ant-design/icons';
 import syncTaskService from '../services/syncTaskService';
+import recordsService from '../services/recordsService';
 import { useTranslation } from 'react-i18next';
+import leetcodeService from '../services/leetcodeService';
+import configService from '../services/configService';
 
 const { Option } = Select;
+const { RangePicker } = DatePicker;
 
 const SyncTasks = () => {
   const [tasks, setTasks] = useState([]);
@@ -38,12 +49,21 @@ const SyncTasks = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [form] = Form.useForm();
   const { t } = useTranslation();
+  const [unsyncedRecords, setUnsyncedRecords] = useState([]);
+  const [recordsLoading, setRecordsLoading] = useState(false);
+  const [selectedTaskType, setSelectedTaskType] = useState(null);
+  const [filters, setFilters] = useState({});
+  const [leetcodeProfile, setLeetCodeProfile] = useState(null);
+  const [leetcodeProfileLoading, setLeetCodeProfileLoading] = useState(false);
+  const [hasLeetCodeConfig, setHasLeetCodeConfig] = useState(false);
+  const [hasGitConfig, setHasGitConfig] = useState(false);
+  const [hasGeminiConfig, setHasGeminiConfig] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [tasksData, statsData] = await Promise.all([
-        syncTaskService.getTasks(),
+        syncTaskService.getTasks(filters),
         syncTaskService.getTaskStats(),
       ]);
       setTasks(tasksData);
@@ -52,6 +72,30 @@ const SyncTasks = () => {
       message.error(t('syncTasks.loadTaskDataFailed') + ': ' + error.message);
     } finally {
       setLoading(false);
+    }
+  }, [t, filters]);
+
+  const loadSelectableRecords = useCallback(async (type) => {
+    setRecordsLoading(true);
+    try {
+      let records = [];
+      if (type === 'leetcode_detail_sync') {
+        records = await recordsService.getRecords({ oj_sync_status: ['pending', 'failed'], limit: 1000 });
+        records = records.filter(r => r.oj_sync_status === 'pending' || r.oj_sync_status === 'failed');
+      } else if (type === 'github_sync') {
+        records = await recordsService.getRecords({ github_sync_status: ['pending', 'failed'], limit: 1000 });
+        records = records.filter(r => r.github_sync_status === 'pending' || r.github_sync_status === 'failed');
+      } else if (type === 'gemini_sync') {
+        records = await recordsService.getRecords({ ai_sync_status: ['pending', 'failed'], limit: 1000 });
+        records = records.filter(r => r.ai_sync_status === 'pending' || r.ai_sync_status === 'failed');
+      } else {
+        records = [];
+      }
+      setUnsyncedRecords(records);
+    } catch (error) {
+      message.error(t('syncTasks.loadUnsyncedRecordsFailed') + ': ' + error.message);
+    } finally {
+      setRecordsLoading(false);
     }
   }, [t]);
 
@@ -62,8 +106,141 @@ const SyncTasks = () => {
     return () => clearInterval(interval);
   }, [loadData]);
 
+  // Check configurations on component mount
+  useEffect(() => {
+    const checkInitialConfigurations = async () => {
+      try {
+        // Check LeetCode config
+        const leetcodeConfig = await configService.getLeetCodeConfig();
+        const hasLeetCode = leetcodeConfig && leetcodeConfig.session_cookie;
+        setHasLeetCodeConfig(hasLeetCode);
+
+        // Check GitHub config
+        const gitConfig = await configService.getGitConfig();
+        const hasGit = gitConfig && gitConfig.token;
+        setHasGitConfig(hasGit);
+
+        // Check Gemini config
+        const geminiConfig = await configService.getGeminiConfig();
+        const hasGemini = geminiConfig && geminiConfig.api_key;
+        setHasGeminiConfig(hasGemini);
+      } catch (error) {
+        console.error('Error checking initial configurations:', error);
+      }
+    };
+
+    checkInitialConfigurations();
+  }, []);
+
+  useEffect(() => {
+    if (modalVisible) {
+      setSelectedTaskType(null);
+      setUnsyncedRecords([]);
+    }
+  }, [modalVisible]);
+
+  useEffect(() => {
+    if (modalVisible && selectedTaskType === 'leetcode_batch_sync') {
+      const checkLeetCodeConfig = async () => {
+        try {
+          const leetcodeConfig = await configService.getLeetCodeConfig();
+          const hasConfig = leetcodeConfig && leetcodeConfig.session_cookie;
+          setHasLeetCodeConfig(hasConfig);
+
+          // Only load LeetCode profile if user has config
+          if (hasConfig) {
+            setLeetCodeProfileLoading(true);
+            try {
+              const res = await leetcodeService.getLeetCodeProfile();
+              setLeetCodeProfile(res);
+            } catch (error) {
+              console.error('Error loading LeetCode profile:', error);
+              message.error(t('leetcode.profileError'));
+            } finally {
+              setLeetCodeProfileLoading(false);
+            }
+          }
+        } catch (error) {
+          console.error('Error checking LeetCode config:', error);
+          setHasLeetCodeConfig(false);
+        }
+      };
+      checkLeetCodeConfig();
+    }
+  }, [modalVisible, selectedTaskType, t]);
+
+  const handleTaskTypeChange = (value) => {
+    setSelectedTaskType(value);
+
+    // Check configurations when task type changes
+    const checkConfigurations = async () => {
+      try {
+        if (value === 'leetcode_batch_sync' || value === 'leetcode_detail_sync') {
+          const leetcodeConfig = await configService.getLeetCodeConfig();
+          const hasConfig = leetcodeConfig && leetcodeConfig.session_cookie;
+          setHasLeetCodeConfig(hasConfig);
+
+          if (!hasConfig) {
+            message.warning(t('leetcode.configRequiredDesc'));
+            setSelectedTaskType(null);
+            form.setFieldsValue({ type: null });
+            return;
+          }
+        }
+
+        if (value === 'github_sync') {
+          const gitConfig = await configService.getGitConfig();
+          const hasConfig = gitConfig && gitConfig.token;
+          setHasGitConfig(hasConfig);
+
+          if (!hasConfig) {
+            message.warning(t('git.configRequired'));
+            setSelectedTaskType(null);
+            form.setFieldsValue({ type: null });
+            return;
+          }
+        }
+
+        if (value === 'gemini_sync') {
+          const geminiConfig = await configService.getGeminiConfig();
+          const hasConfig = geminiConfig && geminiConfig.api_key;
+          setHasGeminiConfig(hasConfig);
+
+          if (!hasConfig) {
+            message.warning(t('syncTasks.geminiConfigRequiredDesc'));
+            setSelectedTaskType(null);
+            form.setFieldsValue({ type: null });
+            return;
+          }
+        }
+
+        // Load records if needed
+        if (value === 'leetcode_detail_sync' || value === 'github_sync' || value === 'gemini_sync') {
+          loadSelectableRecords(value);
+        } else {
+          setUnsyncedRecords([]);
+        }
+      } catch (error) {
+        console.error('Error checking configurations:', error);
+      }
+    };
+
+    checkConfigurations();
+    form.setFieldsValue({ record_ids: [] });
+  };
+
   const handleCreateTask = async (values) => {
     try {
+      // For leetcode_batch_sync, use maximum submissions count
+      if (values.type === 'leetcode_batch_sync' && leetcodeProfile?.total_submissions) {
+        values.total_records = leetcodeProfile.total_submissions;
+      }
+      if (values.type === 'leetcode_detail_sync') {
+        if (!Array.isArray(values.record_ids) || values.record_ids.length === 0) {
+          message.warning(t('syncTasks.selectRecordsPlaceholder'));
+          return;
+        }
+      }
       await syncTaskService.createTask(values);
       message.success(t('syncTasks.taskCreated'));
       setModalVisible(false);
@@ -81,6 +258,36 @@ const SyncTasks = () => {
       loadData();
     } catch (error) {
       message.error(t('syncTasks.deleteTaskFailed') + ': ' + error.message);
+    }
+  };
+
+  const handleRetryTask = async (taskId) => {
+    try {
+      await syncTaskService.retryTask(taskId);
+      message.success(t('syncTasks.taskRetried'));
+      loadData();
+    } catch (error) {
+      message.error(t('syncTasks.retryTaskFailed') + ': ' + error.message);
+    }
+  };
+
+  const handlePauseTask = async (taskId) => {
+    try {
+      await syncTaskService.pauseTask(taskId);
+      message.success(t('syncTasks.taskPaused'));
+      loadData();
+    } catch (error) {
+      message.error(t('syncTasks.pauseTaskFailed') + ': ' + error.message);
+    }
+  };
+
+  const handleResumeTask = async (taskId) => {
+    try {
+      await syncTaskService.resumeTask(taskId);
+      message.success(t('syncTasks.taskResumed'));
+      loadData();
+    } catch (error) {
+      message.error(t('syncTasks.resumeTaskFailed') + ': ' + error.message);
     }
   };
 
@@ -109,25 +316,25 @@ const SyncTasks = () => {
       key: 'type',
       width: 120,
       render: (type) => (
-        <Tag color="blue">{syncTaskService.getTypeText(type)}</Tag>
+        <Tag color="blue">{syncTaskService.getTypeText(type, t)}</Tag>
       ),
     },
     {
-      title: t('syncTasks.status'),
+      title: t('syncTasks.statusLabel'),
       dataIndex: 'status',
       key: 'status',
       width: 100,
       render: (status) => (
         <Badge
           status={syncTaskService.getStatusColor(status)}
-          text={syncTaskService.getStatusText(status)}
+          text={syncTaskService.getStatusText(status, t)}
         />
       ),
     },
     {
       title: t('syncTasks.progress'),
       key: 'progress',
-      width: 200,
+      width: 160,
       render: (_, task) => (
         <div>
           <Progress
@@ -136,16 +343,27 @@ const SyncTasks = () => {
             size="small"
             showInfo={false}
           />
-          <div style={{ fontSize: '12px', color: '#666' }}>
+          <div style={{ fontSize: '12px', color: '#666', marginTop: 4 }}>
             {task.synced_records || 0} / {task.total_records || 0}
-            {task.failed_records > 0 && (
-              <span style={{ color: '#ff4d4f', marginLeft: 8 }}>
-                {t('syncTasks.failed')}: {task.failed_records}
-              </span>
-            )}
           </div>
         </div>
       ),
+    },
+    {
+      title: t('syncTasks.successCount'),
+      dataIndex: 'synced_records',
+      key: 'synced_records',
+      width: 100,
+      align: 'center',
+      render: (value) => <span style={{ color: '#52c41a' }}>{value || 0}</span>,
+    },
+    {
+      title: t('syncTasks.failedCount'),
+      dataIndex: 'failed_records',
+      key: 'failed_records',
+      width: 100,
+      align: 'center',
+      render: (value) => <span style={{ color: '#ff4d4f' }}>{value || 0}</span>,
     },
     {
       title: t('syncTasks.recordIds'),
@@ -177,9 +395,36 @@ const SyncTasks = () => {
     {
       title: t('syncTasks.actions'),
       key: 'actions',
-      width: 120,
+      width: 200,
       render: (_, task) => (
         <Space>
+          {syncTaskService.canRetry(task.status) && (
+            <Button
+              size="small"
+              icon={<RedoOutlined />}
+              onClick={() => handleRetryTask(task.id)}
+            >
+              {t('syncTasks.retry')}
+            </Button>
+          )}
+          {syncTaskService.canPause(task.status) && (
+            <Button
+              size="small"
+              icon={<PauseCircleOutlined />}
+              onClick={() => handlePauseTask(task.id)}
+            >
+              {t('syncTasks.pause')}
+            </Button>
+          )}
+          {syncTaskService.canResume(task.status) && (
+            <Button
+              size="small"
+              icon={<PlayCircleOutlined />}
+              onClick={() => handleResumeTask(task.id)}
+            >
+              {t('syncTasks.resume')}
+            </Button>
+          )}
           <Popconfirm
             title={t('syncTasks.confirmDeleteTask')}
             onConfirm={() => handleDeleteTask(task.id)}
@@ -199,6 +444,22 @@ const SyncTasks = () => {
       ),
     },
   ];
+
+  // 筛选表单提交
+  const handleFilter = (values) => {
+    const { created_at_range, ...rest } = values;
+    let filterParams = { ...rest };
+    if (created_at_range && created_at_range.length === 2) {
+      filterParams.created_at_start = created_at_range[0].startOf('day').toISOString();
+      filterParams.created_at_end = created_at_range[1].endOf('day').toISOString();
+    }
+    setFilters(filterParams);
+  };
+  const handleReset = () => {
+    setFilters({});
+    filterForm.resetFields();
+  };
+  const [filterForm] = Form.useForm();
 
   return (
     <div>
@@ -245,6 +506,79 @@ const SyncTasks = () => {
           </Card>
         </Col>
       </Row>
+
+      {/* Filter Bar*/}
+      <Card
+        size="small"
+        style={{ marginBottom: 16, backgroundColor: '#fafafa' }}
+        title={
+          <Space>
+            <FilterOutlined />
+            {t('syncTasks.filters')}
+          </Space>
+        }
+        extra={
+          <Button
+            size="small"
+            icon={<ClearOutlined />}
+            onClick={handleReset}
+          >
+            {t('common.reset')}
+          </Button>
+        }
+      >
+        <Form
+          form={filterForm}
+          layout="vertical"
+          onFinish={handleFilter}
+          initialValues={filters}
+        >
+          <Row gutter={[16, 0]}>
+            <Col span={6} style={{ minWidth: 160 }}>
+              <Form.Item name="id" label={t('syncTasks.filter.id')}>
+                <Input placeholder={t('syncTasks.filter.idPlaceholder')} allowClear />
+              </Form.Item>
+            </Col>
+            <Col span={6} style={{ minWidth: 180 }}>
+              <Form.Item name="type" label={t('syncTasks.filter.type')}>
+                <Select allowClear placeholder={t('syncTasks.filter.typePlaceholder')}>
+                  <Option value="github_sync">{t('syncTasks.taskTypes.github_sync')}</Option>
+                  <Option value="leetcode_batch_sync">{t('syncTasks.taskTypes.leetcode_batch_sync')}</Option>
+                  <Option value="leetcode_detail_sync">{t('syncTasks.taskTypes.leetcode_detail_sync')}</Option>
+                  <Option value="notion_sync">{t('syncTasks.taskTypes.notion_sync')}</Option>
+                  <Option value="ai_analysis">{t('syncTasks.taskTypes.ai_analysis')}</Option>
+                  <Option value="gemini_sync" disabled={!hasGeminiConfig}>
+                    {t('syncTasks.taskTypes.gemini_sync')} {!hasGeminiConfig && `(${t('syncTasks.geminiConfigRequired')})`}
+                  </Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={6} style={{ minWidth: 180 }}>
+              <Form.Item name="status" label={t('syncTasks.filter.status')}>
+                <Select allowClear placeholder={t('syncTasks.filter.statusPlaceholder')}>
+                  <Option value="pending">{t('syncTasks.status.pending')}</Option>
+                  <Option value="running">{t('syncTasks.status.running')}</Option>
+                  <Option value="completed">{t('syncTasks.status.completed')}</Option>
+                  <Option value="failed">{t('syncTasks.status.failed')}</Option>
+                  <Option value="paused">{t('syncTasks.status.paused')}</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={6} style={{ minWidth: 220 }}>
+              <Form.Item name="created_at_range" label={t('syncTasks.filter.createdAt')}>
+                <RangePicker style={{ width: '100%' }} placeholder={[t('syncTasks.filter.startDate'), t('syncTasks.filter.endDate')]} />
+              </Form.Item>
+            </Col>
+            <Col span={6} style={{ minWidth: 120, display: 'flex', alignItems: 'flex-end' }}>
+              <Form.Item>
+                <Button type="primary" htmlType="submit">
+                  {t('common.search')}
+                </Button>
+              </Form.Item>
+            </Col>
+          </Row>
+        </Form>
+      </Card>
 
       {/* Task List */}
       <Card
@@ -299,26 +633,64 @@ const SyncTasks = () => {
           layout="vertical"
           onFinish={handleCreateTask}
         >
-                      <Form.Item
-              label={t('syncTasks.taskType')}
-              name="type"
-              rules={[{ required: true, message: t('syncTasks.selectTaskTypeRequired') }]}
-            >
-              <Select placeholder={t('syncTasks.selectTaskType')}>
-                <Option value="github_sync">{t('syncTasks.taskTypes.github_sync')}</Option>
-                <Option value="leetcode_batch_sync">{t('syncTasks.taskTypes.leetcode_batch_sync')}</Option>
-                <Option value="leetcode_detail_sync">{t('syncTasks.taskTypes.leetcode_detail_sync')}</Option>
-                <Option value="notion_sync">{t('syncTasks.taskTypes.notion_sync')}</Option>
-                <Option value="ai_analysis">{t('syncTasks.taskTypes.ai_analysis')}</Option>
-              </Select>
-            </Form.Item>
+          <Form.Item
+            label={t('syncTasks.taskType')}
+            name="type"
+            rules={[{ required: true, message: t('syncTasks.selectTaskTypeRequired') }]}
+          >
+            <Select placeholder={t('syncTasks.selectTaskType')} onChange={handleTaskTypeChange}>
+              <Option value="github_sync" disabled={!hasGitConfig}>
+                {t('syncTasks.taskTypes.github_sync')} {!hasGitConfig && `(${t('git.configRequired')})`}
+              </Option>
+              <Option value="leetcode_batch_sync" disabled={!hasLeetCodeConfig}>
+                {t('syncTasks.taskTypes.leetcode_batch_sync')} {!hasLeetCodeConfig && `(${t('leetcode.configRequired')})`}
+              </Option>
+              <Option value="leetcode_detail_sync" disabled={!hasLeetCodeConfig}>
+                {t('syncTasks.taskTypes.leetcode_detail_sync')} {!hasLeetCodeConfig && `(${t('leetcode.configRequired')})`}
+              </Option>
+              <Option value="notion_sync">{t('syncTasks.taskTypes.notion_sync')}</Option>
+              <Option value="ai_analysis">{t('syncTasks.taskTypes.ai_analysis')}</Option>
+            </Select>
+          </Form.Item>
+
+          {selectedTaskType === 'leetcode_batch_sync' && (
+            <Alert
+              message={t('syncTasks.leetcodeBatchSyncInfo')}
+              description={
+                leetcodeProfileLoading
+                  ? t('syncTasks.loadingLeetCodeProfile')
+                  : leetcodeProfile && leetcodeProfile.total_submissions !== undefined
+                  ? t('syncTasks.leetcodeTotalSubmissions', { total: leetcodeProfile.total_submissions })
+                  : t('syncTasks.leetcodeTotalSubmissionsUnknown')
+              }
+              type="info"
+              showIcon
+              style={{ marginBottom:16}}
+            />
+          )}
+
+          {(selectedTaskType === 'leetcode_detail_sync' || selectedTaskType === 'github_sync' || selectedTaskType === 'gemini_sync') && (
             <Form.Item
               label={t('syncTasks.recordIdsList')}
               name="record_ids"
-              extra={t('syncTasks.recordIdsHelp')}
+              rules={[{ required: false }]}
             >
-              <Input placeholder={t('syncTasks.recordIdsPlaceholder')} />
+              <Select
+                mode="multiple"
+                allowClear
+                placeholder={t('syncTasks.selectRecordsPlaceholder')}
+                loading={recordsLoading}
+                optionFilterProp="children"
+                showSearch
+              >
+                {unsyncedRecords.map(record => (
+                  <Option key={record.id} value={record.id}>
+                    {record.problem_title ? `${record.problem_title} (#${record.id})` : `#${record.id}`} ({record.oj_type} - {record.language})
+                  </Option>
+                ))}
+              </Select>
             </Form.Item>
+          )}
         </Form>
       </Modal>
     </div>

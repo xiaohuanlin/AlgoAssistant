@@ -270,4 +270,5 @@ class GitSyncService {
   }
 }
 
-export default new GitSyncService();
+const gitSyncService = new GitSyncService();
+export default gitSyncService;

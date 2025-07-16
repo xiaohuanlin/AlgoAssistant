@@ -2,26 +2,38 @@ import api, { API_ENDPOINTS, handleApiError, handleApiSuccess } from './api';
 
 class RecordsService {
   /**
-   * 获取记录列表
-   * @param {Object} filters - 过滤参数
-   * @param {string} filters.tag - 单个标签过滤
-   * @param {string} filters.tags - 多个标签过滤（逗号分隔）
-   * @param {string} filters.status - 执行状态过滤
-   * @param {string} filters.oj_type - OJ平台过滤
-   * @param {string} filters.language - 编程语言过滤
-   * @param {string} filters.problem_title - 题目标题搜索
-   * @param {number} filters.problem_id - 题目ID过滤
-   * @param {string} filters.start_time - 开始时间
-   * @param {string} filters.end_time - 结束时间
-   * @param {number} filters.limit - 限制数量
-   * @param {number} filters.offset - 偏移量
-   * @param {string} filters.sort_by - 排序字段
-   * @param {string} filters.sort_order - 排序方向
-   * @returns {Promise<Array>} 记录列表
+   * Get record list
+   * @param {Object} filters - Filter parameters
+   * @param {string} filters.tag - Single tag filter
+   * @param {string} filters.tags - Multiple tags filter (comma separated)
+   * @param {string} filters.status - Execution status filter
+   * @param {string} filters.oj_type - OJ platform filter
+   * @param {string} filters.language - Programming language filter
+   * @param {string} filters.problem_title - Problem title search
+   * @param {number} filters.problem_id - Problem ID filter
+   * @param {string} filters.start_time - Start time
+   * @param {string} filters.end_time - End time
+   * @param {number} filters.limit - Limit
+   * @param {number} filters.offset - Offset
+   * @param {string} filters.sort_by - Sort field
+   * @param {string} filters.sort_order - Sort order
+   * @returns {Promise<Array>} Record list
    */
   async getRecords(filters = {}) {
     try {
-      const response = await api.get(API_ENDPOINTS.RECORDS.LIST, { params: filters });
+      // Multi-value params to support
+      const multiParams = ['status', 'oj_sync_status', 'github_sync_status', 'ai_sync_status'];
+      const params = { ...filters };
+      // Convert array params to repeated query params
+      const searchParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (multiParams.includes(key) && Array.isArray(value)) {
+          value.forEach(v => searchParams.append(key, v));
+        } else if (value !== undefined && value !== null) {
+          searchParams.append(key, value);
+        }
+      });
+      const response = await api.get(API_ENDPOINTS.RECORDS.LIST + '?' + searchParams.toString());
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -29,9 +41,9 @@ class RecordsService {
   }
 
   /**
-   * 获取特定记录
-   * @param {number} recordId - 记录ID
-   * @returns {Promise<Object>} 记录详情
+   * Get a specific record
+   * @param {number} recordId - Record ID
+   * @returns {Promise<Object>} Record detail
    */
   async getRecord(recordId) {
     try {
@@ -43,9 +55,9 @@ class RecordsService {
   }
 
   /**
-   * 创建记录
-   * @param {Object} recordData - 记录数据
-   * @returns {Promise<Object>} 创建的记录
+   * Create a record
+   * @param {Object} recordData - Record data
+   * @returns {Promise<Object>} Created record
    */
   async createRecord(recordData) {
     try {
@@ -57,10 +69,10 @@ class RecordsService {
   }
 
   /**
-   * 更新记录
-   * @param {number} recordId - 记录ID
-   * @param {Object} recordData - 更新数据
-   * @returns {Promise<Object>} 更新后的记录
+   * Update a record
+   * @param {number} recordId - Record ID
+   * @param {Object} recordData - Update data
+   * @returns {Promise<Object>} Updated record
    */
   async updateRecord(recordId, recordData) {
     try {
@@ -72,9 +84,9 @@ class RecordsService {
   }
 
   /**
-   * 删除记录
-   * @param {number} recordId - 记录ID
-   * @returns {Promise<Object>} 删除结果
+   * Delete a record
+   * @param {number} recordId - Record ID
+   * @returns {Promise<Object>} Delete result
    */
   async deleteRecord(recordId) {
     try {
@@ -86,8 +98,8 @@ class RecordsService {
   }
 
   /**
-   * 获取统计信息
-   * @returns {Promise<Object>} 统计信息
+   * Get statistics
+   * @returns {Promise<Object>} Statistics
    */
   async getStats() {
     try {
@@ -99,8 +111,8 @@ class RecordsService {
   }
 
   /**
-   * 获取所有标签
-   * @returns {Promise<Array>} 标签列表
+   * Get all tags
+   * @returns {Promise<Array>} Tag list
    */
   async getTags() {
     try {
@@ -112,10 +124,10 @@ class RecordsService {
   }
 
   /**
-   * 为记录分配标签
-   * @param {number} recordId - 记录ID
-   * @param {Array<string>} tagNames - 标签名称列表
-   * @returns {Promise<Object>} 更新后的记录
+   * Assign tags to a record
+   * @param {number} recordId - Record ID
+   * @param {Array<string>} tagNames - Tag name list
+   * @returns {Promise<Object>} Updated record
    */
   async assignTags(recordId, tagNames) {
     try {
@@ -129,10 +141,10 @@ class RecordsService {
   }
 
   /**
-   * 更新标签Wiki
-   * @param {number} tagId - 标签ID
-   * @param {string} wiki - Wiki内容
-   * @returns {Promise<Object>} 更新后的标签
+   * Update tag wiki
+   * @param {number} tagId - Tag ID
+   * @param {string} wiki - Wiki content
+   * @returns {Promise<Object>} Updated tag
    */
   async updateTagWiki(tagId, wiki) {
     try {
@@ -146,9 +158,9 @@ class RecordsService {
   }
 
   /**
-   * 批量获取记录
-   * @param {Array<number>} recordIds - 记录ID列表
-   * @returns {Promise<Array>} 记录列表
+   * Batch get records
+   * @param {Array<number>} recordIds - Record ID list
+   * @returns {Promise<Array>} Record list
    */
   async getRecordsByIds(recordIds) {
     try {
@@ -160,10 +172,10 @@ class RecordsService {
   }
 
   /**
-   * 搜索记录
-   * @param {string} query - 搜索查询
-   * @param {Object} filters - 额外过滤条件
-   * @returns {Promise<Array>} 搜索结果
+   * Search records
+   * @param {string} query - Search query
+   * @param {Object} filters - Extra filters
+   * @returns {Promise<Array>} Search result
    */
   async searchRecords(query, filters = {}) {
     try {
@@ -178,9 +190,9 @@ class RecordsService {
   }
 
   /**
-   * 获取执行结果状态文本
-   * @param {string} status - 执行状态
-   * @returns {string} 状态文本
+   * Get execution status text
+   * @param {string} status - Execution status
+   * @returns {string} Status text
    */
   getExecutionStatusText(status) {
     const statusMap = {
@@ -196,9 +208,9 @@ class RecordsService {
   }
 
   /**
-   * 获取执行结果状态颜色
-   * @param {string} status - 执行状态
-   * @returns {string} 状态颜色
+   * Get execution status color
+   * @param {string} status - Execution status
+   * @returns {string} Status color
    */
   getExecutionStatusColor(status) {
     const colorMap = {
@@ -214,9 +226,9 @@ class RecordsService {
   }
 
   /**
-   * 获取编程语言颜色
-   * @param {string} language - 编程语言
-   * @returns {string} 语言颜色
+   * Get language color
+   * @param {string} language - Programming language
+   * @returns {string} Language color
    */
   getLanguageColor(language) {
     const colorMap = {
@@ -232,9 +244,9 @@ class RecordsService {
   }
 
   /**
-   * 获取OJ平台颜色
-   * @param {string} ojType - OJ平台类型
-   * @returns {string} 平台颜色
+   * Get OJ type color
+   * @param {string} ojType - OJ type
+   * @returns {string} OJ type color
    */
   getOJTypeColor(ojType) {
     const colorMap = {
@@ -246,9 +258,9 @@ class RecordsService {
   }
 
   /**
-   * 获取难度颜色
-   * @param {string} difficulty - 难度等级
-   * @returns {string} 难度颜色
+   * Get difficulty color
+   * @param {string} difficulty - Difficulty level
+   * @returns {string} Difficulty color
    */
   getDifficultyColor(difficulty) {
     const colorMap = {
@@ -260,9 +272,9 @@ class RecordsService {
   }
 
   /**
-   * 格式化运行时间
-   * @param {number} runtime - 运行时间（毫秒）
-   * @returns {string} 格式化的运行时间
+   * Format runtime
+   * @param {number} runtime - Runtime (ms)
+   * @returns {string} Formatted runtime
    */
   formatRuntime(runtime) {
     if (!runtime) return 'N/A';
@@ -271,9 +283,9 @@ class RecordsService {
   }
 
   /**
-   * 格式化内存使用
-   * @param {number} memory - 内存使用（字节）
-   * @returns {string} 格式化的内存使用
+   * Format memory usage
+   * @param {number} memory - Memory usage (bytes)
+   * @returns {string} Formatted memory usage
    */
   formatMemory(memory) {
     if (!memory) return 'N/A';

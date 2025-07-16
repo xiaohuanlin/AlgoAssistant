@@ -3,7 +3,7 @@ from typing import Optional
 from app import schemas
 from app.celery_app import celery_app
 from app.deps import get_db, get_redis_client
-from app.models import OJType, Record, SyncStatus, SyncTask
+from app.models import LeetCodeProblem, OJType, Record, SyncStatus, SyncTask
 from app.services.leetcode_service import LeetCodeService
 from app.services.record_service import RecordService
 from app.services.sync_task_service import SyncTaskService
@@ -35,57 +35,71 @@ def leetcode_batch_sync_task(task_id: int):
             )
             return
         limiter.wait_if_needed(0, 1, 1, "leetcode")
-        leetcode_config = user_config_service.get_leetcode_config(sync_task.user_id)
+        config = user_config_service.get(sync_task.user_id)
+        leetcode_config = (
+            config.leetcode_config if config and config.leetcode_config else None
+        )
         if not leetcode_config:
             logger.error(f"LeetCode config not found for user {sync_task.user_id}")
             return
         service = LeetCodeService(leetcode_config)
-        submissions = service.fetch_user_submissions()
+        if sync_task.total_records:
+            submissions = service.fetch_user_submissions(
+                max_submissions=sync_task.total_records
+            )
+        else:
+            submissions = service.fetch_user_submissions()
+        sync_task.status = SyncStatus.RUNNING.value
+        sync_task_service.update(task_id, status=SyncStatus.RUNNING.value)
         for batch in submissions:
             for submission in batch:
                 record_id = submission["submission_id"]
                 record = record_service.get_record(int(record_id))
                 if record:
                     logger.warning(f"Record {record_id} already exists")
+                    sync_count += 1
                     continue
                 try:
-                    record_service.create_record(
-                        sync_task.user_id,
-                        schemas.RecordCreate(
-                            oj_type=OJType.leetcode,
-                            problem_title=submission["problem_title"],
-                            language=submission["language"],
-                            submit_time=submission["submit_time"],
-                            runtime=submission["runtime"],
-                            memory=submission["memory"],
-                            code="",
-                            topic_tags=[],
-                            status=submission["status"],
-                            sync_status=SyncStatus.PENDING.value,
-                            submission_url=submission["submission_url"],
-                        ),
-                    )
-                    if not record_service.get_leetcode_problem(
+                    leetcode_problem: Optional[
+                        LeetCodeProblem
+                    ] = record_service.get_leetcode_problem(
                         submission["problem_title_slug"]
-                    ):
-                        leetcode_problem = service.fetch_problem_detail(
+                    )
+
+                    if not leetcode_problem:
+                        problem = service.fetch_problem_detail(
                             submission["problem_title_slug"]
                         )
-                        if not leetcode_problem:
+                        if not problem:
                             logger.error(
                                 f"LeetCode problem {submission['problem_title_slug']} not found"
                             )
                             continue
-                        record_service.create_leetcode_problem(
+                        leetcode_problem = record_service.create_leetcode_problem(
                             schemas.LeetCodeProblemCreate(
-                                title=leetcode_problem["title"],
-                                title_slug=leetcode_problem["title_slug"],
-                                difficulty=leetcode_problem["difficulty"],
-                                topic_tags=leetcode_problem["topic_tags"],
-                                content=leetcode_problem["content"],
-                                url=leetcode_problem["url"],
+                                id=problem["id"],
+                                title=problem["title"],
+                                title_slug=problem["title_slug"],
+                                difficulty=problem["difficulty"],
+                                topic_tags=problem["topic_tags"],
+                                content=problem["content"],
                             )
                         )
+
+                    record_service.create_record(
+                        sync_task.user_id,
+                        schemas.RecordCreate(
+                            problem_id=leetcode_problem.id,
+                            oj_type=OJType.leetcode.value,
+                            execution_result=submission["status"],
+                            language=submission["language"],
+                            submit_time=submission["submit_time"],
+                            runtime=submission["runtime"],
+                            memory=submission["memory"],
+                            submission_id=submission["submission_id"],
+                            submission_url=submission["submission_url"],
+                        ),
+                    )
                     sync_count += 1
                 except Exception as e:
                     logger.exception(
@@ -93,6 +107,9 @@ def leetcode_batch_sync_task(task_id: int):
                     )
                     failed_count += 1
                 logger.info(f"[LeetCodeBatchSyncTask] Record {record_id} synced.")
+            sync_task_service.update(
+                task_id, synced_records=sync_count, failed_records=failed_count
+            )
         sync_task_service.update(
             task_id,
             status=SyncStatus.COMPLETED.value,

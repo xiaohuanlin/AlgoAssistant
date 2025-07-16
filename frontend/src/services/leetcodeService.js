@@ -243,4 +243,5 @@ class LeetCodeService {
   }
 }
 
-export default new LeetCodeService();
+const leetcodeService = new LeetCodeService();
+export default leetcodeService;

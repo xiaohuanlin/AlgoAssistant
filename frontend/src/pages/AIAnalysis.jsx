@@ -17,7 +17,6 @@ import {
   Progress,
   Badge,
   Typography,
-  Alert,
   Divider,
 } from 'antd';
 import {
@@ -37,7 +36,7 @@ import { useTranslation } from 'react-i18next';
 import syncTaskService from '../services/syncTaskService';
 import recordsService from '../services/recordsService';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 const { Option } = Select;
 
 const AIAnalysis = () => {
@@ -250,6 +249,7 @@ const AIAnalysis = () => {
     },
   ];
 
+  // 只展示后端 schema 字段的 recordColumns
   const recordColumns = [
     {
       title: t('records.problem'),
@@ -265,31 +265,27 @@ const AIAnalysis = () => {
       ),
     },
     {
-      title: t('records.difficulty'),
-      dataIndex: 'difficulty',
-      key: 'difficulty',
+      title: t('records.ojType'),
+      dataIndex: 'oj_type',
+      key: 'oj_type',
       width: 80,
-      render: (difficulty) => (
-        <Tag color={recordsService.getDifficultyColor(difficulty)}>
-          {difficulty}
-        </Tag>
+      render: (ojType) => (
+        <Tag color="blue">{ojType}</Tag>
       ),
     },
     {
-      title: t('records.status'),
-      dataIndex: 'status',
-      key: 'status',
-      width: 100,
-      render: (status) => (
-        <Tag color={recordsService.getExecutionStatusColor(status)}>
-          {recordsService.getExecutionStatusText(status)}
-        </Tag>
+      title: t('records.language'),
+      dataIndex: 'language',
+      key: 'language',
+      width: 80,
+      render: (language) => (
+        <Tag color="default">{language}</Tag>
       ),
     },
     {
-      title: t('aiAnalysis.analysisStatus'),
-      dataIndex: 'ai_analysis_status',
-      key: 'ai_analysis_status',
+      title: t('records.aiSyncStatus'),
+      dataIndex: 'ai_sync_status',
+      key: 'ai_sync_status',
       width: 100,
       render: (status) => {
         if (!status) return <Tag color="default">{t('aiAnalysis.notAnalyzed')}</Tag>;
@@ -311,8 +307,8 @@ const AIAnalysis = () => {
     paused: tasks.filter(t => t.status === 'paused').length,
   };
 
-  const analyzedRecords = records.filter(r => r.ai_analysis_status);
-  const unanalyzedRecords = records.filter(r => !r.ai_analysis_status);
+  const analyzedRecords = records.filter(r => r.ai_sync_status);
+  const unanalyzedRecords = records.filter(r => !r.ai_sync_status);
 
   return (
     <div>

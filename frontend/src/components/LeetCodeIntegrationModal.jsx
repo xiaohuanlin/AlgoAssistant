@@ -96,16 +96,7 @@ const LeetCodeIntegrationModal = ({ visible, onCancel, onSuccess, initialValues 
             />
           </Form.Item>
 
-          <Form.Item>
-            <Button
-              onClick={testConnection}
-              loading={testing}
-              icon={<CheckCircleOutlined />}
-              size="large"
-            >
-              {t('leetcode.testConnection')}
-            </Button>
-          </Form.Item>
+
         </Form>
       )
     }
@@ -117,18 +108,28 @@ const LeetCodeIntegrationModal = ({ visible, onCancel, onSuccess, initialValues 
       open={visible}
       onCancel={onCancel}
       footer={[
-        <Button key="cancel" onClick={onCancel}>
-          {t('common.cancel')}
-        </Button>,
-        <Button
-          key="submit"
-          type="primary"
-          loading={loading}
-          icon={<SaveOutlined />}
-          onClick={() => form.submit()}
-        >
-          {t('leetcode.saveConfig')}
-        </Button>
+        <div key="footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Button
+            icon={<CheckCircleOutlined />}
+            loading={testing}
+            onClick={testConnection}
+          >
+            {t('leetcode.testConnection')}
+          </Button>
+          <div>
+            <Button onClick={onCancel} style={{ marginRight: '8px' }}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              type="primary"
+              loading={loading}
+              icon={<SaveOutlined />}
+              onClick={() => form.submit()}
+            >
+              {t('leetcode.saveConfig')}
+            </Button>
+          </div>
+        </div>
       ]}
       width={700}
     >

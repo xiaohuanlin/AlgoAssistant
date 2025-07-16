@@ -18,6 +18,8 @@ import GitHubIntegrationModal from '../components/GitHubIntegrationModal';
 import configService from '../services/configService';
 import authService from '../services/authService';
 
+import GeminiIntegrationModal from '../components/GeminiIntegrationModal';
+
 const { Title, Text } = Typography;
 
 const Settings = () => {
@@ -27,6 +29,8 @@ const Settings = () => {
     const [loading, setLoading] = useState(false);
     const [leetcodeModalVisible, setLeetCodeModalVisible] = useState(false);
     const [githubModalVisible, setGithubModalVisible] = useState(false);
+    const [geminiConfig, setGeminiConfig] = useState(null);
+    const [geminiModalVisible, setGeminiModalVisible] = useState(false);
 
     useEffect(() => {
         if (authService.isAuthenticated()) {
@@ -62,6 +66,16 @@ const Settings = () => {
                 });
             } else {
                 setLeetCodeConfig(null);
+            }
+
+            // Set Gemini config
+            if (allConfigs.gemini_config) {
+                setGeminiConfig({
+                    api_key: allConfigs.gemini_config.api_key || '',
+                    model_name: allConfigs.gemini_config.model_name || ''
+                });
+            } else {
+                setGeminiConfig(null);
             }
         } catch (error) {
             console.error('Error loading configs:', error);
@@ -153,23 +167,22 @@ const Settings = () => {
                         </Card>
                     </Col>
 
-                    {/* OpenAI Integration */}
+                    {/* Gemini Integration */}
                     <Col xs={24} lg={12}>
-                        <Card size="small" style={{ height: '100%' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
-                                <RobotOutlined style={{ fontSize: '18px', marginRight: '8px', color: '#1890ff' }} />
-                                <Title level={5} style={{ margin: 0 }}>{t('settings.openaiIntegration')}</Title>
-                            </div>
-
-                            <Alert
-                                message={t('settings.inDevelopment')}
-                                description={t('settings.openaiDescription')}
-                                type="warning"
-                                showIcon
-                                icon={<WarningOutlined />}
-                                style={{ fontSize: '12px' }}
-                            />
-                        </Card>
+                        <IntegrationCard
+                            title={t('gemini.title')}
+                            icon={<RobotOutlined style={{ fontSize: '18px', color: '#1890ff' }} />}
+                            description={t('gemini.subtitle')}
+                            status={geminiConfig?.api_key ? 'configured' : 'not_configured'}
+                            onConfigure={() => setGeminiModalVisible(true)}
+                            loading={loading}
+                        />
+                        <GeminiIntegrationModal
+                            visible={geminiModalVisible}
+                            onCancel={() => setGeminiModalVisible(false)}
+                            onSuccess={async () => { setGeminiModalVisible(false); await loadConfigs(); }}
+                            initialValues={geminiConfig}
+                        />
                     </Col>
                 </Row>
             )

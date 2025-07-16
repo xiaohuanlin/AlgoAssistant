@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List
+from typing import Any, Dict, List, TypeVar
 
 from .base_service import BaseService
 
+ConfigType = TypeVar("ConfigType")
 
-class BaseAIService(BaseService):
+
+class BaseAIService(BaseService[ConfigType]):
     """Abstract base class for AI analysis services."""
 
     @abstractmethod
@@ -12,11 +14,4 @@ class BaseAIService(BaseService):
         self, code: str, problem_description: str = "", language: str = ""
     ) -> Dict[str, Any]:
         """Analyze code and return summary, tags, error analysis, etc."""
-        pass
-
-    @abstractmethod
-    def recommend_related_problems(
-        self, code: str, problem_number: str = ""
-    ) -> List[str]:
-        """Recommend related problems based on code and problem context."""
         pass

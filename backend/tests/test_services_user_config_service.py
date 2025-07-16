@@ -176,8 +176,6 @@ class TestUserConfigService:
     def test_get_leetcode_config(self, db_session):
         """Test getting LeetCode configuration for a user."""
         service = UserConfigService(db_session)
-
-        # Create a user first
         user = User(
             username="testuser",
             email="test@example.com",
@@ -185,8 +183,6 @@ class TestUserConfigService:
         )
         db_session.add(user)
         db_session.commit()
-
-        # Create config with LeetCode settings
         config = UserConfig(
             user_id=user.id,
             leetcode_username="leetcode_user",
@@ -194,10 +190,9 @@ class TestUserConfigService:
         )
         db_session.add(config)
         db_session.commit()
-
         # Get LeetCode config
-        leetcode_config = service.get_leetcode_config(user.id)
-
+        user_config = service.get(user.id)
+        leetcode_config = user_config.leetcode_config if user_config else None
         assert leetcode_config is not None
         assert leetcode_config["username"] == "leetcode_user"
         assert leetcode_config["session_id"] == "session_123"
@@ -205,8 +200,6 @@ class TestUserConfigService:
     def test_get_github_config(self, db_session):
         """Test getting GitHub configuration for a user."""
         service = UserConfigService(db_session)
-
-        # Create a user first
         user = User(
             username="testuser",
             email="test@example.com",
@@ -214,8 +207,6 @@ class TestUserConfigService:
         )
         db_session.add(user)
         db_session.commit()
-
-        # Create config with GitHub settings
         config = UserConfig(
             user_id=user.id,
             github_username="github_user",
@@ -223,10 +214,9 @@ class TestUserConfigService:
         )
         db_session.add(config)
         db_session.commit()
-
         # Get GitHub config
-        github_config = service.get_github_config(user.id)
-
+        user_config = service.get(user.id)
+        github_config = user_config.github_config if user_config else None
         assert github_config is not None
         assert github_config["username"] == "github_user"
         assert github_config["token"] == "github_token_123"
@@ -234,8 +224,6 @@ class TestUserConfigService:
     def test_get_notion_config(self, db_session):
         """Test getting Notion configuration for a user."""
         service = UserConfigService(db_session)
-
-        # Create a user first
         user = User(
             username="testuser",
             email="test@example.com",
@@ -243,8 +231,6 @@ class TestUserConfigService:
         )
         db_session.add(user)
         db_session.commit()
-
-        # Create config with Notion settings
         config = UserConfig(
             user_id=user.id,
             notion_token="notion_token_123",
@@ -252,10 +238,9 @@ class TestUserConfigService:
         )
         db_session.add(config)
         db_session.commit()
-
         # Get Notion config
-        notion_config = service.get_notion_config(user.id)
-
+        user_config = service.get(user.id)
+        notion_config = user_config.notion_config if user_config else None
         assert notion_config is not None
         assert notion_config["token"] == "notion_token_123"
         assert notion_config["db_id"] == "notion_db_123"

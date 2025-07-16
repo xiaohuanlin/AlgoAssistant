@@ -1,16 +1,17 @@
 import re
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
+
+from bs4 import BeautifulSoup
 
 from app.celery_app import celery_app
-from app.deps import get_db, get_redis_client
+from app.deps import get_db
 from app.models import Record, SyncStatus, SyncTask
 from app.schemas.github import GitHubConfig, GitHubSyncStatus
 from app.services.github_service import GitHubService
 from app.services.sync_task_service import SyncTaskService
 from app.services.user_config_service import UserConfigService
 from app.utils.logger import get_logger
-from app.utils.rate_limiter import get_global_rate_limiter
 
 logger = get_logger("github_sync")
 
@@ -20,6 +21,20 @@ class GitHubSyncTask:
         self.db = db
         self.config = config
         self.service = GitHubService(config)
+
+    def _clean_html_content(self, html_content: str) -> str:
+        """Clean HTML content, keep pure text and line breaks"""
+        if not html_content:
+            return ""
+
+        try:
+            soup = BeautifulSoup(html_content, "html.parser")
+            text = soup.get_text(separator="\n", strip=True)
+            text = re.sub(r"\n\s*\n\s*\n", "\n\n", text)
+            return text.strip()
+        except Exception as e:
+            logger.warning(f"Failed to clean HTML content: {e}")
+            return re.sub(r"<[^>]+>", "", html_content).strip()
 
     def _get_file_extension(self, language: str) -> str:
         """Get file extension based on programming language."""
@@ -102,7 +117,7 @@ class GitHubSyncTask:
             )
             code = record.code
             content = self._format_code_content(
-                record.language, problem_title, record.problem.description, code
+                record.language, problem_title, record.problem.content, code
             )
             files_data.append({"file_path": file_path, "code": content})
         return files_data
@@ -110,20 +125,23 @@ class GitHubSyncTask:
     def _format_code_content(
         self, language: str, problem_title: str, problem_description: str, code: str
     ) -> str:
+        # Clean HTML content
+        clean_description = self._clean_html_content(problem_description)
+
         language = language.lower()
         if language in ["python", "python3"]:
-            return f'"""\n{problem_title}\n\n{problem_description}\n\nLeetCode Problem\n"""\n\n{code}\n\n# Test cases\nif __name__ == "__main__":\n    # Add your test cases here\n    pass\n'
+            return f'"""\n{problem_title}\n\n{clean_description}\n\nLeetCode Problem\n"""\n\n{code}\n\n# Test cases\nif __name__ == "__main__":\n    # Add your test cases here\n    pass\n'
         elif language == "java":
             class_name = "Solution"
             class_match = re.search(r"class\s+(\w+)", code)
             if class_match:
                 class_name = class_match.group(1)
-            return f"""/**\n * {problem_title}\n *\n * {problem_description}\n *\n * LeetCode Problem\n */\n\n{code}\n\n// Test class\nclass Main {{\n    public static void main(String[] args) {{\n        // Add your test cases here\n        {class_name} solution = new {class_name}();\n    }}\n}}\n"""
+            return f"""/**\n * {problem_title}\n *\n * {clean_description}\n *\n * LeetCode Problem\n */\n\n{code}\n\n// Test class\nclass Main {{\n    public static void main(String[] args) {{\n        // Add your test cases here\n        {class_name} solution = new {class_name}();\n    }}\n}}\n"""
         elif language in ["cpp", "c++"]:
-            return f"""/**\n * {problem_title}\n *\n * {problem_description}\n *\n * LeetCode Problem\n */\n\n#include <iostream>\n#include <vector>\n#include <string>\nusing namespace std;\n\n{code}\n\n// Test function\nint main() {{\n    // Add your test cases here\n    return 0;\n}}\n"""
+            return f"""/**\n * {problem_title}\n *\n * {clean_description}\n *\n * LeetCode Problem\n */\n\n#include <iostream>\n#include <vector>\n#include <string>\nusing namespace std;\n\n{code}\n\n// Test function\nint main() {{\n    // Add your test cases here\n    return 0;\n}}\n"""
         else:
             comment_symbol = "#" if language in ["python", "python3"] else "//"
-            return f"{comment_symbol} {problem_title}\n{comment_symbol}\n{comment_symbol} {problem_description}\n{comment_symbol}\n{comment_symbol} LeetCode Problem\n\n{code}\n"
+            return f"{comment_symbol} {problem_title}\n{comment_symbol}\n{comment_symbol} {clean_description}\n{comment_symbol}\n{comment_symbol} LeetCode Problem\n\n{code}\n"
 
     def _generate_commit_message(
         self, problem_title: str, submit_time: datetime
@@ -132,7 +150,7 @@ class GitHubSyncTask:
         date_str = submit_time.strftime("%Y%m%d")
         # Add last_commit_date_inc_1_day variable
         last_commit_date_inc_1_day = self._generate_incremental_date("%Y%m%d")
-        return self.config.commit_template.format(
+        return self.config.commit_message_template.format(
             problem_title=problem_title,
             date=date_str,
             last_commit_date_inc_1_day=last_commit_date_inc_1_day,
@@ -143,7 +161,7 @@ class GitHubSyncTask:
         Parse date from the latest commit message.
         Parse date information according to the current commit template format.
         """
-        commit_message = self.service.get_lastest_commit(self.config)
+        commit_message = self.service.get_lastest_commit()
         if not commit_message:
             return None
 
@@ -155,7 +173,7 @@ class GitHubSyncTask:
                 return datetime.strptime(date_str, "%Y%m%d")
             except ValueError:
                 pass
-            logger.info("No date found in commit message")
+            logger.info("No date found in last commit message")
         return None
 
     def _generate_incremental_date(self, template: str) -> str:
@@ -188,8 +206,9 @@ class GitHubSyncTask:
             records[0].problem.title, records[0].submit_time
         )
         try:
-            url = self.service.push_files(files_data, commit_message, self.config)
+            url = self.service.push_files(files_data, commit_message)
             for record in records:
+                record.github_sync_status = SyncStatus.COMPLETED.value
                 record.git_file_path = url
             self.db.commit()
             logger.info(
@@ -204,8 +223,6 @@ class GitHubSyncTask:
 @celery_app.task
 def github_sync_task(task_id: int):
     db = next(get_db())
-    redis_client = next(get_redis_client())
-    limiter = get_global_rate_limiter(redis_client)
     sync_task_service = SyncTaskService(db)
     user_config_service = UserConfigService(db)
     try:
@@ -223,9 +240,11 @@ def github_sync_task(task_id: int):
                 f"Sync task {task_id} is in state '{sync_task.status}', skipping processing"
             )
             return
-        limiter.wait_if_needed(0, 1, 1, "github")
-        config = user_config_service.get_github_config(user_id)
-        if not config:
+        config = user_config_service.get(user_id)
+        github_config = (
+            config.github_config if config and config.github_config else None
+        )
+        if not github_config:
             logger.error(f"GitHub config not found for user {user_id}")
             return
         records = (
@@ -233,13 +252,16 @@ def github_sync_task(task_id: int):
             .filter(
                 Record.id.in_(record_ids),
                 Record.user_id == user_id,
-                Record.oj_status.in_(
-                    [SyncStatus.PENDING.value, SyncStatus.RETRY.value]
+                Record.github_sync_status.in_(
+                    [SyncStatus.PENDING.value, SyncStatus.FAILED.value]
                 ),
             )
             .all()
         )
-        sync = GitHubSyncTask(db, config)
+        logger.info(
+            f"[GitHubSyncTask] Running task {sync_task.id} with {len(records)} records"
+        )
+        sync = GitHubSyncTask(db, github_config)
         success = sync.run(sync_task, records)
         if success:
             sync_task_service.update(

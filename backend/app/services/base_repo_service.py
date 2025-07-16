@@ -1,10 +1,12 @@
 from abc import abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TypeVar
 
 from .base_service import BaseService
 
+ConfigType = TypeVar("ConfigType")
 
-class BaseRepoService(BaseService):
+
+class BaseRepoService(BaseService[ConfigType]):
     """Abstract base class for code repository integration services (e.g., GitHub)."""
 
     @abstractmethod
@@ -13,7 +15,6 @@ class BaseRepoService(BaseService):
         file_path: str,
         code: str,
         commit_message: str,
-        repo_config: Dict[str, Any],
     ) -> Any:
         """Push code to the repository with a specific commit message."""
         pass
@@ -23,8 +24,6 @@ class BaseRepoService(BaseService):
         self,
         files: List[Dict[str, str]],
         commit_message: str,
-        repo_config: Dict[str, Any],
-        branch: str = "main",
     ) -> Any:
         """
         Push multiple files to a specific repo/branch with a single commit message.
@@ -42,6 +41,6 @@ class BaseRepoService(BaseService):
         """List all repositories."""
         pass
 
-    def get_lastest_commit(self, repo_config: Dict[str, Any]) -> Optional[str]:
+    def get_lastest_commit(self) -> Optional[str]:
         """Get the latest commit of the repository."""
         pass

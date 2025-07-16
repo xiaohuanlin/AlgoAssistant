@@ -112,6 +112,5 @@ def update_config(
     service = UserConfigService(db)
     updated = service.update(current_user.id, config)
     if not updated:
-        # If config doesn't exist, create new config
-        return service.create(current_user.id, config)
+        raise HTTPException(status_code=404, detail="User config not found")
     return service.get(current_user.id)

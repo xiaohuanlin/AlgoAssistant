@@ -63,17 +63,24 @@ class ConfigService {
   }
 
   /**
+   * Get Gemini configuration
+   * @param {boolean} forceRefresh - Force refresh cache
+   * @returns {Promise<Object|null>} Gemini configuration
+   */
+  async getGeminiConfig(forceRefresh = false) {
+    const configs = await this.getAllConfigs(forceRefresh);
+    return configs.gemini_config || null;
+  }
+
+  /**
    * Update LeetCode configuration
    * @param {Object} configData - Configuration data
    * @returns {Promise<Object>} Update result
    */
   async updateLeetCodeConfig(configData) {
     try {
-      console.log('Updating LeetCode config with data:', configData);
-
       // Get current configs to preserve other configurations
       const currentConfigs = await this.getAllConfigs();
-      console.log('Current configs:', currentConfigs);
 
       const requestData = {
         ...currentConfigs,
@@ -83,11 +90,8 @@ class ConfigService {
         }
       };
 
-      console.log('Sending request data:', requestData);
       const response = await api.put(API_ENDPOINTS.USERS.CONFIG, requestData);
       const result = handleApiSuccess(response);
-
-      console.log('Update result:', result);
 
       // Update cache
       this.configCache = result;
@@ -107,11 +111,8 @@ class ConfigService {
    */
   async updateGitConfig(configData) {
     try {
-      console.log('Updating Git config with data:', configData);
-
       // Get current configs to preserve other configurations
       const currentConfigs = await this.getAllConfigs();
-      console.log('Current configs:', currentConfigs);
 
       const githubConfig = {
         repo_url: configData.repo_url,
@@ -122,21 +123,13 @@ class ConfigService {
         token: configData.token
       };
 
-      console.log('GitHub config being sent:', githubConfig);
-      console.log('commit_template from frontend:', configData.commit_template);
-      console.log('commit_message_template from frontend:', configData.commit_message_template);
-      console.log('Final commit_message_template:', githubConfig.commit_message_template);
-
       const requestData = {
         ...currentConfigs,
         github_config: githubConfig
       };
 
-      console.log('Sending request data:', requestData);
       const response = await api.put(API_ENDPOINTS.USERS.CONFIG, requestData);
       const result = handleApiSuccess(response);
-
-      console.log('Update result:', result);
 
       // Update cache
       this.configCache = result;
@@ -145,6 +138,28 @@ class ConfigService {
       return result;
     } catch (error) {
       console.error('Error updating Git config:', error);
+      throw new Error(handleApiError(error));
+    }
+  }
+
+  /**
+   * Update Gemini configuration
+   * @param {Object} configData - Gemini configuration data (e.g. { api_key })
+   * @returns {Promise<Object>} Update result
+   */
+  async updateGeminiConfig(configData) {
+    try {
+      const currentConfigs = await this.getAllConfigs();
+      const requestData = {
+        ...currentConfigs,
+        gemini_config: configData
+      };
+      const response = await api.put(API_ENDPOINTS.USERS.CONFIG, requestData);
+      const result = handleApiSuccess(response);
+      this.configCache = result;
+      this.lastFetchTime = Date.now();
+      return result;
+    } catch (error) {
       throw new Error(handleApiError(error));
     }
   }
@@ -194,4 +209,5 @@ class ConfigService {
   }
 }
 
-export default new ConfigService();
+const configService = new ConfigService();
+export default configService;

@@ -4,15 +4,16 @@ import { SyncOutlined, CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutl
 import { useTranslation } from 'react-i18next';
 import { useGitSync } from '../contexts/GitSyncContext';
 
-const GitSyncAction = ({ record, onSync }) => {
+const GitSyncAction = ({ record, onSync, disabled }) => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const { config, loading: configLoading } = useGitSync();
 
-  const gitConfigured = !!(config && config.status === 'success');
+  const gitConfigured = !!(config && config.token && config.repo_url);
 
   const handleSync = async () => {
-    if (!record || !record.submission_id) {
+    if (disabled) return;
+    if (!record || !record.id) {
       message.error(t('git.invalidRecord'));
       return;
     }
@@ -26,7 +27,7 @@ const GitSyncAction = ({ record, onSync }) => {
     try {
       // Still call service directly here, context can also expose methods
       const gitSyncService = require('../services/gitSyncService').default;
-      await gitSyncService.syncToGit([record.submission_id]);
+      await gitSyncService.syncToGit([record.id]);
       message.success(t('git.syncStarted'));
       onSync && onSync();
     } catch (error) {
@@ -48,6 +49,7 @@ const GitSyncAction = ({ record, onSync }) => {
           rel="noopener noreferrer"
           icon={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
           style={{ padding: '4px 8px', height: 'auto', lineHeight: '1.2' }}
+          disabled={disabled}
         >
           {t('git.viewRepo')}
         </Button>
@@ -96,7 +98,7 @@ const GitSyncAction = ({ record, onSync }) => {
             color: '#999'
           }}
         >
-          {t('git.sync')}
+          {t('git.syncToGit')}
         </Button>
       </Tooltip>
     );
@@ -120,11 +122,12 @@ const GitSyncAction = ({ record, onSync }) => {
       case 'failed':
         return t('git.failed');
       default:
-        return t('git.sync');
+        return t('git.syncToGit');
     }
   };
 
   const getSyncStatusTooltip = (status) => {
+    if (disabled) return t('records.pleaseSyncOJFirst');
     switch (status) {
       case 'syncing':
         return t('git.syncingInProgress');
@@ -135,7 +138,7 @@ const GitSyncAction = ({ record, onSync }) => {
     }
   };
 
-  const isDisabled = record?.git_sync_status === 'syncing';
+  const isDisabled = disabled || record?.git_sync_status === 'syncing';
 
   return (
     <Tooltip title={getSyncStatusTooltip(record?.git_sync_status)}>
@@ -149,7 +152,8 @@ const GitSyncAction = ({ record, onSync }) => {
         style={{
           padding: '4px 8px',
           height: 'auto',
-          lineHeight: '1.2'
+          lineHeight: '1.2',
+          color: disabled ? '#999' : undefined
         }}
       >
         {getSyncStatusText(record?.git_sync_status)}

@@ -13,6 +13,7 @@ import {
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
+import configService from '../../services/configService';
 
 const { Title } = Typography;
 
@@ -20,6 +21,7 @@ const DashboardPage = () => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [hasLeetCodeConfig, setHasLeetCodeConfig] = useState(false);
   const [stats, setStats] = useState({
     totalProblems: 0,
     solvedProblems: 0,
@@ -46,6 +48,11 @@ const DashboardPage = () => {
     setError(null);
 
     try {
+      // Check LeetCode config first
+      const leetcodeConfig = await configService.getLeetCodeConfig();
+      const hasConfig = leetcodeConfig && leetcodeConfig.session_cookie;
+      setHasLeetCodeConfig(hasConfig);
+
       // Use mock data to avoid calling non-existent APIs
       setGitStats({
         total_records: 156,
@@ -108,54 +115,56 @@ const DashboardPage = () => {
         </Button>
       </div>
 
-      {/* LeetCode Statistics */}
-      <Row gutter={[24, 24]}>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title={t('app.totalProblems')}
-              value={stats.totalProblems}
-              prefix={<CodeOutlined />}
-              valueStyle={{ color: '#1890ff' }}
-            />
-          </Card>
-        </Col>
+      {/* LeetCode Statistics - Only show if user has LeetCode config */}
+      {hasLeetCodeConfig && (
+        <Row gutter={[24, 24]}>
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title={t('app.totalProblems')}
+                value={stats.totalProblems}
+                prefix={<CodeOutlined />}
+                valueStyle={{ color: '#1890ff' }}
+              />
+            </Card>
+          </Col>
 
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title={t('app.solvedProblems')}
-              value={stats.solvedProblems}
-              prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: '#52c41a' }}
-              suffix={`/ ${stats.totalProblems}`}
-            />
-          </Card>
-        </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title={t('app.solvedProblems')}
+                value={stats.solvedProblems}
+                prefix={<CheckCircleOutlined />}
+                valueStyle={{ color: '#52c41a' }}
+                suffix={`/ ${stats.totalProblems}`}
+              />
+            </Card>
+          </Col>
 
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title={t('app.reviewProblems')}
-              value={stats.reviewProblems}
-              prefix={<ClockCircleOutlined />}
-              valueStyle={{ color: '#faad14' }}
-            />
-          </Card>
-        </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title={t('app.reviewProblems')}
+                value={stats.reviewProblems}
+                prefix={<ClockCircleOutlined />}
+                valueStyle={{ color: '#faad14' }}
+              />
+            </Card>
+          </Col>
 
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title={t('app.streakDays')}
-              value={stats.streakDays}
-              prefix={<TrophyOutlined />}
-              valueStyle={{ color: '#f5222d' }}
-              suffix={t('app.days')}
-            />
-          </Card>
-        </Col>
-      </Row>
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title={t('app.streakDays')}
+                value={stats.streakDays}
+                prefix={<TrophyOutlined />}
+                valueStyle={{ color: '#f5222d' }}
+                suffix={t('app.days')}
+              />
+            </Card>
+          </Col>
+        </Row>
+      )}
 
       {/* Git Sync Statistics */}
       <Row gutter={[24, 24]} style={{ marginTop: 24 }}>

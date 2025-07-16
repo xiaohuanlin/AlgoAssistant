@@ -1,28 +1,33 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Row, Col, Statistic, List, Avatar, Tag, Spin, Divider } from 'antd';
+import { Card, Row, Col, Statistic, List, Avatar, Tag, Spin } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   TrophyOutlined,
   BookOutlined,
   ClockCircleOutlined,
-  SyncOutlined,
-  LoadingOutlined,
   CheckCircleOutlined,
   CodeOutlined,
-  GithubOutlined,
-  ExclamationCircleOutlined
+  UserOutlined,
+  RobotOutlined
 } from '@ant-design/icons';
 import recordsService from '../services/recordsService';
 import leetcodeService from '../services/leetcodeService';
-import gitSyncService from '../services/gitSyncService';
-import LeetCodeConfig from '../components/LeetCodeConfig';
-import GitSyncStatusPage from '../components/GitSyncStatusPage';
+import configService from '../services/configService';
+import syncTaskService from '../services/syncTaskService';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [stats, setStats] = useState(null);
-  const [syncStats, setSyncStats] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [leetcodeProfile, setLeetCodeProfile] = useState(null);
+  const [leetcodeLoading, setLeetCodeLoading] = useState(false);
+  const [leetcodeError, setLeetCodeError] = useState(null);
+  const [hasLeetCodeConfig, setHasLeetCodeConfig] = useState(false);
+  const [geminiStats, setGeminiStats] = useState(null);
+  const [geminiLoading, setGeminiLoading] = useState(false);
+  const [hasGeminiConfig, setHasGeminiConfig] = useState(false);
 
   useEffect(() => {
     const loadStats = async () => {
@@ -43,7 +48,66 @@ const Dashboard = () => {
       }
     };
     loadStats();
-  }, []);
+
+    const checkLeetCodeConfig = async () => {
+      try {
+        const leetcodeConfig = await configService.getLeetCodeConfig();
+        const hasConfig = leetcodeConfig && leetcodeConfig.session_cookie;
+        setHasLeetCodeConfig(hasConfig);
+
+        // Only load LeetCode profile if user has config
+        if (hasConfig) {
+          const loadLeetCodeProfile = async () => {
+            setLeetCodeLoading(true);
+            setLeetCodeError(null);
+            try {
+              const res = await leetcodeService.getLeetCodeProfile();
+              setLeetCodeProfile(res);
+            } catch (err) {
+              setLeetCodeError(err.message || 'Failed to load LeetCode profile');
+            } finally {
+              setLeetCodeLoading(false);
+            }
+          };
+          loadLeetCodeProfile();
+        }
+      } catch (error) {
+        console.error('Error checking LeetCode config:', error);
+        setHasLeetCodeConfig(false);
+      }
+    };
+    checkLeetCodeConfig();
+
+    const checkGeminiConfig = async () => {
+      try {
+        const geminiConfig = await configService.getGeminiConfig();
+        const hasConfig = geminiConfig && geminiConfig.api_key;
+        setHasGeminiConfig(hasConfig);
+
+        // Only load Gemini stats if user has config
+        if (hasConfig) {
+          const loadGeminiStats = async () => {
+            setGeminiLoading(true);
+            try {
+              const stats = await syncTaskService.getTaskStats();
+              const geminiTaskStats = stats.gemini_sync || { total: 0, completed: 0, failed: 0 };
+              setGeminiStats(geminiTaskStats);
+            } catch (err) {
+              console.error('Error loading Gemini stats:', err);
+              setGeminiStats({ total: 0, completed: 0, failed: 0 });
+            } finally {
+              setGeminiLoading(false);
+            }
+          };
+          loadGeminiStats();
+        }
+      } catch (error) {
+        console.error('Error checking Gemini config:', error);
+        setHasGeminiConfig(false);
+      }
+    };
+    checkGeminiConfig();
+  }, [t]);
 
   // You can add real recent activity API integration here if needed
   const recentActivity = [];
@@ -67,7 +131,6 @@ const Dashboard = () => {
     <div>
       <h1 style={{ marginBottom: 24 }}>{t('app.welcome')}</h1>
 
-      {/* 基础统计信息 */}
       {/* Basic Statistics */}
       <Spin spinning={loading}>
         <Row gutter={[16, 16]}>
@@ -112,27 +175,102 @@ const Dashboard = () => {
             </Card>
           </Col>
         </Row>
-
-        {/* LeetCode同步状态子模块 */}
-        {/* LeetCode Sync Status Submodule */}
-        {/* <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-          <Col span={24}>
-            <Card title={t('app.leetcodeSync')}>
-              <LeetCodeConfig />
-            </Card>
-          </Col>
-        </Row> */}
-
-        {/* GitHub同步状态子模块 */}
-        {/* GitHub Sync Status Submodule */}
-        {/* <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-          <Col span={24}>
-            <Card title={t('app.githubSync')}>
-              <GitSyncStatusPage />
-            </Card>
-          </Col>
-        </Row> */}
       </Spin>
+      {/* LeetCode Profile Card - Only show if user has LeetCode config */}
+      {hasLeetCodeConfig && (
+        <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+          <Col xs={24} md={12} lg={8}>
+            <Card title="LeetCode" loading={leetcodeLoading}>
+              {leetcodeError ? (
+                <div style={{ color: 'red' }}>{leetcodeError}</div>
+              ) : leetcodeProfile ? (
+                <div
+                  className="leetcode-profile-content"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    minHeight: 90,
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <Avatar
+                    size={64}
+                    src={leetcodeProfile.user_avatar}
+                    icon={<UserOutlined />}
+                    style={{ marginRight: 24, flexShrink: 0, marginBottom: 12 }}
+                  />
+                  <div
+                    style={{
+                      flex: 1,
+                      minWidth: 180,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontWeight: 'bold',
+                        fontSize: 20,
+                        textAlign: 'center',
+                        marginBottom: 8,
+                        wordBreak: 'break-all',
+                      }}
+                    >
+                      {leetcodeProfile.username}
+                    </div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        gap: 16,
+                        marginBottom: 4,
+                        flexWrap: 'wrap',
+                        fontSize: 14,
+                      }}
+                    >
+                      <span style={{ color: '#52c41a', fontWeight: 600 }}>AC: {leetcodeProfile.total_ac_count ?? '-'}</span>
+                      <span style={{ color: '#1890ff', fontWeight: 600 }}>Submissions: {leetcodeProfile.total_submissions ?? '-'}</span>
+                      <span style={{ color: '#faad14', fontWeight: 600 }}>Ranking: {leetcodeProfile.ranking ?? '-'}</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ color: '#999' }}>No LeetCode data</div>
+              )}
+            </Card>
+          </Col>
+        </Row>
+      )}
+
+      {/* Gemini Report Card - Only show if user has Gemini config */}
+      {hasGeminiConfig && (
+        <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+          <Col xs={24} md={12} lg={8}>
+            <Card title="Gemini AI Analysis" loading={geminiLoading} extra={<a onClick={() => navigate('/gemini')}>{t('settings.geminiIntegration')}</a>}>
+              {geminiStats ? (
+                <div style={{ display: 'flex', alignItems: 'center', minHeight: 90 }}>
+                  <Avatar
+                    size={64}
+                    icon={<RobotOutlined />}
+                    style={{ marginRight: 24, flexShrink: 0, backgroundColor: '#1890ff' }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 'bold', fontSize: 20, textAlign: 'center', marginBottom: 8 }}>AI Analysis</div>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginBottom: 4 }}>
+                      <span style={{ color: '#52c41a', fontWeight: 600 }}>Completed: {geminiStats.completed || 0}</span>
+                      <span style={{ color: '#1890ff', fontWeight: 600 }}>Total: {geminiStats.total || 0}</span>
+                      <span style={{ color: '#ff4d4f', fontWeight: 600 }}>Failed: {geminiStats.failed || 0}</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ color: '#999' }}>No Gemini analysis data</div>
+              )}
+            </Card>
+          </Col>
+        </Row>
+      )}
       {/* Recent Activity (placeholder, can be replaced with real data) */}
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={12}>

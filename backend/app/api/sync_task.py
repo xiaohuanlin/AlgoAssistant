@@ -28,9 +28,14 @@ async def create_sync_task(
         )
 
     try:
-        sync_task = sync_task_service.create(
+        create_kwargs = dict(
             user_id=user_id, type=task_data.type, record_ids=task_data.record_ids
         )
+        if task_data.type == "leetcode_batch_sync" and task_data.total_records:
+            create_kwargs["total_records"] = task_data.total_records
+        elif task_data.record_ids:
+            create_kwargs["total_records"] = len(task_data.record_ids)
+        sync_task = sync_task_service.create(**create_kwargs)
 
         task_manager = TaskManager()
         success = task_manager.start_sync_task(sync_task)
@@ -92,3 +97,61 @@ async def delete_sync_task(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete sync task",
         )
+
+
+@router.post("/{task_id}/pause", response_model=SyncTaskOut)
+async def pause_sync_task(
+    task_id: int, user_id: int = 1, db: Session = Depends(get_db)
+):
+    sync_task_service = SyncTaskService(db)
+    task = sync_task_service.get(task_id)
+    if not task or task.user_id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Sync task not found"
+        )
+    if task.status not in [SyncStatus.PENDING.value, SyncStatus.RUNNING.value]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Task cannot be paused"
+        )
+    sync_task_service.update(task_id, status=SyncStatus.PAUSED.value)
+    return SyncTaskOut.from_orm(sync_task_service.get(task_id))
+
+
+@router.post("/{task_id}/resume", response_model=SyncTaskOut)
+async def resume_sync_task(
+    task_id: int, user_id: int = 1, db: Session = Depends(get_db)
+):
+    sync_task_service = SyncTaskService(db)
+    task = sync_task_service.get(task_id)
+    if not task or task.user_id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Sync task not found"
+        )
+    if task.status != SyncStatus.PAUSED.value:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Task is not paused"
+        )
+    sync_task_service.update(task_id, status=SyncStatus.PENDING.value)
+    task_manager = TaskManager()
+    task_manager.start_sync_task(sync_task_service.get(task_id))
+    return SyncTaskOut.from_orm(sync_task_service.get(task_id))
+
+
+@router.post("/{task_id}/retry", response_model=SyncTaskOut)
+async def retry_sync_task(
+    task_id: int, user_id: int = 1, db: Session = Depends(get_db)
+):
+    sync_task_service = SyncTaskService(db)
+    task = sync_task_service.get(task_id)
+    if not task or task.user_id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Sync task not found"
+        )
+    if task.status not in [SyncStatus.FAILED.value, SyncStatus.PAUSED.value]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Task cannot be retried"
+        )
+    sync_task_service.update(task_id, status=SyncStatus.PENDING.value)
+    task_manager = TaskManager()
+    task_manager.start_sync_task(sync_task_service.get(task_id))
+    return SyncTaskOut.from_orm(sync_task_service.get(task_id))

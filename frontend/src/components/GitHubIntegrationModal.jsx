@@ -3,6 +3,7 @@ import { Modal, Form, Input, Button, Select, message, Steps, Table, Typography, 
 import { SaveOutlined, CheckCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import configService from '../services/configService';
+import gitSyncService from '../services/gitSyncService';
 
 const { TextArea } = Input;
 const { Title, Text } = Typography;
@@ -106,7 +107,7 @@ const GitHubIntegrationModal = ({ visible, onCancel, onSuccess, initialValues })
 
     setTesting(true);
     try {
-      const response = await configService.testGitConnection(values);
+      const response = await gitSyncService.testGitConnection(values);
       if (response.status === 'success') {
         message.success(t('git.connectionSuccess'));
       } else {
@@ -229,16 +230,7 @@ const GitHubIntegrationModal = ({ visible, onCancel, onSuccess, initialValues })
             scroll={{ x: 600 }}
           />
 
-          <Form.Item>
-            <Button
-              onClick={testConnection}
-              loading={testing}
-              icon={<CheckCircleOutlined />}
-              size="large"
-            >
-              {t('git.testConnection')}
-            </Button>
-          </Form.Item>
+
         </Form>
       )
     }
@@ -250,18 +242,28 @@ const GitHubIntegrationModal = ({ visible, onCancel, onSuccess, initialValues })
       open={visible}
       onCancel={onCancel}
       footer={[
-        <Button key="cancel" onClick={onCancel}>
-          {t('common.cancel')}
-        </Button>,
-        <Button
-          key="submit"
-          type="primary"
-          loading={loading}
-          icon={<SaveOutlined />}
-          onClick={() => form.submit()}
-        >
-          {t('git.saveConfig')}
-        </Button>
+        <div key="footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Button
+            icon={<CheckCircleOutlined />}
+            loading={testing}
+            onClick={testConnection}
+          >
+            {t('git.testConnection')}
+          </Button>
+          <div>
+            <Button onClick={onCancel} style={{ marginRight: '8px' }}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              type="primary"
+              loading={loading}
+              icon={<SaveOutlined />}
+              onClick={() => form.submit()}
+            >
+              {t('git.saveConfig')}
+            </Button>
+          </div>
+        </div>
       ]}
       width={700}
     >

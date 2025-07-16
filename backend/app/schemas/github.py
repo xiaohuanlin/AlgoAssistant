@@ -28,13 +28,12 @@ class GitHubSyncTaskStatus(str, Enum):
 class GitHubConfig(BaseModel):
     """GitHub integration configuration for repository management and code synchronization."""
 
-    repo_url: Optional[str] = Field(
-        None,
+    repo_url: str = Field(
         max_length=200,
-        description="GitHub repository URL in format 'owner/repo'. Example: 'john-doe/leetcode-solutions'. Used for code pushing and repository access.",
+        description="GitHub repository URL in format 'https://github.com/owner/repo'. Example: 'https://github.com/john-doe/leetcode-solutions'. Used for code pushing and repository access.",
     )
-    branch: Optional[str] = Field(
-        None,
+    branch: str = Field(
+        default="main",
         max_length=100,
         description="Target branch for code pushing operations. Defaults to 'main' if not specified. Must be an existing branch in the repository.",
     )
@@ -48,13 +47,12 @@ class GitHubConfig(BaseModel):
         max_length=200,
         description="Template for file naming with placeholders. Supports {date}, {time}, {problem_title}, {language}, {ext} placeholders for dynamic naming.",
     )
-    commit_message_template: Optional[str] = Field(
-        None,
+    commit_message_template: str = Field(
+        default="Update {problem_title} on {date}",
         max_length=500,
         description="Template for commit messages when pushing code. Supports {problem_title}, {last_commit_date_inc_1_day}, {date} placeholders for meaningful commit history.",
     )
-    token: Optional[str] = Field(
-        None,
+    token: str = Field(
         max_length=1000,
         description="GitHub personal access token for authentication. Must have repo scope permissions. Encrypted in storage for security.",
     )

@@ -5,18 +5,22 @@ Redis-based rate limiter for controlling API request frequency per user
 import time
 from typing import Any, Dict, Optional
 
-import redis
-
+from app.deps import get_redis_client
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+_global_redis_client = None
 
 
 class RedisRateLimiter:
     """Redis-based rate limiter for controlling request frequency"""
 
-    def __init__(self, redis_client: redis.Redis, prefix: str = "rate_limit"):
-        self.redis_client = redis_client
+    def __init__(self, prefix: str = "rate_limit"):
+        global _global_redis_client
+        if _global_redis_client is None:
+            _global_redis_client = next(get_redis_client())
+        self.redis_client = _global_redis_client
         self.prefix = prefix
 
     def _get_key(self, user_id: int, operation: str = "default") -> str:
@@ -225,9 +229,9 @@ class RedisRateLimiter:
 _global_rate_limiter: Optional[RedisRateLimiter] = None
 
 
-def get_global_rate_limiter(redis_client: redis.Redis) -> RedisRateLimiter:
+def get_global_rate_limiter(prefix: str = "leetcode_rate_limit") -> RedisRateLimiter:
     """Get global rate limiter instance"""
     global _global_rate_limiter
     if _global_rate_limiter is None:
-        _global_rate_limiter = RedisRateLimiter(redis_client, "leetcode_rate_limit")
+        _global_rate_limiter = RedisRateLimiter(prefix)
     return _global_rate_limiter

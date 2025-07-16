@@ -11,12 +11,15 @@ from app.models import Tag
 from app.schemas import (
     RecordCreate,
     RecordDeleteResponse,
-    RecordOut,
+    RecordDetailOut,
+    RecordListOut,
     RecordStatsOut,
+    RecordUpdate,
     TagAssignRequest,
     TagOut,
     TagWikiUpdateRequest,
 )
+from app.schemas.record import SyncStatus
 from app.services.record_service import RecordService
 from app.utils.logger import get_logger
 
@@ -25,7 +28,7 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/api/records", tags=["records"])
 
 
-@router.post("/", response_model=RecordOut)
+@router.post("/", response_model=RecordDetailOut)
 def create_record(
     record: RecordCreate,
     db: Session = Depends(get_db),
@@ -34,10 +37,10 @@ def create_record(
     """Create a new problem record."""
     service = RecordService(db)
     db_record = service.create_record(current_user.id, record)
-    return service.to_record_out(db_record)
+    return service.to_record_detail_out(db_record)
 
 
-@router.get("/", response_model=List[RecordOut])
+@router.get("/", response_model=List[RecordListOut])
 def list_records(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
@@ -45,16 +48,19 @@ def list_records(
     tags: Optional[str] = Query(
         None, description="Filter by multiple tags (comma-separated)"
     ),
-    status: Optional[str] = Query(None, description="Filter by execution status"),
+    status: Optional[List[str]] = Query(
+        None, description="Filter by execution status (multi-param supported)"
+    ),
     oj_type: Optional[str] = Query(None, description="Filter by OJ type"),
-    oj_sync_status: Optional[str] = Query(
-        None, description="Filter by OJ synchronization status"
+    oj_sync_status: Optional[List[str]] = Query(
+        None, description="Filter by OJ synchronization status (multi-param supported)"
     ),
-    github_sync_status: Optional[str] = Query(
-        None, description="Filter by GitHub synchronization status"
+    github_sync_status: Optional[List[str]] = Query(
+        None,
+        description="Filter by GitHub synchronization status (multi-param supported)",
     ),
-    ai_analysis_status: Optional[str] = Query(
-        None, description="Filter by AI analysis status"
+    ai_sync_status: Optional[List[str]] = Query(
+        None, description="Filter by AI analysis status (multi-param supported)"
     ),
     language: Optional[str] = Query(None, description="Filter by programming language"),
     problem_title: Optional[str] = Query(
@@ -87,19 +93,21 @@ def list_records(
 
     # Status filtering
     if github_sync_status:
-        query = query.filter(models.Record.github_sync_status == github_sync_status)
+        query = query.filter(models.Record.github_sync_status.in_(github_sync_status))
     if oj_sync_status:
-        query = query.filter(models.Record.oj_sync_status == oj_sync_status)
-    if ai_analysis_status:
-        query = query.filter(models.Record.ai_analysis_status == ai_analysis_status)
+        query = query.filter(models.Record.oj_sync_status.in_(oj_sync_status))
+    if ai_sync_status:
+        query = query.filter(models.Record.ai_sync_status.in_(ai_sync_status))
     if status:
-        query = query.filter(models.Record.execution_result == status)
+        query = query.filter(models.Record.execution_result.in_(status))
     if oj_type:
         query = query.filter(models.Record.oj_type == oj_type)
     if language:
         query = query.filter(models.Record.language == language)
     if problem_title:
-        query = query.filter(models.Record.problem_title.ilike(f"%{problem_title}%"))
+        query = query.join(models.LeetCodeProblem).filter(
+            models.LeetCodeProblem.title.ilike(f"%{problem_title}%")
+        )
     if problem_id:
         query = query.filter(models.Record.problem_id == problem_id)
 
@@ -138,7 +146,7 @@ def list_records(
     query = query.offset(offset).limit(limit)
 
     records = query.all()
-    return [service.to_record_out(r) for r in records]
+    return [service.to_record_list_out(r) for r in records]
 
 
 @router.get("/stats", response_model=RecordStatsOut)
@@ -189,7 +197,7 @@ def get_records_stats(
     )
 
 
-@router.get("/{id}", response_model=RecordOut)
+@router.get("/{id}", response_model=RecordDetailOut)
 def get_record(
     id: int,
     db: Session = Depends(get_db),
@@ -198,15 +206,19 @@ def get_record(
     """Get a specific problem record by ID."""
     service = RecordService(db)
     db_record = service.get_record(id)
-    if not db_record or db_record.user_id != current_user.id:
+    if (
+        not db_record
+        or db_record.user_id != current_user.id
+        or db_record.oj_sync_status != SyncStatus.COMPLETED.value
+    ):
         raise HTTPException(status_code=404, detail="Record not found")
-    return service.to_record_out(db_record)
+    return service.to_record_detail_out(db_record)
 
 
-@router.put("/{id}", response_model=RecordOut)
+@router.put("/{id}", response_model=RecordDetailOut)
 def update_record(
     id: int,
-    record: RecordCreate,
+    record: RecordUpdate,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
@@ -215,27 +227,11 @@ def update_record(
     db_record = service.get_record(id)
     if not db_record or db_record.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Record not found")
-
-    # Update record fields
-    db_record.oj_type = record.oj_type
-    db_record.problem_title = record.problem_title
-    db_record.execution_result = record.execution_result
-    db_record.oj_status = record.oj_status
-    db_record.language = record.language
-    db_record.code = record.code
-    db_record.submit_time = record.submit_time
-    db_record.submission_url = record.submission_url
-    db_record.runtime = record.runtime
-    db_record.memory = record.memory
-    db_record.runtime_percentile = record.runtime_percentile
-    db_record.memory_percentile = record.memory_percentile
-    db_record.total_correct = record.total_correct
-    db_record.total_testcases = record.total_testcases
-    db_record.topic_tags = record.topic_tags
-
+    for field, value in record.dict(exclude_unset=True).items():
+        setattr(db_record, field, value)
     db.commit()
     db.refresh(db_record)
-    return service.to_record_out(db_record)
+    return service.to_record_detail_out(db_record)
 
 
 @router.delete("/{id}", response_model=RecordDeleteResponse)
@@ -263,7 +259,7 @@ def list_tags(db: Session = Depends(get_db)):
     return [TagOut.model_validate(tag) for tag in tags]
 
 
-@router.post("/{id}/tags", response_model=RecordOut)
+@router.post("/{id}/tags", response_model=RecordDetailOut)
 def assign_tags(
     id: int,
     tag_request: TagAssignRequest,
@@ -277,7 +273,7 @@ def assign_tags(
         raise HTTPException(status_code=404, detail="Record not found")
 
     updated_record = service.assign_tags_to_record(db_record, tag_request.tag_names)
-    return service.to_record_out(updated_record)
+    return service.to_record_detail_out(updated_record)
 
 
 @router.put("/tags/{tag_id}/wiki", response_model=TagOut)

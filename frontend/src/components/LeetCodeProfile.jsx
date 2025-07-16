@@ -3,6 +3,7 @@ import { Card, Typography, Row, Col, Statistic, Tag, Avatar, Spin, Alert, Button
 import { UserOutlined, TrophyOutlined, StarOutlined, GlobalOutlined, CompanyOutlined, BankOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import leetcodeService from '../services/leetcodeService';
+import configService from '../services/configService';
 
 const { Title, Text } = Typography;
 
@@ -11,6 +12,7 @@ const LeetCodeProfile = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [hasLeetCodeConfig, setHasLeetCodeConfig] = useState(false);
 
   const loadProfile = async () => {
     setLoading(true);
@@ -26,12 +28,41 @@ const LeetCodeProfile = () => {
   };
 
   useEffect(() => {
-    loadProfile();
+    const checkLeetCodeConfig = async () => {
+      try {
+        const leetcodeConfig = await configService.getLeetCodeConfig();
+        const hasConfig = leetcodeConfig && leetcodeConfig.session_cookie;
+        setHasLeetCodeConfig(hasConfig);
+
+        // Only load LeetCode profile if user has config
+        if (hasConfig) {
+          loadProfile();
+        }
+      } catch (error) {
+        console.error('Error checking LeetCode config:', error);
+        setHasLeetCodeConfig(false);
+      }
+    };
+    checkLeetCodeConfig();
   }, [t]);
+
+  // If user doesn't have LeetCode config, show configuration message
+  if (!hasLeetCodeConfig) {
+    return (
+      <Card title={t('leetcode.profileTitle')}>
+        <Alert
+          message={t('leetcode.configRequired')}
+          description={t('leetcode.configRequiredDesc')}
+          type="warning"
+          showIcon
+        />
+      </Card>
+    );
+  }
 
   if (loading) {
     return (
-      <Card>
+      <Card title={t('leetcode.profileTitle')}>
         <div style={{ textAlign: 'center', padding: '40px' }}>
           <Spin size="large" />
           <div style={{ marginTop: 16 }}>
@@ -44,7 +75,7 @@ const LeetCodeProfile = () => {
 
   if (error) {
     return (
-      <Card>
+      <Card title={t('leetcode.profileTitle')}>
         <Alert
           message={t('leetcode.profileError')}
           description={error}
@@ -62,7 +93,7 @@ const LeetCodeProfile = () => {
 
   if (!profile) {
     return (
-      <Card>
+      <Card title={t('leetcode.profileTitle')}>
         <Alert
           message={t('leetcode.profileNoData')}
           description={t('leetcode.profileNoDataDesc')}

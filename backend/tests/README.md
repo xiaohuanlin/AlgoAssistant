@@ -244,7 +244,7 @@ def test_new_api_endpoint(self, client, test_user_data):
     # Register user
     response = client.post("/api/register", json=test_user_data)
     assert response.status_code == 200
-    
+
     # Test new endpoint
     response = client.get("/api/new-endpoint")
     assert response.status_code == 200
@@ -300,16 +300,6 @@ Remember to update this documentation to explain the purpose and usage of new te
 
 ## Mock and Stub Usage
 
-### External Service Mocking
-
-```python
-# Mock external API calls
-@patch('app.services.openai_service.openai.ChatCompletion.create')
-def test_openai_service_mock(mock_openai):
-    mock_openai.return_value = MockResponse()
-    # Test implementation
-```
-
 ### Database Stubbing
 
 ```python
@@ -331,4 +321,4 @@ def test_with_mock_data(db_session, test_user_data):
 
 - Automatic cleanup via pytest fixtures
 - Transaction rollback ensures isolation
-- No persistent test data left behind 
+- No persistent test data left behind

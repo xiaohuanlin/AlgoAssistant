@@ -54,9 +54,10 @@ GITHUB_CLIENT_ID=your-github-client-id
 GITHUB_CLIENT_SECRET=your-github-client-secret
 ```
 
-#### OpenAI API (Optional)
-```env
-OPENAI_API_KEY=your-openai-api-key
+#### Gemini API (Optional)
+
+```bash
+GEMINI_API_KEY=your-gemini-api-key
 ```
 
 #### Notion API (Optional)
@@ -141,7 +142,7 @@ Before deploying to production:
 **Solution**: Ensure redirect URIs in Google Console match exactly with your application URLs
 
 #### Issue: Environment Variables Not Loading
-**Solution**: 
+**Solution**:
 1. Restart containers after changing `.env` files
 2. Check file permissions
 3. Verify variable names match exactly
@@ -156,4 +157,4 @@ Before deploying to production:
 3. **Regular Rotation**: Rotate secrets periodically
 4. **Monitoring**: Set up alerts for unauthorized access
 5. **Documentation**: Keep setup instructions updated
-6. **Testing**: Test OAuth flow in each environment before deployment 
+6. **Testing**: Test OAuth flow in each environment before deployment

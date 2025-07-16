@@ -97,6 +97,9 @@ export const API_ENDPOINTS = {
     DETAIL: (taskId) => `/api/sync_task/${taskId}`,
     DELETE: (taskId) => `/api/sync_task/${taskId}`,
     STATS: '/api/sync_task/stats',
+    RETRY: (taskId) => `/api/sync_task/${taskId}/retry`,
+    PAUSE: (taskId) => `/api/sync_task/${taskId}/pause`,
+    RESUME: (taskId) => `/api/sync_task/${taskId}/resume`,
   },
 
   // GitHub Integration (supplement)
@@ -127,6 +130,15 @@ export const API_ENDPOINTS = {
   },
 
   // AI Analysis
+  AI: {
+    ANALYZE: '/api/ai/analyze',
+    ANALYZE_BATCH: '/api/ai/analyze/batch',
+    STATUS: (recordId) => `/api/ai/status/${recordId}`,
+    STATS: '/api/ai/stats',
+    HISTORY: (recordId) => `/api/ai/history/${recordId}`,
+  },
+
+  // AI Analysis (legacy)
   AI_ANALYSIS: {
     CREATE: '/api/ai_analysis/',
     LIST: '/api/ai_analysis/',

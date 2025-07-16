@@ -4,7 +4,17 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import models
-from app.api import github, google, leetcode, notion, records, review, sync_task, users
+from app.api import (
+    gemini,
+    github,
+    google,
+    leetcode,
+    notion,
+    records,
+    review,
+    sync_task,
+    users,
+)
 from app.database import engine
 from app.utils.logger import get_logger
 
@@ -35,6 +45,7 @@ app.include_router(github.router)
 app.include_router(google.router)
 app.include_router(review.router)
 app.include_router(sync_task.router)
+app.include_router(gemini.router)
 
 
 @app.get("/")

@@ -39,7 +39,6 @@ class LeetCodeProblemBase(BaseModel):
     )
     content: Optional[str] = Field(
         None,
-        max_length=10000,
         description="Problem description and content including problem statement, examples, constraints, and follow-up questions. May include HTML formatting.",
     )
     difficulty: Optional[str] = Field(

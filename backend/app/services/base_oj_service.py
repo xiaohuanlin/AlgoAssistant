@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Generator, List, Optional
+from typing import Any, Dict, Generator, List, Optional, TypeVar
 
 from .base_service import BaseService
 
+ConfigType = TypeVar("ConfigType")
 
-class BaseOJService(BaseService):
+
+class BaseOJService(BaseService[ConfigType]):
     """Abstract base class for Online Judge (OJ) integration services."""
 
     @abstractmethod

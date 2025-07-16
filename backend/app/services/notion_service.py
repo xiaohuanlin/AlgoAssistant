@@ -3,7 +3,7 @@ from typing import Any, Dict
 from app.services.base_note_service import BaseNoteService
 
 
-class NotionService(BaseNoteService):
+class NotionService(BaseNoteService[Dict[str, Any]]):
     """Notion integration service implementation."""
 
     def __init__(self, config: Dict[str, Any]):

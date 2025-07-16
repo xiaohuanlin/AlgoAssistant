@@ -79,7 +79,7 @@ services:
   celery_worker:
     build: ./backend
     container_name: algo_assistant_celery_worker
-    command: celery -A app.celery_app.celery_app worker --loglevel=INFO --concurrency=2 -Q leetcode_sync_queue,git_sync_queue
+    command: celery -A app.celery_app.celery_app worker --loglevel=INFO --concurrency=2 -Q leetcode_sync_queue,git_sync_queue,gemini_sync_queue
     env_file:
       - ./backend/.env
     volumes:

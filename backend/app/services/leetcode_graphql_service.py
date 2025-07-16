@@ -4,14 +4,13 @@ Uses GraphQL API to fetch LeetCode data without browser simulation
 Based on leetcode-query implementation
 """
 
-import random
-import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 import requests
 
 from app.utils.logger import get_logger
+from app.utils.rate_limiter import RedisRateLimiter
 
 logger = get_logger(__name__)
 
@@ -25,6 +24,7 @@ class LeetCodeGraphQLService:
         self.session = requests.Session()
         self.base_url = "https://leetcode.com"
         self.graphql_url = f"{self.base_url}/graphql"
+        self.limiter = RedisRateLimiter("leetcode_rate_limit")
 
         # Set up more realistic session headers
         self.session.headers.update(
@@ -96,6 +96,8 @@ class LeetCodeGraphQLService:
     def _make_graphql_request(
         self, query: str, variables: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
+        if self.limiter:
+            self.limiter.wait_if_needed(0, 1, 1, "leetcode")
         # Add random delay to simulate human behavior
         payload = {"query": query, "variables": variables or {}}
         response = self.session.post(self.graphql_url, json=payload, timeout=30)
@@ -178,8 +180,6 @@ class LeetCodeGraphQLService:
                 "submit_time": submit_time,
                 "submission_url": submission_url,
                 "submission_id": submission_id,
-                "code": "",
-                "topic_tags": [],
                 "is_pending": is_pending,
             }
             transformed_submissions.append(transformed_submission)
@@ -271,9 +271,6 @@ class LeetCodeGraphQLService:
         compile_error = submission_details.get("compileError")
         code_output = submission_details.get("codeOutput", "")
         expected_output = submission_details.get("expectedOutput", "")
-        success_rate = (
-            (total_correct / total_testcases * 100) if total_testcases > 0 else 0
-        )
         enhanced_details = {
             "id": submission_details.get("id"),
             "code": code,
@@ -282,7 +279,6 @@ class LeetCodeGraphQLService:
             "memory_percentile": memory_percentile,
             "total_correct": total_correct,
             "total_testcases": total_testcases,
-            "success_rate": round(success_rate, 2),
             "runtime_error": runtime_error,
             "compile_error": compile_error,
             "code_output": code_output,
@@ -290,9 +286,6 @@ class LeetCodeGraphQLService:
         }
         logger.info(
             f"Successfully fetched enhanced details for submission {submission_id}"
-        )
-        logger.info(
-            f"Test cases: {total_correct}/{total_testcases} ({success_rate}% success rate)"
         )
         return enhanced_details
 
@@ -336,6 +329,13 @@ class LeetCodeGraphQLService:
                     reputation
                     ranking
                 }
+                submitStats {
+                    acSubmissionNum {
+                        difficulty
+                        count
+                        submissions
+                    }
+                }
             }
         }
         """
@@ -349,6 +349,16 @@ class LeetCodeGraphQLService:
             logger.warning(f"No user found with username: {username}")
             return {}
         profile = matched_user.get("profile", {})
+        ac_submission_num = matched_user.get("submitStats", {}).get(
+            "acSubmissionNum", []
+        )
+        total_ac_count = None
+        total_submissions = None
+        for item in ac_submission_num:
+            if item.get("difficulty") == "All":
+                total_ac_count = item.get("count")
+                total_submissions = item.get("submissions")
+                break
         enhanced_profile = {
             "username": matched_user.get("username"),
             "real_name": profile.get("realName"),
@@ -362,6 +372,8 @@ class LeetCodeGraphQLService:
             "user_avatar": profile.get("userAvatar"),
             "reputation": profile.get("reputation"),
             "ranking": profile.get("ranking"),
+            "total_ac_count": total_ac_count,
+            "total_submissions": total_submissions,
             "raw_data": {"matched_user": matched_user, "profile": profile},
         }
         logger.info(f"Successfully fetched profile for user: {username}")

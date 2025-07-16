@@ -1,0 +1,257 @@
+.ai-analysis-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.ai-analysis-card .ant-card-head {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px 8px 0 0;
+}
+
+.ai-analysis-card .ant-card-head-title {
+  color: white;
+  font-weight: 600;
+  text-align: left;
+}
+
+.ai-analysis-card .ant-collapse {
+  background: transparent;
+}
+
+.ai-analysis-card .ant-collapse-item {
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  background: white;
+}
+
+.ai-analysis-card .ant-collapse-header {
+  background: #fafafa;
+  border-radius: 6px 6px 0 0;
+  padding: 12px 16px;
+  font-weight: 500;
+}
+
+.ai-analysis-card .ant-collapse-content {
+  border-top: 1px solid #f0f0f0;
+}
+
+.ai-analysis-card .ant-collapse-content-box {
+  padding: 16px;
+  overflow: hidden;
+}
+
+.ai-analysis-card .score-progress {
+  margin-top: 8px;
+}
+
+.ai-analysis-card .complexity-text {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-weight: 600;
+}
+
+.ai-analysis-card .tag-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+/* Remove old list styles since we now use markdown rendering */
+
+.ai-analysis-card .related-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-analysis-card .related-links a {
+  word-break: break-all;
+  color: #1890ff;
+  text-decoration: none;
+}
+
+.ai-analysis-card .related-links a:hover {
+  text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .ai-analysis-card .ant-collapse-header {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+
+  .ai-analysis-card .ant-collapse-content-box {
+    padding: 12px;
+  }
+
+  .ai-analysis-card .tag-container {
+    gap: 2px;
+  }
+
+  .ai-analysis-card .risk-tag,
+  .ai-analysis-card .edge-case-tag {
+    font-size: 11px;
+    padding: 3px 6px;
+  }
+}
+
+/* Animation Effects */
+.ai-analysis-card .ant-collapse-item {
+  transition: all 0.3s ease;
+}
+
+.ai-analysis-card .ant-collapse-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.ai-analysis-card .ant-progress-bg {
+  transition: width 0.6s ease;
+}
+
+/* Score Tag Styles */
+.ai-analysis-card .score-tag {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+/* Markdown Styles */
+.ai-analysis-card .markdown-content {
+  text-align: left;
+  line-height: 1.6;
+}
+
+.ai-analysis-card .markdown-content h1,
+.ai-analysis-card .markdown-content h2,
+.ai-analysis-card .markdown-content h3,
+.ai-analysis-card .markdown-content h4,
+.ai-analysis-card .markdown-content h5,
+.ai-analysis-card .markdown-content h6 {
+  margin-top: 16px;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #262626;
+}
+
+.ai-analysis-card .markdown-content p {
+  margin-bottom: 12px;
+  text-align: left;
+}
+
+.ai-analysis-card .markdown-content ul,
+.ai-analysis-card .markdown-content ol {
+  margin-bottom: 12px;
+  padding-left: 20px;
+}
+
+.ai-analysis-card .markdown-content li {
+  margin-bottom: 8px;
+  text-align: left;
+  line-height: 1.5;
+}
+
+/* Special styles for edge cases and risk areas */
+.ai-analysis-card .markdown-content ul li {
+  padding: 4px 8px;
+  border-radius: 4px;
+  background-color: #fafafa;
+  margin-bottom: 6px;
+  line-height: 1.5;
+  border-left: 3px solid #d9d9d9;
+}
+
+/* Edge cases special styles */
+.ai-analysis-card .edge-cases-content ul li {
+  background-color: #fff7e6;
+  border-left: 3px solid #fa8c16;
+}
+
+/* Risk areas special styles */
+.ai-analysis-card .risk-areas-content ul li {
+  background-color: #fff2f0;
+  border-left: 3px solid #ff4d4f;
+}
+
+.ai-analysis-card .markdown-content code {
+  background-color: #f6f8fa;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.9em;
+}
+
+.ai-analysis-card .markdown-content pre {
+  background-color: #f6f8fa;
+  padding: 12px;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin-bottom: 12px;
+}
+
+.ai-analysis-card .markdown-content pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+.ai-analysis-card .markdown-content blockquote {
+  border-left: 4px solid #d0d7de;
+  padding-left: 12px;
+  margin: 12px 0;
+  color: #656d76;
+}
+
+.ai-analysis-card .markdown-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.ai-analysis-card .markdown-content th,
+.ai-analysis-card .markdown-content td {
+  border: 1px solid #d0d7de;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.ai-analysis-card .markdown-content th {
+  background-color: #f6f8fa;
+  font-weight: 600;
+}
+
+/* Complexity tag styles */
+.ai-analysis-card .complexity-tag {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: #f6f8fa;
+  border: 1px solid #e1e4e8;
+}
+
+/* Risk tag styles */
+.ai-analysis-card .risk-tag {
+  border-radius: 4px;
+  font-size: 12px;
+  padding: 4px 8px;
+  margin-bottom: 4px;
+  max-width: 100%;
+  word-break: break-word;
+  white-space: normal;
+}
+
+/* Edge case tag styles */
+.ai-analysis-card .edge-case-tag {
+  border-radius: 4px;
+  font-size: 12px;
+  padding: 4px 8px;
+  margin-bottom: 4px;
+  max-width: 100%;
+  word-break: break-word;
+  white-space: normal;
+}

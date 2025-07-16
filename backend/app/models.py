@@ -15,7 +15,15 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 
+from app.schemas.record import LanguageType, OJType, SyncStatus, SyncTaskType
+
 from .database import Base
+from .schemas.gemini import GeminiConfig
+from .schemas.github import GitHubConfig
+from .schemas.google import GoogleConfig
+from .schemas.leetcode import LeetCodeConfig
+from .schemas.notion import NotionConfig
+from .types import PydanticJSON
 
 
 class User(Base):
@@ -31,21 +39,29 @@ class User(Base):
     )  # "true" or "false" - control sync permission
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    configs = relationship("UserConfig", back_populates="user", uselist=False)
+    configs = relationship(
+        "UserConfig",
+        back_populates="user",
+        uselist=False,
+        cascade="none",
+        passive_updates=True,
+    )
 
 
 class UserConfig(Base):
     __tablename__ = "user_configs"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    google_config = Column(JSON, nullable=True)
-    github_config = Column(JSON, nullable=True)
-    leetcode_config = Column(JSON, nullable=True)
-    notion_config = Column(JSON, nullable=True)
-    ai_config = Column(JSON, nullable=True)
+    google_config = Column(PydanticJSON(GoogleConfig), nullable=True)
+    github_config = Column(PydanticJSON(GitHubConfig), nullable=True)
+    leetcode_config = Column(PydanticJSON(LeetCodeConfig), nullable=True)
+    notion_config = Column(PydanticJSON(NotionConfig), nullable=True)
+    gemini_config = Column(PydanticJSON(GeminiConfig), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    user = relationship("User", back_populates="configs")
+    user = relationship(
+        "User", back_populates="configs", cascade="none", passive_updates=True
+    )
 
 
 class LeetCodeProblem(Base):
@@ -63,29 +79,6 @@ class LeetCodeProblem(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
-class SyncStatus(str, Enum):
-    PENDING = "pending"
-    RUNNING = "running"
-    COMPLETED = "completed"
-    FAILED = "failed"
-    PAUSED = "paused"
-    RETRY = "retry"
-
-
-class OJType(str, Enum):
-    leetcode = "leetcode"
-    nowcoder = "nowcoder"
-    other = "other"
-
-
-class LanguageType(str, Enum):
-    python = "python"
-    cpp = "cpp"
-    java = "java"
-    go = "go"
-    other = "other"
-
-
 class Record(Base):
     """Model for problem solving records."""
 
@@ -100,14 +93,13 @@ class Record(Base):
 
     # Basic submission information
     oj_type = Column(String(32), default=OJType.leetcode.value)
-    execution_result = Column(
-        String(32), nullable=False
-    )  # e.g. "Accepted", "Wrong Answer"
+    execution_result = Column(String(32), nullable=False)  # e.g. Accepted,Wrong Answer"
     oj_sync_status = Column(String(32), default=SyncStatus.PENDING.value)
     github_sync_status = Column(String(32), default=SyncStatus.PENDING.value)
-    ai_analysis_status = Column(String(32), default=SyncStatus.PENDING.value)
+    ai_sync_status = Column(String(32), default=SyncStatus.PENDING.value)
     language = Column(String(32), default=LanguageType.python.value)
-    code = Column(Text, nullable=False)
+    code = Column(Text, nullable=True)
+    submission_id = Column(Integer, nullable=False)
     submit_time = Column(DateTime, default=datetime.utcnow)
     submission_url = Column(String(512), nullable=True)  # LeetCode submission URL
 
@@ -123,7 +115,6 @@ class Record(Base):
     # Test case information
     total_correct = Column(Integer, nullable=True)
     total_testcases = Column(Integer, nullable=True)
-    # github_pushed 字段移除
 
     # Additional information
     topic_tags = Column(JSON, nullable=True)  # Array of topic tags
@@ -135,18 +126,17 @@ class Record(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    user = relationship("User", backref="records")
-    problem = relationship("LeetCodeProblem", backref="records")
-    tags = relationship("Tag", secondary="record_tag", backref="records")
-
-
-class SyncTaskType(str, Enum):
-    GITHUB_SYNC = "github_sync"
-    LEETCODE_BATCH_SYNC = "leetcode_batch_sync"
-    LEETCODE_DETAIL_SYNC = "leetcode_detail_sync"
-    NOTION_SYNC = "notion_sync"
-    AI_ANALYSIS = "ai_analysis"
-    OTHER = "other"
+    user = relationship("User", backref="records", cascade="none", passive_updates=True)
+    problem = relationship(
+        "LeetCodeProblem", backref="records", cascade="none", passive_updates=True
+    )
+    tags = relationship(
+        "Tag",
+        secondary="record_tag",
+        backref="records",
+        cascade="none",
+        passive_updates=True,
+    )
 
 
 class SyncTask(Base):
@@ -173,7 +163,9 @@ class SyncTask(Base):
     type = Column(String(32), nullable=False, default=SyncTaskType.GITHUB_SYNC.value)
 
     # Relationships
-    user = relationship("User", backref="sync_tasks")
+    user = relationship(
+        "User", backref="sync_tasks", cascade="none", passive_updates=True
+    )
 
 
 record_tag = Table(

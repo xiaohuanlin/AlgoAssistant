@@ -1,9 +1,9 @@
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
-from app.schemas.ai import AIConfig
+from app.schemas.gemini import GeminiConfig
 from app.schemas.github import GitHubConfig
 from app.schemas.google import GoogleConfig
 from app.schemas.leetcode import LeetCodeConfig
@@ -69,6 +69,10 @@ class UserLoginResponse(BaseModel):
         default="bearer",
         description="Token type identifier. Always 'bearer' for JWT tokens.",
     )
+    user: "UserOut" = Field(
+        ...,
+        description="User profile information including username, email, nickname, and avatar. Excludes sensitive data like password hash.",
+    )
 
 
 class UserOut(UserBase):
@@ -132,9 +136,9 @@ class UserConfigBase(BaseModel):
         None,
         description="Notion integration settings for knowledge base synchronization and note management.",
     )
-    ai_config: Optional[AIConfig] = Field(
+    gemini_config: Optional[GeminiConfig] = Field(
         None,
-        description="AI service configuration for code analysis and improvement suggestions using OpenAI API.",
+        description="Gemini AI service configuration for code analysis using Google's Gemini model.",
     )
     google_config: Optional[GoogleConfig] = Field(
         None,
@@ -158,9 +162,9 @@ class UserConfigCreate(BaseModel):
         None,
         description="Notion workspace settings including encrypted API token and target database ID for record synchronization.",
     )
-    ai_config: Optional[AIConfig] = Field(
+    gemini_config: Optional[GeminiConfig] = Field(
         None,
-        description="OpenAI API configuration including encrypted API key for code analysis and improvement suggestions.",
+        description="Gemini AI service configuration including encrypted API key for code analysis using Google's Gemini model.",
     )
     google_config: Optional[GoogleConfig] = Field(
         None,
@@ -190,8 +194,8 @@ class UserConfigOut(BaseModel):
     notion_config: Optional[NotionConfig] = Field(
         None, description="Notion settings excluding sensitive API token for security."
     )
-    ai_config: Optional[AIConfig] = Field(
-        None, description="AI settings excluding sensitive API key for security."
+    gemini_config: Optional[GeminiConfig] = Field(
+        None, description="Gemini settings excluding sensitive API key for security."
     )
     google_config: Optional[GoogleConfig] = Field(
         None,

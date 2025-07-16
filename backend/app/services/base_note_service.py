@@ -1,10 +1,12 @@
 from abc import abstractmethod
-from typing import Any, Dict
+from typing import Any, Dict, TypeVar
 
 from .base_service import BaseService
 
+ConfigType = TypeVar("ConfigType")
 
-class BaseNoteService(BaseService):
+
+class BaseNoteService(BaseService[ConfigType]):
     """Abstract base class for note/knowledge base integration services (e.g., Notion)."""
 
     @abstractmethod
