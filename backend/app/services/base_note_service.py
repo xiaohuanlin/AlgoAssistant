@@ -1,5 +1,7 @@
 from abc import abstractmethod
-from typing import Any, Dict, TypeVar
+from typing import Any, Dict, Tuple, TypeVar
+
+from app.models import Record
 
 from .base_service import BaseService
 
@@ -10,11 +12,6 @@ class BaseNoteService(BaseService[ConfigType]):
     """Abstract base class for note/knowledge base integration services (e.g., Notion)."""
 
     @abstractmethod
-    def sync_record(self, record: Dict[str, Any]) -> Any:
-        """Sync a problem record to the note/knowledge base platform."""
-        pass
-
-    @abstractmethod
-    def update_tag_wiki(self, tag: str, wiki_content: str) -> Any:
-        """Update or create wiki information for a specific tag."""
+    def create_page_from_record(self, record: Record) -> Tuple[bool, Dict[str, str]]:
+        """Create a page from a problem record."""
         pass

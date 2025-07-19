@@ -94,10 +94,17 @@ class RecordCreate(BaseModel):
     ai_sync_status: SyncStatus = Field(
         default=SyncStatus.PENDING, description="The status of the AI synchronization"
     )
+    notion_sync_status: SyncStatus = Field(
+        default=SyncStatus.PENDING,
+        description="The status of the Notion synchronization",
+    )
     submission_id: int = Field(..., description="The ID of the submission")
     submission_url: str = Field(..., description="The URL of the submission")
     notion_url: Optional[str] = Field(
         None, description="The URL of the problem in Notion"
+    )
+    notion_page_id: Optional[str] = Field(
+        None, description="The Notion page ID for updates"
     )
     git_file_path: Optional[str] = Field(
         None, description="The path of the solution in the git repository"
@@ -126,6 +133,9 @@ class RecordListOut(BaseModel):
     )
     ai_sync_status: SyncStatus = Field(
         ..., description="The status of the AI synchronization"
+    )
+    notion_sync_status: SyncStatus = Field(
+        ..., description="The status of the Notion synchronization"
     )
     submit_time: datetime = Field(
         ..., description="The time when the solution was submitted"
@@ -187,9 +197,15 @@ class RecordDetailOut(BaseModel):
     ai_sync_status: SyncStatus = Field(
         ..., description="The status of the AI synchronization"
     )
+    notion_sync_status: SyncStatus = Field(
+        ..., description="The status of the Notion synchronization"
+    )
     submission_url: str = Field(..., description="The URL of the submission")
     notion_url: Optional[str] = Field(
         None, description="The URL of the problem in Notion"
+    )
+    notion_page_id: Optional[str] = Field(
+        None, description="The Notion page ID for updates"
     )
     git_file_path: Optional[str] = Field(
         None, description="The path of the solution in the git repository"
@@ -236,6 +252,12 @@ class RecordUpdate(BaseModel):
     )
     ai_sync_status: Optional[SyncStatus] = Field(
         None, description="The status of the AI synchronization"
+    )
+    notion_sync_status: Optional[SyncStatus] = Field(
+        None, description="The status of the Notion synchronization"
+    )
+    notion_page_id: Optional[str] = Field(
+        None, description="The Notion page ID for updates"
     )
     submission_url: Optional[str] = Field(None, description="The URL of the submission")
     notion_url: Optional[str] = Field(

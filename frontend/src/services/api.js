@@ -71,6 +71,8 @@ export const API_ENDPOINTS = {
     MARK_WRONG: (recordId) => `/api/review/mark/${recordId}`,
     LIST: '/api/review/list',
     DUE: '/api/review/due',
+    DUE_REVIEWS: '/api/review/due',
+    MARK_REVIEWED: (reviewId) => `/api/review/${reviewId}/complete`,
     COMPLETE: (reviewId) => `/api/review/${reviewId}/complete`,
   },
 
@@ -79,6 +81,7 @@ export const API_ENDPOINTS = {
     LEETCODE_TEST: '/api/leetcode/test-connection',
     NOTION_TEST: '/api/notion/test_connection',
     GITHUB_TEST: '/api/github/test_connection',
+    GEMINI_TEST: '/api/gemini/test_connection',
   },
 
   // Google OAuth
@@ -91,6 +94,18 @@ export const API_ENDPOINTS = {
   },
 
   // Sync Tasks
+  SYNC_TASK: {
+    CREATE: '/api/sync_task/',
+    LIST: '/api/sync_task/',
+    DETAIL: (taskId) => `/api/sync_task/${taskId}`,
+    DELETE: (taskId) => `/api/sync_task/${taskId}`,
+    STATS: '/api/sync_task/stats',
+    RETRY: (taskId) => `/api/sync_task/${taskId}/retry`,
+    PAUSE: (taskId) => `/api/sync_task/${taskId}/pause`,
+    RESUME: (taskId) => `/api/sync_task/${taskId}/resume`,
+  },
+
+  // Sync Tasks (alias for backward compatibility)
   SYNC_TASKS: {
     CREATE: '/api/sync_task/',
     LIST: '/api/sync_task/',
@@ -124,6 +139,7 @@ export const API_ENDPOINTS = {
 
   // Notion Integration (supplement)
   NOTION: {
+    TEST_CONNECTION: '/api/notion/test_connection',
     SYNC: '/api/notion/sync',
     SYNC_STATUS: '/api/notion/sync/status',
     SYNC_PROGRESS: '/api/notion/sync/progress',

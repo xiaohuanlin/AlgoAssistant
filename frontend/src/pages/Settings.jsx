@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import IntegrationCard from '../components/IntegrationCard';
 import LeetCodeIntegrationModal from '../components/LeetCodeIntegrationModal';
 import GitHubIntegrationModal from '../components/GitHubIntegrationModal';
+import NotionIntegrationModal from '../components/NotionIntegrationModal';
 import configService from '../services/configService';
 import authService from '../services/authService';
 
@@ -29,6 +30,8 @@ const Settings = () => {
     const [loading, setLoading] = useState(false);
     const [leetcodeModalVisible, setLeetCodeModalVisible] = useState(false);
     const [githubModalVisible, setGithubModalVisible] = useState(false);
+    const [notionConfig, setNotionConfig] = useState(null);
+    const [notionModalVisible, setNotionModalVisible] = useState(false);
     const [geminiConfig, setGeminiConfig] = useState(null);
     const [geminiModalVisible, setGeminiModalVisible] = useState(false);
 
@@ -66,6 +69,16 @@ const Settings = () => {
                 });
             } else {
                 setLeetCodeConfig(null);
+            }
+
+            // Set Notion config
+            if (allConfigs.notion_config) {
+                setNotionConfig({
+                    token: allConfigs.notion_config.token || '',
+                    db_id: allConfigs.notion_config.db_id || ''
+                });
+            } else {
+                setNotionConfig(null);
             }
 
             // Set Gemini config
@@ -150,21 +163,14 @@ const Settings = () => {
 
                     {/* Notion Integration */}
                     <Col xs={24} lg={12}>
-                        <Card size="small" style={{ height: '100%' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
-                                <BookOutlined style={{ fontSize: '18px', marginRight: '8px', color: '#1890ff' }} />
-                                <Title level={5} style={{ margin: 0 }}>{t('settings.notionIntegration')}</Title>
-                            </div>
-
-                            <Alert
-                                message={t('settings.inDevelopment')}
-                                description={t('settings.notionDescription')}
-                                type="warning"
-                                showIcon
-                                icon={<WarningOutlined />}
-                                style={{ fontSize: '12px' }}
-                            />
-                        </Card>
+                        <IntegrationCard
+                            title={t('settings.notionIntegration')}
+                            icon={<BookOutlined style={{ fontSize: '18px', color: '#1890ff' }} />}
+                            description={t('settings.notionDescription')}
+                            status={notionConfig?.token ? 'configured' : 'not_configured'}
+                            onConfigure={() => setNotionModalVisible(true)}
+                            loading={loading}
+                        />
                     </Col>
 
                     {/* Gemini Integration */}
@@ -241,6 +247,14 @@ const Settings = () => {
                 onCancel={() => setGithubModalVisible(false)}
                 onSuccess={handleGitConfigSave}
                 initialValues={gitConfig}
+            />
+
+            {/* Notion Integration Modal */}
+            <NotionIntegrationModal
+                visible={notionModalVisible}
+                onCancel={() => setNotionModalVisible(false)}
+                onSuccess={async () => { setNotionModalVisible(false); await loadConfigs(); }}
+                initialValues={notionConfig}
             />
         </div>
     );

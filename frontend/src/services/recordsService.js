@@ -22,7 +22,7 @@ class RecordsService {
   async getRecords(filters = {}) {
     try {
       // Multi-value params to support
-      const multiParams = ['status', 'oj_sync_status', 'github_sync_status', 'ai_sync_status'];
+      const multiParams = ['status', 'oj_sync_status', 'github_sync_status', 'ai_sync_status', 'notion_sync_status'];
       const params = { ...filters };
       // Convert array params to repeated query params
       const searchParams = new URLSearchParams();

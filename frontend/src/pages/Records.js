@@ -34,6 +34,7 @@ import recordsService from '../services/recordsService';
 import gitSyncService from '../services/gitSyncService';
 import GitSyncAction from '../components/GitSyncAction';
 import GeminiSyncAction from '../components/GeminiSyncAction';
+import NotionSyncAction from '../components/NotionSyncAction';
 import configService from '../services/configService';
 import { useNavigate } from 'react-router-dom';
 
@@ -446,6 +447,36 @@ const Records = () => {
       }
     },
     {
+      title: t('records.notionSyncStatus'),
+      dataIndex: 'notion_sync_status',
+      key: 'notion_sync_status',
+      width: 120,
+      render: (notionSyncStatus) => {
+        const safeNotionSyncStatus = notionSyncStatus && typeof notionSyncStatus === 'string' ? notionSyncStatus : 'pending';
+        const colorMap = {
+          'completed': 'success',
+          'running': 'processing',
+          'failed': 'error',
+          'pending': 'default',
+          'paused': 'default',
+          'retry': 'default'
+        };
+        const textMap = {
+          'pending': t('records.gitSyncStatusPending'),
+          'running': t('records.gitSyncStatusSyncing'),
+          'completed': t('records.gitSyncStatusSynced'),
+          'failed': t('records.gitSyncStatusFailed'),
+          'paused': t('records.gitSyncStatusPaused'),
+          'retry': t('records.gitSyncStatusRetry')
+        };
+        return (
+          <Tag color={colorMap[safeNotionSyncStatus] || 'default'}>
+            {textMap[safeNotionSyncStatus] || safeNotionSyncStatus}
+          </Tag>
+        );
+      }
+    },
+    {
       title: t('records.topicTags'),
       dataIndex: 'topic_tags',
       key: 'topic_tags',
@@ -549,6 +580,7 @@ const Records = () => {
             </Tooltip>
             <GitSyncAction record={record} onSync={() => loadRecords()} disabled={!actionEnabled} />
             <GeminiSyncAction record={record} onSync={() => loadRecords()} geminiConfig={geminiConfig} disabled={!actionEnabled} />
+            <NotionSyncAction record={record} onSync={() => loadRecords()} disabled={!actionEnabled} />
           </Space>
         );
       }

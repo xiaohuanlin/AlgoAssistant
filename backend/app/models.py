@@ -120,6 +120,10 @@ class Record(Base):
     topic_tags = Column(JSON, nullable=True)  # Array of topic tags
     ai_analysis = Column(JSON, nullable=True)  # Store AI result as JSON
     notion_url = Column(String(256), nullable=True)  # Notion page link after sync
+    notion_sync_status = Column(
+        String(32), default=SyncStatus.PENDING.value
+    )  # Notion sync status
+    notion_page_id = Column(String(100), nullable=True)  # Notion page ID for updates
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow)

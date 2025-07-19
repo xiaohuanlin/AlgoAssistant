@@ -8,6 +8,7 @@ from app.tasks.gemini_sync import gemini_sync_task
 from app.tasks.github_sync import github_sync_task
 from app.tasks.leetcode_batch_sync import leetcode_batch_sync_task
 from app.tasks.leetcode_detail_sync import leetcode_detail_sync_task
+from app.tasks.notion_sync import notion_sync_task
 from app.utils.logger import get_logger
 
 logger = get_logger("task_manager")
@@ -28,5 +29,9 @@ class TaskManager:
         elif task.type == SyncTaskType.GEMINI_SYNC.value:
             return gemini_sync_task.apply_async(
                 args=[task.id], queue="gemini_sync_queue"
+            )
+        elif task.type == SyncTaskType.NOTION_SYNC.value:
+            return notion_sync_task.apply_async(
+                args=[task.id], queue="notion_sync_queue"
             )
         return False

@@ -73,6 +73,16 @@ class ConfigService {
   }
 
   /**
+   * Get Notion configuration
+   * @param {boolean} forceRefresh - Force refresh cache
+   * @returns {Promise<Object|null>} Notion configuration
+   */
+  async getNotionConfig(forceRefresh = false) {
+    const configs = await this.getAllConfigs(forceRefresh);
+    return configs.notion_config || null;
+  }
+
+  /**
    * Update LeetCode configuration
    * @param {Object} configData - Configuration data
    * @returns {Promise<Object>} Update result
@@ -153,6 +163,28 @@ class ConfigService {
       const requestData = {
         ...currentConfigs,
         gemini_config: configData
+      };
+      const response = await api.put(API_ENDPOINTS.USERS.CONFIG, requestData);
+      const result = handleApiSuccess(response);
+      this.configCache = result;
+      this.lastFetchTime = Date.now();
+      return result;
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
+
+  /**
+   * Update Notion configuration
+   * @param {Object} configData - Notion configuration data (e.g. { token, db_id })
+   * @returns {Promise<Object>} Update result
+   */
+  async updateNotionConfig(configData) {
+    try {
+      const currentConfigs = await this.getAllConfigs();
+      const requestData = {
+        ...currentConfigs,
+        notion_config: configData
       };
       const response = await api.put(API_ENDPOINTS.USERS.CONFIG, requestData);
       const result = handleApiSuccess(response);

@@ -89,7 +89,7 @@ class GeminiSyncService {
    */
   async testGeminiConnection(config) {
     try {
-      const response = await api.post('/api/gemini/test_connection', config);
+      const response = await api.post(API_ENDPOINTS.INTEGRATIONS.GEMINI_TEST, config);
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));

@@ -1,79 +1,79 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
+
+from app.schemas.notion import NotionConfig
 from app.services.notion_service import NotionService
+
 
 class TestNotionService:
     """Test NotionService functionality."""
-    
-    def test_sync_record_success(self):
-        """Test successful record sync to Notion."""
-        service = NotionService("test_token", "test_db_id")
-        
-        record_data = {
-            "id": 1,
-            "problem_title": "Two Sum",
-            "language": "python",
-            "code": "def twoSum(nums, target): pass",
-            "tag_notion_urls": ["https://notion.so/tag1", "https://notion.so/tag2"]
-        }
-        
-        result = service.sync_record(record_data)
-        
-        assert "notion.so" in result
-        assert "fake-page-1" in result
-        assert "https://notion.so/tag1|https://notion.so/tag2" in result
-    
-    def test_sync_record_without_tags(self):
-        """Test record sync without tag relations."""
-        service = NotionService("test_token", "test_db_id")
-        
-        record_data = {
-            "id": 1,
-            "problem_title": "Two Sum",
-            "language": "python",
-            "code": "def twoSum(nums, target): pass"
-        }
-        
-        result = service.sync_record(record_data)
-        
-        assert "notion.so" in result
-        assert "fake-page-1" in result
-        assert "tags=" in result
-    
-    def test_update_tag_wiki_success(self):
-        """Test successful tag wiki update."""
-        service = NotionService("test_token", "test_db_id")
-        
-        result = service.update_tag_wiki("Two Pointers", "Updated wiki content")
-        
-        # Currently returns None as it's a mock implementation
-        assert result is None
-    
-    def test_sync_tag_success(self):
-        """Test successful tag sync to Notion."""
-        service = NotionService("test_token", "test_db_id")
-        
-        tag_data = {
-            "id": 1,
-            "name": "Two Pointers",
-            "wiki": "Two pointers technique"
-        }
-        
-        result = service.sync_tag(tag_data)
-        
-        assert "notion.so" in result
-        assert "fake-tag-1" in result
-    
-    def test_sync_tag_without_id(self):
-        """Test tag sync without ID."""
-        service = NotionService("test_token", "test_db_id")
-        
-        tag_data = {
-            "name": "Two Pointers",
-            "wiki": "Two pointers technique"
-        }
-        
-        result = service.sync_tag(tag_data)
-        
-        assert "notion.so" in result
-        assert "fake-tag-unknown" in result 
+
+    def test_create_page_from_record_success(self):
+        """Test successful page creation from record."""
+        config = NotionConfig(token="test_token", db_id="test_db_id")
+        service = NotionService(config)
+
+        # Mock record object
+        record = MagicMock()
+        record.problem.title = "Two Sum"
+        record.problem_id = 1
+        record.oj_type = "leetcode"
+        record.execution_result = "Accepted"
+        record.language = "python"
+        record.problem.difficulty = "Easy"
+        record.topic_tags = ["Array", "Hash Table"]
+        record.submit_time.isoformat.return_value = "2023-01-01T00:00:00"
+        record.runtime = "100ms"
+        record.memory = "50MB"
+        record.total_correct = 10
+        record.total_testcases = 10
+        record.sync_status = "completed"
+        record.problem.content = "Given an array of integers..."
+        record.code = "def twoSum(nums, target): pass"
+        record.submission_url = "https://leetcode.com/submissions/123"
+
+        # Mock Notion API response
+        mock_response = {"id": "test-page-id", "url": "https://notion.so/test-page"}
+
+        with patch.object(service.client.pages, "create", return_value=mock_response):
+            success, result = service.create_page_from_record(record)
+
+            assert success is True
+            assert result["page_id"] == "test-page-id"
+            assert result["page_url"] == "https://notion.so/test-page"
+
+    def test_create_page_from_record_failure(self):
+        """Test page creation failure."""
+        config = NotionConfig(token="test_token", db_id="test_db_id")
+        service = NotionService(config)
+
+        # Mock record object
+        record = MagicMock()
+        record.problem.title = "Two Sum"
+        record.problem_id = 1
+        record.oj_type = "leetcode"
+        record.execution_result = "Accepted"
+        record.language = "python"
+        record.problem.difficulty = "Easy"
+        record.topic_tags = []
+        record.submit_time.isoformat.return_value = "2023-01-01T00:00:00"
+        record.runtime = "100ms"
+        record.memory = "50MB"
+        record.total_correct = 10
+        record.total_testcases = 10
+        record.sync_status = "completed"
+        record.problem.content = "Given an array of integers..."
+        record.code = "def twoSum(nums, target): pass"
+        record.submission_url = "https://leetcode.com/submissions/123"
+
+        # Mock Notion API error
+        from notion_client.errors import APIResponseError
+
+        with patch.object(
+            service.client.pages, "create", side_effect=APIResponseError("API Error")
+        ):
+            success, result = service.create_page_from_record(record)
+
+            assert success is False
+            assert "error" in result
