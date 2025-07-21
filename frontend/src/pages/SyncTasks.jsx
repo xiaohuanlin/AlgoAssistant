@@ -2,62 +2,60 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card,
   Table,
-  Tag,
   Button,
+  message,
+  Tag,
   Space,
-  Statistic,
   Row,
   Col,
+  Statistic,
+  Tooltip,
   Modal,
   Form,
   Select,
-  Input,
-  message,
-  Tooltip,
-  Popconfirm,
+  Alert,
   Progress,
   Badge,
+  Popconfirm,
+  Input,
   DatePicker,
-  Alert,
 } from 'antd';
 import {
-  SyncOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
-  DeleteOutlined,
-  ReloadOutlined,
-  PlusOutlined,
+  SyncOutlined,
   FilterOutlined,
   ClearOutlined,
+  PlusOutlined,
+  DeleteOutlined,
+  ReloadOutlined,
   PauseCircleOutlined,
   PlayCircleOutlined,
-  RedoOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
+
 import syncTaskService from '../services/syncTaskService';
 import recordsService from '../services/recordsService';
-import { useTranslation } from 'react-i18next';
 import leetcodeService from '../services/leetcodeService';
-import configService from '../services/configService';
+import { useConfig } from '../contexts/ConfigContext';
 
-const { Option } = Select;
 const { RangePicker } = DatePicker;
+const { Option } = Select;
 
 const SyncTasks = () => {
   const [tasks, setTasks] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const [form] = Form.useForm();
   const { t } = useTranslation();
+  const { hasLeetCodeConfig, hasGitConfig, hasGeminiConfig } = useConfig();
   const [unsyncedRecords, setUnsyncedRecords] = useState([]);
   const [recordsLoading, setRecordsLoading] = useState(false);
   const [selectedTaskType, setSelectedTaskType] = useState(null);
   const [filters, setFilters] = useState({});
   const [leetcodeProfile, setLeetCodeProfile] = useState(null);
   const [leetcodeProfileLoading, setLeetCodeProfileLoading] = useState(false);
-  const [hasLeetCodeConfig, setHasLeetCodeConfig] = useState(false);
-  const [hasGitConfig, setHasGitConfig] = useState(false);
-  const [hasGeminiConfig, setHasGeminiConfig] = useState(false);
+  const [form] = Form.useForm();
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -106,32 +104,6 @@ const SyncTasks = () => {
     return () => clearInterval(interval);
   }, [loadData]);
 
-  // Check configurations on component mount
-  useEffect(() => {
-    const checkInitialConfigurations = async () => {
-      try {
-        // Check LeetCode config
-        const leetcodeConfig = await configService.getLeetCodeConfig();
-        const hasLeetCode = leetcodeConfig && leetcodeConfig.session_cookie;
-        setHasLeetCodeConfig(hasLeetCode);
-
-        // Check GitHub config
-        const gitConfig = await configService.getGitConfig();
-        const hasGit = gitConfig && gitConfig.token;
-        setHasGitConfig(hasGit);
-
-        // Check Gemini config
-        const geminiConfig = await configService.getGeminiConfig();
-        const hasGemini = geminiConfig && geminiConfig.api_key;
-        setHasGeminiConfig(hasGemini);
-      } catch (error) {
-        console.error('Error checking initial configurations:', error);
-      }
-    };
-
-    checkInitialConfigurations();
-  }, []);
-
   useEffect(() => {
     if (modalVisible) {
       setSelectedTaskType(null);
@@ -141,92 +113,62 @@ const SyncTasks = () => {
 
   useEffect(() => {
     if (modalVisible && selectedTaskType === 'leetcode_batch_sync') {
-      const checkLeetCodeConfig = async () => {
-        try {
-          const leetcodeConfig = await configService.getLeetCodeConfig();
-          const hasConfig = leetcodeConfig && leetcodeConfig.session_cookie;
-          setHasLeetCodeConfig(hasConfig);
-
-          // Only load LeetCode profile if user has config
-          if (hasConfig) {
-            setLeetCodeProfileLoading(true);
-            try {
-              const res = await leetcodeService.getLeetCodeProfile();
-              setLeetCodeProfile(res);
-            } catch (error) {
-              console.error('Error loading LeetCode profile:', error);
-              message.error(t('leetcode.profileError'));
-            } finally {
-              setLeetCodeProfileLoading(false);
-            }
+      // 使用ConfigContext检查LeetCode配置
+      if (hasLeetCodeConfig()) {
+        const loadLeetCodeProfile = async () => {
+          setLeetCodeProfileLoading(true);
+          try {
+            const res = await leetcodeService.getLeetCodeProfile();
+            setLeetCodeProfile(res);
+          } catch (error) {
+            console.error('Error loading LeetCode profile:', error);
+            message.error(t('leetcode.profileError'));
+          } finally {
+            setLeetCodeProfileLoading(false);
           }
-        } catch (error) {
-          console.error('Error checking LeetCode config:', error);
-          setHasLeetCodeConfig(false);
-        }
-      };
-      checkLeetCodeConfig();
+        };
+        loadLeetCodeProfile();
+      }
     }
-  }, [modalVisible, selectedTaskType, t]);
+  }, [modalVisible, selectedTaskType, t, hasLeetCodeConfig]);
 
   const handleTaskTypeChange = (value) => {
     setSelectedTaskType(value);
 
-    // Check configurations when task type changes
-    const checkConfigurations = async () => {
-      try {
-        if (value === 'leetcode_batch_sync' || value === 'leetcode_detail_sync') {
-          const leetcodeConfig = await configService.getLeetCodeConfig();
-          const hasConfig = leetcodeConfig && leetcodeConfig.session_cookie;
-          setHasLeetCodeConfig(hasConfig);
-
-          if (!hasConfig) {
-            message.warning(t('leetcode.configRequiredDesc'));
-            setSelectedTaskType(null);
-            form.setFieldsValue({ type: null });
-            return;
-          }
-        }
-
-        if (value === 'github_sync') {
-          const gitConfig = await configService.getGitConfig();
-          const hasConfig = gitConfig && gitConfig.token;
-          setHasGitConfig(hasConfig);
-
-          if (!hasConfig) {
-            message.warning(t('git.configRequired'));
-            setSelectedTaskType(null);
-            form.setFieldsValue({ type: null });
-            return;
-          }
-        }
-
-        if (value === 'gemini_sync') {
-          const geminiConfig = await configService.getGeminiConfig();
-          const hasConfig = geminiConfig && geminiConfig.api_key;
-          setHasGeminiConfig(hasConfig);
-
-          if (!hasConfig) {
-            message.warning(t('syncTasks.geminiConfigRequiredDesc'));
-            setSelectedTaskType(null);
-            form.setFieldsValue({ type: null });
-            return;
-          }
-        }
-
-        // Load records if needed
-        if (value === 'leetcode_detail_sync' || value === 'github_sync' || value === 'gemini_sync') {
-          loadSelectableRecords(value);
-        } else {
-          setUnsyncedRecords([]);
-        }
-      } catch (error) {
-        console.error('Error checking configurations:', error);
+    // 使用ConfigContext检查配置
+    if (value === 'leetcode_batch_sync' || value === 'leetcode_detail_sync') {
+      if (!hasLeetCodeConfig()) {
+        message.warning(t('leetcode.configRequiredDesc'));
+        setSelectedTaskType(null);
+        form.setFieldsValue({ type: null });
+        return;
       }
-    };
+    }
 
-    checkConfigurations();
-    form.setFieldsValue({ record_ids: [] });
+    if (value === 'github_sync') {
+      if (!hasGitConfig()) {
+        message.warning(t('git.configRequired'));
+        setSelectedTaskType(null);
+        form.setFieldsValue({ type: null });
+        return;
+      }
+    }
+
+    if (value === 'gemini_sync') {
+      if (!hasGeminiConfig()) {
+        message.warning(t('syncTasks.geminiConfigRequiredDesc'));
+        setSelectedTaskType(null);
+        form.setFieldsValue({ type: null });
+        return;
+      }
+    }
+
+    // Load records if needed
+    if (value === 'leetcode_detail_sync' || value === 'github_sync' || value === 'gemini_sync') {
+      loadSelectableRecords(value);
+    } else {
+      setUnsyncedRecords([]);
+    }
   };
 
   const handleCreateTask = async (values) => {
@@ -401,7 +343,7 @@ const SyncTasks = () => {
           {syncTaskService.canRetry(task.status) && (
             <Button
               size="small"
-              icon={<RedoOutlined />}
+              icon={<SyncOutlined />}
               onClick={() => handleRetryTask(task.id)}
             >
               {t('syncTasks.retry')}
@@ -445,7 +387,7 @@ const SyncTasks = () => {
     },
   ];
 
-  // 筛选表单提交
+      // Filter form submission
   const handleFilter = (values) => {
     const { created_at_range, ...rest } = values;
     let filterParams = { ...rest };
@@ -457,9 +399,8 @@ const SyncTasks = () => {
   };
   const handleReset = () => {
     setFilters({});
-    filterForm.resetFields();
+    form.resetFields();
   };
-  const [filterForm] = Form.useForm();
 
   return (
     <div>
@@ -528,7 +469,7 @@ const SyncTasks = () => {
         }
       >
         <Form
-          form={filterForm}
+          form={form}
           layout="vertical"
           onFinish={handleFilter}
           initialValues={filters}

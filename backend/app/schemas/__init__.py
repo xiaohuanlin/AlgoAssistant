@@ -21,6 +21,15 @@ from .leetcode import (
     LeetCodeProblemCreate,
     LeetCodeProblemOut,
 )
+from .notification import (
+    EmailSettings,
+    NotificationChannelConfig,
+    NotificationConfig,
+    NotificationConfigResponse,
+    NotificationConfigUpdate,
+    PushSettings,
+    SmsSettings,
+)
 from .notion import NotionConfig, NotionConnectionTestOut
 from .record import (
     RecordCreate,
@@ -69,6 +78,13 @@ __all__ = [
     GoogleLoginResponse,
     GoogleDisconnectResponse,
     GoogleStatusResponse,
+    NotificationConfig,
+    NotificationConfigUpdate,
+    NotificationConfigResponse,
+    NotificationChannelConfig,
+    EmailSettings,
+    PushSettings,
+    SmsSettings,
     RecordCreate,
     RecordListOut,
     RecordDetailOut,

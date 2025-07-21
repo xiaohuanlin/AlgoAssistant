@@ -64,7 +64,7 @@ const DashboardPage = () => {
         active_tasks: 1
       });
 
-      // TODO: Fetch other dashboard statistics
+      // Fetch other dashboard statistics
       // For now, use mock data
       setStats({
         totalProblems: 156,

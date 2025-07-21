@@ -1,6 +1,44 @@
 import api, { API_ENDPOINTS, handleApiError, handleApiSuccess } from './api';
 
 /**
+ * @typedef {Object} ReviewOut
+ * @property {number} id
+ * @property {number} user_id
+ * @property {number} problem_id
+ * @property {string=} wrong_reason
+ * @property {string=} review_plan
+ * @property {string} next_review_date
+ * @property {number} review_count
+ * @property {boolean} notification_sent
+ * @property {string=} notification_sent_at
+ * @property {string} notification_type
+ * @property {string} notification_status
+ * @property {string} created_at
+ * @property {string} updated_at
+ */
+
+/**
+ * @typedef {Object} ReviewCreate
+ * @property {number} problem_id
+ * @property {string=} wrong_reason
+ * @property {string=} review_plan
+ * @property {string=} next_review_date
+ * @property {number=} review_count
+ */
+
+/**
+ * @typedef {Object} ReviewUpdate
+ * @property {string=} wrong_reason
+ * @property {string=} review_plan
+ * @property {string=} next_review_date
+ * @property {number=} review_count
+ * @property {boolean=} notification_sent
+ * @property {string=} notification_sent_at
+ * @property {string=} notification_type
+ * @property {string=} notification_status
+ */
+
+/**
  * Review service class
  * Handles API calls related to review plans
  */
@@ -23,12 +61,27 @@ class ReviewService {
   }
 
   /**
-   * Get all review records
-   * @returns {Promise<Array>} Review records list
+   * Get all review records (with pagination, sorting, filtering)
+   * @param {Object} params - Query params: limit, offset, sort_by, sort_order, filters
+   * @returns {Promise<{total: number, items: ReviewOut[]}>}
    */
-  async getReviews() {
+  async getReviews(params = {}) {
     try {
-      const response = await api.get(API_ENDPOINTS.REVIEW.LIST);
+      const response = await api.get(API_ENDPOINTS.REVIEW.LIST, { params });
+      return handleApiSuccess(response);
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
+
+  /**
+   * Filter reviews (with pagination, sorting, filtering)
+   * @param {Object} params - Query params: limit, offset, sort_by, sort_order, filters
+   * @returns {Promise<{total: number, items: ReviewOut[]}>}
+   */
+  async filterReviews(params = {}) {
+    try {
+      const response = await api.get(API_ENDPOINTS.REVIEW.FILTER, { params });
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -37,7 +90,7 @@ class ReviewService {
 
   /**
    * Get due review records
-   * @returns {Promise<Array>} Due review records list
+   * @returns {Promise<ReviewOut[]>}
    */
   async getDueReviews() {
     try {
@@ -50,11 +103,69 @@ class ReviewService {
 
   /**
    * Mark review as completed
-   * @param {number} reviewId - Review record ID
+   * @param {number} reviewId
+   * @returns {Promise<ReviewOut>}
    */
   async markAsReviewed(reviewId) {
     try {
-      const response = await api.post(API_ENDPOINTS.REVIEW.MARK_REVIEWED(reviewId));
+      const response = await api.put(API_ENDPOINTS.REVIEW.MARK_REVIEWED(reviewId));
+      return handleApiSuccess(response);
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
+
+  /**
+   * Batch mark reviews as reviewed
+   * @param {number[]} ids - Review IDs
+   * @returns {Promise<{marked: number}>}
+   */
+  async batchMarkReviewed(ids) {
+    try {
+      const response = await api.post(API_ENDPOINTS.REVIEW.BATCH_MARK_REVIEWED, { ids });
+      return handleApiSuccess(response);
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
+
+  /**
+   * Batch delete reviews
+   * @param {number[]} ids - Review IDs
+   * @returns {Promise<{deleted: number}>}
+   */
+  async batchDelete(ids) {
+    try {
+      const response = await api.post(API_ENDPOINTS.REVIEW.BATCH_DELETE, { ids });
+      return handleApiSuccess(response);
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
+
+  /**
+   * Create a new review
+   * @param {ReviewCreate} reviewData
+   * @returns {Promise<ReviewOut>}
+   */
+  async createReview(reviewData) {
+    try {
+      const response = await api.post('/api/review/', reviewData);
+      return handleApiSuccess(response);
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
+
+  /**
+   * Update a review
+   * @param {number} reviewId
+   * @param {ReviewUpdate} reviewData
+   * @returns {Promise<ReviewOut>}
+   */
+  async updateReview(reviewId, reviewData) {
+    try {
+      const response = await api.put(`/api/review/${reviewId}`, reviewData);
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -71,12 +182,10 @@ class ReviewService {
         this.getReviews(),
         this.getDueReviews(),
       ]);
-
       const totalReviews = reviews.length;
       const dueCount = dueReviews.length;
       const completedCount = reviews.filter(review => review.review_count > 0).length;
       const pendingCount = totalReviews - completedCount;
-
       return {
         total: totalReviews,
         due: dueCount,
@@ -117,6 +226,20 @@ class ReviewService {
     if (diffDays === 0) return 'Today';
     if (diffDays === 1) return 'Tomorrow';
     return `In ${diffDays} days`;
+  }
+
+  /**
+   * Get a single review by ID
+   * @param {number} reviewId
+   * @returns {Promise<ReviewOut>}
+   */
+  async getReviewById(reviewId) {
+    try {
+      const response = await api.get(`/api/review/${reviewId}`);
+      return handleApiSuccess(response);
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
   }
 }
 

@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { Button, message, Tooltip } from 'antd';
-import { RobotOutlined, SyncOutlined, CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import {
+  CheckCircleOutlined,
+  SyncOutlined,
+  RobotOutlined,
+  ClockCircleOutlined
+} from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 
 const GeminiSyncAction = ({ record, onSync, geminiConfig, disabled }) => {
@@ -23,7 +28,7 @@ const GeminiSyncAction = ({ record, onSync, geminiConfig, disabled }) => {
 
     setLoading(true);
     try {
-      // 调用 Gemini 同步服务
+      // Call Gemini sync service
       const geminiSyncService = require('../services/geminiSyncService').default;
       await geminiSyncService.syncToGemini([record.id]);
       message.success(t('gemini.syncStarted'));
@@ -35,7 +40,7 @@ const GeminiSyncAction = ({ record, onSync, geminiConfig, disabled }) => {
     }
   };
 
-  // 如果已经同步，显示成功状态
+  // Show success state if already synced
   if (record?.ai_sync_status === 'synced') {
     return (
       <Tooltip title={t('gemini.alreadySynced')}>
@@ -57,7 +62,7 @@ const GeminiSyncAction = ({ record, onSync, geminiConfig, disabled }) => {
     );
   }
 
-  // 如果 Gemini 未配置，显示灰色按钮
+  // Show gray button if Gemini not configured
   if (!geminiConfigured) {
     return (
       <Tooltip title={t('gemini.configRequired')}>
@@ -83,7 +88,7 @@ const GeminiSyncAction = ({ record, onSync, geminiConfig, disabled }) => {
     switch (status) {
       case 'syncing':
         return <SyncOutlined spin style={{ color: '#1890ff' }} />;
-      // failed 状态下也显示默认icon
+      // Show default icon for failed state
       default:
         return <ClockCircleOutlined style={{ color: '#999' }} />;
     }
@@ -93,7 +98,7 @@ const GeminiSyncAction = ({ record, onSync, geminiConfig, disabled }) => {
     switch (status) {
       case 'syncing':
         return t('gemini.syncing');
-      // failed 状态下也显示“AI分析”
+      // Show "AI Analysis" for failed state
       default:
         return t('gemini.aiSync');
     }
@@ -104,13 +109,13 @@ const GeminiSyncAction = ({ record, onSync, geminiConfig, disabled }) => {
     switch (status) {
       case 'syncing':
         return t('gemini.syncingInProgress');
-      // failed 状态下也显示“未分析”
+      // Show "Not analyzed" for failed state
       default:
         return t('gemini.notSynced');
     }
   };
 
-  // failed 状态下按钮可点击
+  // Button clickable in failed state
   const isDisabled = disabled || record?.ai_sync_status === 'syncing';
 
   return (

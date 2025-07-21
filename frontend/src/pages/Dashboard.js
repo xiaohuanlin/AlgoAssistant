@@ -12,22 +12,21 @@ import {
 } from '@ant-design/icons';
 import recordsService from '../services/recordsService';
 import leetcodeService from '../services/leetcodeService';
-import configService from '../services/configService';
+import { useConfig } from '../contexts/ConfigContext';
 import syncTaskService from '../services/syncTaskService';
 import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
   const { t } = useTranslation();
+  const { hasLeetCodeConfig, hasGeminiConfig } = useConfig();
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
   const [leetcodeProfile, setLeetCodeProfile] = useState(null);
   const [leetcodeLoading, setLeetCodeLoading] = useState(false);
   const [leetcodeError, setLeetCodeError] = useState(null);
-  const [hasLeetCodeConfig, setHasLeetCodeConfig] = useState(false);
   const [geminiStats, setGeminiStats] = useState(null);
   const [geminiLoading, setGeminiLoading] = useState(false);
-  const [hasGeminiConfig, setHasGeminiConfig] = useState(false);
 
   useEffect(() => {
     const loadStats = async () => {
@@ -49,65 +48,41 @@ const Dashboard = () => {
     };
     loadStats();
 
-    const checkLeetCodeConfig = async () => {
-      try {
-        const leetcodeConfig = await configService.getLeetCodeConfig();
-        const hasConfig = leetcodeConfig && leetcodeConfig.session_cookie;
-        setHasLeetCodeConfig(hasConfig);
-
-        // Only load LeetCode profile if user has config
-        if (hasConfig) {
-          const loadLeetCodeProfile = async () => {
-            setLeetCodeLoading(true);
-            setLeetCodeError(null);
-            try {
-              const res = await leetcodeService.getLeetCodeProfile();
-              setLeetCodeProfile(res);
-            } catch (err) {
-              setLeetCodeError(err.message || 'Failed to load LeetCode profile');
-            } finally {
-              setLeetCodeLoading(false);
-            }
-          };
-          loadLeetCodeProfile();
+    // 使用ConfigContext检查LeetCode配置
+    if (hasLeetCodeConfig()) {
+      const loadLeetCodeProfile = async () => {
+        setLeetCodeLoading(true);
+        setLeetCodeError(null);
+        try {
+          const res = await leetcodeService.getLeetCodeProfile();
+          setLeetCodeProfile(res);
+        } catch (err) {
+          setLeetCodeError(err.message || 'Failed to load LeetCode profile');
+        } finally {
+          setLeetCodeLoading(false);
         }
-      } catch (error) {
-        console.error('Error checking LeetCode config:', error);
-        setHasLeetCodeConfig(false);
-      }
-    };
-    checkLeetCodeConfig();
+      };
+      loadLeetCodeProfile();
+    }
 
-    const checkGeminiConfig = async () => {
-      try {
-        const geminiConfig = await configService.getGeminiConfig();
-        const hasConfig = geminiConfig && geminiConfig.api_key;
-        setHasGeminiConfig(hasConfig);
-
-        // Only load Gemini stats if user has config
-        if (hasConfig) {
-          const loadGeminiStats = async () => {
-            setGeminiLoading(true);
-            try {
-              const stats = await syncTaskService.getTaskStats();
-              const geminiTaskStats = stats.gemini_sync || { total: 0, completed: 0, failed: 0 };
-              setGeminiStats(geminiTaskStats);
-            } catch (err) {
-              console.error('Error loading Gemini stats:', err);
-              setGeminiStats({ total: 0, completed: 0, failed: 0 });
-            } finally {
-              setGeminiLoading(false);
-            }
-          };
-          loadGeminiStats();
+    // 使用ConfigContext检查Gemini配置
+    if (hasGeminiConfig()) {
+      const loadGeminiStats = async () => {
+        setGeminiLoading(true);
+        try {
+          const stats = await syncTaskService.getTaskStats();
+          const geminiTaskStats = stats.gemini_sync || { total: 0, completed: 0, failed: 0 };
+          setGeminiStats(geminiTaskStats);
+        } catch (err) {
+          console.error('Error loading Gemini stats:', err);
+          setGeminiStats({ total: 0, completed: 0, failed: 0 });
+        } finally {
+          setGeminiLoading(false);
         }
-      } catch (error) {
-        console.error('Error checking Gemini config:', error);
-        setHasGeminiConfig(false);
-      }
-    };
-    checkGeminiConfig();
-  }, [t]);
+      };
+      loadGeminiStats();
+    }
+  }, [t, hasLeetCodeConfig, hasGeminiConfig]);
 
   // You can add real recent activity API integration here if needed
   const recentActivity = [];
@@ -247,7 +222,7 @@ const Dashboard = () => {
       {hasGeminiConfig && (
         <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
           <Col xs={24} md={12} lg={8}>
-            <Card title="Gemini AI Analysis" loading={geminiLoading} extra={<a onClick={() => navigate('/gemini')}>{t('settings.geminiIntegration')}</a>}>
+            <Card title="Gemini AI Analysis" loading={geminiLoading} extra={<button type="button" style={{ background: 'none', border: 'none', color: '#1890ff', cursor: 'pointer', padding: 0 }} onClick={() => navigate('/gemini')}>{t('settings.geminiIntegration')}</button>}>
               {geminiStats ? (
                 <div style={{ display: 'flex', alignItems: 'center', minHeight: 90 }}>
                   <Avatar

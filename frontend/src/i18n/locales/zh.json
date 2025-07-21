@@ -41,7 +41,12 @@
     "view": "查看",
     "id": "ID",
     "noData": "暂无数据",
-    "all": "全部"
+    "all": "全部",
+    "info": "主要信息",
+    "meta": "元信息",
+    "createdAt": "创建时间",
+    "updatedAt": "更新时间",
+    "actions": "操作"
   },
   "auth": {
     "login": "登录",
@@ -221,7 +226,29 @@
       "completed": "已完成",
       "pending": "待复习",
       "completionRate": "完成率"
-    }
+    },
+    "notification": "通知",
+    "notificationStatus": "通知状态",
+    "notificationType": "通知类型",
+    "notificationSent": "已发送通知",
+    "notificationSentAt": "通知发送时间",
+    "type": {
+      "email": "邮件",
+      "push": "推送",
+      "sms": "短信"
+    },
+    "status": {
+      "pending": "待发送",
+      "sent": "已发送",
+      "failed": "失败"
+    },
+    "problemId": "题目ID",
+    "batchMarkReviewed": "批量标记为已复习",
+    "batchDelete": "批量删除",
+    "wrongReasonRequired": "请输入错误原因",
+    "wrongReasonPlaceholder": "请描述你做错的原因...",
+    "reviewPlanRequired": "请输入复习计划",
+    "reviewPlanPlaceholder": "请填写具体的复习计划..."
   },
   "syncTasks": {
     "title": "同步任务",

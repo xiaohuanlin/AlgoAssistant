@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.deps import get_db
-from app.models import SyncStatus, SyncTask, SyncTaskType
+from app.models import Record, SyncStatus, SyncTask, SyncTaskType
 from app.schemas import SyncTaskCreate, SyncTaskOut
 from app.services.sync_task_service import SyncTaskService
 from app.tasks import TaskManager
@@ -155,3 +155,46 @@ async def retry_sync_task(
     task_manager = TaskManager()
     task_manager.start_sync_task(sync_task_service.get(task_id))
     return SyncTaskOut.from_orm(sync_task_service.get(task_id))
+
+
+@router.get("/{task_id}/review-candidates")
+async def get_review_candidates(
+    task_id: int, user_id: int = 1, db: Session = Depends(get_db)
+):
+    """Get records that need review from a completed sync task."""
+    sync_task_service = SyncTaskService(db)
+    task = sync_task_service.get(task_id)
+
+    if not task or task.user_id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Sync task not found"
+        )
+
+    if task.status != SyncStatus.COMPLETED.value:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Sync task must be completed to get review candidates",
+        )
+
+    if not task.record_ids:
+        return {"task_id": task_id, "candidates": []}
+
+    # Get records that need review (failed submissions)
+    candidates = []
+    for record_id in task.record_ids:
+        record = db.query(Record).filter(Record.id == record_id).first()
+        if record and record.execution_result != "Accepted":
+            candidates.append(
+                {
+                    "record_id": record.id,
+                    "problem_id": record.problem_id,
+                    "title": record.problem.title if record.problem else "Unknown",
+                    "execution_result": record.execution_result,
+                    "submitted_at": record.submit_time.isoformat()
+                    if record.submit_time
+                    else None,
+                    "language": record.language,
+                }
+            )
+
+    return {"task_id": task_id, "candidates": candidates}

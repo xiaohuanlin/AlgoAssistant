@@ -22,7 +22,7 @@ class ErrorBoundary extends Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    // 静默处理错误边界捕获的错误
+    // Silently handle errors caught by error boundary
     this.setState({ errorInfo });
 
     // Error reporting logic can be added here

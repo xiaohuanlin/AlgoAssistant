@@ -307,54 +307,6 @@ class TagOut(TagBase):
         from_attributes = True
 
 
-class ReviewBase(BaseModel):
-    """Base review model for wrong problems tracking and spaced repetition learning."""
-
-    wrong_reason: str = Field(
-        ...,
-        max_length=1000,
-        description="Detailed reason why the problem was marked as wrong. Should include specific mistakes, edge cases missed, or conceptual errors.",
-    )
-    review_plan: str = Field(
-        ...,
-        max_length=1000,
-        description="Plan for reviewing and improving the solution. Should include specific steps, resources, and timeline for improvement.",
-    )
-
-
-class ReviewCreate(ReviewBase):
-    """Schema for creating a new review for wrong problems."""
-
-    pass
-
-
-class ReviewOut(ReviewBase):
-    """Response schema for review data with scheduling and tracking information."""
-
-    id: int = Field(
-        ...,
-        description="Unique review identifier in the database. Auto-generated sequential integer.",
-    )
-    user_id: int = Field(
-        ...,
-        description="User ID who created this review. Links to the User table for data isolation.",
-    )
-    record_id: int = Field(
-        ...,
-        description="Associated problem record ID. Links to the Record table for problem context.",
-    )
-    created_at: datetime = Field(
-        ..., description="Review creation timestamp in ISO 8601 format (UTC timezone)."
-    )
-    updated_at: datetime = Field(
-        ...,
-        description="Last review update timestamp in ISO 8601 format (UTC timezone).",
-    )
-
-    class Config:
-        from_attributes = True
-
-
 class SyncTaskCreate(BaseModel):
     """Schema for creating a new synchronization task for background processing."""
 

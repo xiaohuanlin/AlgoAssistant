@@ -35,7 +35,7 @@ import gitSyncService from '../services/gitSyncService';
 import GitSyncAction from '../components/GitSyncAction';
 import GeminiSyncAction from '../components/GeminiSyncAction';
 import NotionSyncAction from '../components/NotionSyncAction';
-import configService from '../services/configService';
+import { useConfig } from '../contexts/ConfigContext';
 import { useNavigate } from 'react-router-dom';
 
 import dayjs from 'dayjs';
@@ -43,8 +43,68 @@ import dayjs from 'dayjs';
 const { RangePicker } = DatePicker;
 const { Title, Text, Link } = Typography;
 
+// Common status mapping functions
+const getStatusColor = (executionResult) => {
+  switch (executionResult.toLowerCase()) {
+    case 'accepted':
+      return 'success';
+    case 'wrong answer':
+      return 'error';
+    case 'time limit exceeded':
+      return 'warning';
+    case 'runtime error':
+      return 'error';
+    default:
+      return 'default';
+  }
+};
+
+const getLanguageColor = (language) => {
+  const colors = {
+    'python': 'blue',
+    'java': 'orange',
+    'cpp': 'purple',
+    'c': 'cyan',
+    'javascript': 'yellow',
+    'typescript': 'blue',
+    'go': 'green',
+    'rust': 'red'
+  };
+  return colors[language.toLowerCase()] || 'default';
+};
+
+const getSyncStatusConfig = (status, t) => {
+  const colorMap = {
+    'synced': 'success',
+    'completed': 'success',
+    'syncing': 'processing',
+    'running': 'processing',
+    'failed': 'error',
+    'pending': 'default',
+    'paused': 'default',
+    'retry': 'default'
+  };
+
+  const textMap = {
+    'pending': t('records.gitSyncStatusPending'),
+    'syncing': t('records.gitSyncStatusSyncing'),
+    'running': t('records.gitSyncStatusSyncing'),
+    'synced': t('records.gitSyncStatusSynced'),
+    'completed': t('records.gitSyncStatusSynced'),
+    'failed': t('records.gitSyncStatusFailed'),
+    'paused': t('records.gitSyncStatusPaused'),
+    'retry': t('records.gitSyncStatusRetry')
+  };
+
+  return {
+    color: colorMap[status] || 'default',
+    text: textMap[status] || status
+  };
+};
+
 const Records = () => {
   const { t } = useTranslation();
+  const { hasGitConfig, getGeminiConfig } = useConfig();
   const [loading, setLoading] = useState(false);
   const [records, setRecords] = useState([]);
   const [stats, setStats] = useState({});
@@ -68,18 +128,13 @@ const Records = () => {
         recordsService.getStats()
       ]);
 
-      // Ensure we have valid arrays/objects
-      const validRecords = Array.isArray(recordsData) ? recordsData : [];
-      const validStats = statsData && typeof statsData === 'object' ? statsData : {};
-
-      setRecords(validRecords);
-      setStats(validStats);
+      setRecords(recordsData);
+      setStats(statsData);
     } catch (error) {
       console.error('Error loading records:', error);
 
       if (error.response?.status === 401) {
         message.error('Authentication required. Please login again.');
-        // Redirect to login
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         window.location.href = '/login';
@@ -95,7 +150,6 @@ const Records = () => {
   }, [t]);
 
   useEffect(() => {
-    // Add error boundary for debugging
     const handleError = (error) => {
       console.error('Global error caught:', error);
       console.error('Error stack:', error.stack);
@@ -108,47 +162,50 @@ const Records = () => {
     };
   }, []);
 
-  // Combine all initialization requests into one useEffect
-  useEffect(() => {
-    const initializeData = async () => {
-      setLoading(true);
-      try {
-        const [recordsData, statsData, configData, geminiCfg] = await Promise.all([
-          recordsService.getRecords(filters),
-          recordsService.getStats(),
-          gitSyncService.getConfigurationStatus().catch(err => ({
-            configured: false,
-            message: 'GitHub not configured',
-            action: 'configure',
-            actionText: 'Configure GitHub'
-          })),
-          configService.getGeminiConfig().catch(() => null)
-        ]);
-        const validRecords = Array.isArray(recordsData) ? recordsData : [];
-        const validStats = statsData && typeof statsData === 'object' ? statsData : {};
-        setRecords(validRecords);
-        setStats(validStats);
-        setConfigStatus(configData);
-        setGeminiConfig(geminiCfg);
-      } catch (error) {
-        console.error('Error initializing data:', error);
-        if (error.response?.status === 401) {
-          message.error('Authentication required. Please login again.');
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          window.location.href = '/login';
-        } else {
-          message.error(t('records.loadError'));
-        }
-        setRecords([]);
-        setStats({});
-        setGeminiConfig(null);
-      } finally {
-        setLoading(false);
+  // 优化初始化数据加载，使用ConfigContext
+  const initializeData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [recordsData, statsData] = await Promise.all([
+        recordsService.getRecords(filters),
+        recordsService.getStats()
+      ]);
+
+      // 从ConfigContext获取配置状态
+      const configData = {
+        configured: hasGitConfig(),
+        message: hasGitConfig() ? 'GitHub configured' : 'GitHub not configured',
+        action: hasGitConfig() ? 'test' : 'configure',
+        actionText: hasGitConfig() ? 'Test connection' : 'Configure GitHub'
+      };
+
+      const geminiCfg = getGeminiConfig();
+
+      setRecords(recordsData);
+      setStats(statsData);
+      setConfigStatus(configData);
+      setGeminiConfig(geminiCfg);
+    } catch (error) {
+      console.error('Error initializing data:', error);
+      if (error.response?.status === 401) {
+        message.error('Authentication required. Please login again.');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      } else {
+        message.error(t('records.loadError'));
       }
-    };
+      setRecords([]);
+      setStats({});
+      setGeminiConfig(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [filters, t, hasGitConfig, getGeminiConfig]);
+
+  useEffect(() => {
     initializeData();
-  }, [filters, t]);
+  }, [initializeData]);
 
   const handleFilter = (values) => {
     const filterParams = { ...values };
@@ -172,8 +229,6 @@ const Records = () => {
     filterForm.resetFields();
     setFilters({});
   };
-
-
 
   const handleBatchSync = async () => {
     if (selectedRecords.length === 0) {
@@ -208,17 +263,11 @@ const Records = () => {
   const navigate = useNavigate();
 
   const canViewRecord = (record) => {
-    if (!record) return false;
     const ojStatus = record.oj_sync_status?.toLowerCase();
     return ojStatus === 'completed';
   };
 
   const handleViewRecord = (record) => {
-    if (!record) {
-      message.error('Invalid record');
-      return;
-    }
-
     if (!canViewRecord(record)) {
       message.warning(t('records.viewNotAllowed'));
       return;
@@ -228,10 +277,6 @@ const Records = () => {
   };
 
   const handleOJSync = async (record) => {
-    if (!record || !record.id) {
-      message.error(t('invalidRecord'));
-      return;
-    }
     try {
       const syncService = require('../services/gitSyncService').default;
       await syncService.createSyncTask({
@@ -245,41 +290,8 @@ const Records = () => {
     }
   };
 
-
-  const getStatusColor = (execution_result) => {
-    if (!execution_result || typeof execution_result !== 'string') return 'default';
-    switch (execution_result.toLowerCase()) {
-      case 'accepted':
-        return 'success';
-      case 'wrong answer':
-        return 'error';
-      case 'time limit exceeded':
-        return 'warning';
-      case 'runtime error':
-        return 'error';
-      default:
-        return 'default';
-    }
-  };
-
-  const getLanguageColor = (language) => {
-    if (!language || typeof language !== 'string') return 'default';
-    const lowerLanguage = language.toLowerCase();
-    const colors = {
-      'python': 'blue',
-      'java': 'orange',
-      'cpp': 'purple',
-      'c': 'cyan',
-      'javascript': 'yellow',
-      'typescript': 'blue',
-      'go': 'green',
-      'rust': 'red'
-    };
-    return colors[lowerLanguage] || 'default';
-  };
-
   const isSyncActionEnabled = (record) => {
-    const status = (record.oj_sync_status || '').toLowerCase();
+    const status = record.oj_sync_status?.toLowerCase();
     return status === 'completed';
   };
 
@@ -315,15 +327,14 @@ const Records = () => {
       dataIndex: 'execution_result',
       key: 'execution_result',
       width: 120,
-      render: (execution_result) => {
-        const safeStatus = execution_result && typeof execution_result === 'string' ? execution_result : '';
-        const lowerStatus = safeStatus.toLowerCase();
+      render: (executionResult) => {
+        const lowerStatus = executionResult.toLowerCase();
         return (
           <Tag
-            color={getStatusColor(safeStatus)}
+            color={getStatusColor(executionResult)}
             icon={lowerStatus === 'accepted' ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
           >
-            {safeStatus || 'Unknown'}
+            {executionResult}
           </Tag>
         );
       }
@@ -333,55 +344,33 @@ const Records = () => {
       dataIndex: 'language',
       key: 'language',
       width: 100,
-      render: (language) => {
-        const safeLanguage = language && typeof language === 'string' ? language : '';
-        return (
-          <Tag color={getLanguageColor(safeLanguage)}>
-            {safeLanguage || 'Unknown'}
-          </Tag>
-        );
-      }
+      render: (language) => (
+        <Tag color={getLanguageColor(language)}>
+          {language}
+        </Tag>
+      )
     },
     {
       title: t('records.ojType'),
       dataIndex: 'oj_type',
       key: 'oj_type',
       width: 80,
-      render: (ojType) => {
-        const safeOjType = ojType && typeof ojType === 'string' ? ojType : 'leetcode';
-        return (
-          <Tag color="blue">
-            {safeOjType}
-          </Tag>
-        );
-      }
+      render: (ojType) => (
+        <Tag color="blue">
+          {ojType}
+        </Tag>
+      )
     },
     {
       title: t('records.ojSyncStatus'),
       dataIndex: 'oj_sync_status',
       key: 'oj_sync_status',
       width: 100,
-      render: (oj_sync_status) => {
-        const safeSyncStatus = oj_sync_status && typeof oj_sync_status === 'string' ? oj_sync_status : 'pending';
-        const colorMap = {
-          'synced': 'success',
-          'syncing': 'processing',
-          'failed': 'error',
-          'pending': 'default',
-          'paused': 'default',
-          'retry': 'default'
-        };
-        const textMap = {
-          'pending': t('records.gitSyncStatusPending'),
-          'syncing': t('records.gitSyncStatusSyncing'),
-          'synced': t('records.gitSyncStatusSynced'),
-          'failed': t('records.gitSyncStatusFailed'),
-          'paused': t('records.gitSyncStatusPaused'),
-          'retry': t('records.gitSyncStatusRetry')
-        };
+      render: (ojSyncStatus) => {
+        const config = getSyncStatusConfig(ojSyncStatus, t);
         return (
-          <Tag color={colorMap[safeSyncStatus] || 'default'}>
-            {textMap[safeSyncStatus] || safeSyncStatus}
+          <Tag color={config.color}>
+            {config.text}
           </Tag>
         );
       }
@@ -392,26 +381,10 @@ const Records = () => {
       key: 'github_sync_status',
       width: 120,
       render: (githubSyncStatus) => {
-        const safeGitSyncStatus = githubSyncStatus && typeof githubSyncStatus === 'string' ? githubSyncStatus : 'pending';
-        const colorMap = {
-          'synced': 'success',
-          'syncing': 'processing',
-          'failed': 'error',
-          'pending': 'default',
-          'paused': 'default',
-          'retry': 'default'
-        };
-        const textMap = {
-          'pending': t('records.gitSyncStatusPending'),
-          'syncing': t('records.gitSyncStatusSyncing'),
-          'synced': t('records.gitSyncStatusSynced'),
-          'failed': t('records.gitSyncStatusFailed'),
-          'paused': t('records.gitSyncStatusPaused'),
-          'retry': t('records.gitSyncStatusRetry')
-        };
+        const config = getSyncStatusConfig(githubSyncStatus, t);
         return (
-          <Tag color={colorMap[safeGitSyncStatus] || 'default'}>
-            {textMap[safeGitSyncStatus] || safeGitSyncStatus}
+          <Tag color={config.color}>
+            {config.text}
           </Tag>
         );
       }
@@ -422,26 +395,10 @@ const Records = () => {
       key: 'ai_sync_status',
       width: 120,
       render: (aiSyncStatus) => {
-        const safeAiSyncStatus = aiSyncStatus && typeof aiSyncStatus === 'string' ? aiSyncStatus : 'pending';
-        const colorMap = {
-          'synced': 'success',
-          'syncing': 'processing',
-          'failed': 'error',
-          'pending': 'default',
-          'paused': 'default',
-          'retry': 'default'
-        };
-        const textMap = {
-          'pending': t('records.gitSyncStatusPending'),
-          'syncing': t('records.gitSyncStatusSyncing'),
-          'synced': t('records.gitSyncStatusSynced'),
-          'failed': t('records.gitSyncStatusFailed'),
-          'paused': t('records.gitSyncStatusPaused'),
-          'retry': t('records.gitSyncStatusRetry')
-        };
+        const config = getSyncStatusConfig(aiSyncStatus, t);
         return (
-          <Tag color={colorMap[safeAiSyncStatus] || 'default'}>
-            {textMap[safeAiSyncStatus] || safeAiSyncStatus}
+          <Tag color={config.color}>
+            {config.text}
           </Tag>
         );
       }
@@ -452,26 +409,10 @@ const Records = () => {
       key: 'notion_sync_status',
       width: 120,
       render: (notionSyncStatus) => {
-        const safeNotionSyncStatus = notionSyncStatus && typeof notionSyncStatus === 'string' ? notionSyncStatus : 'pending';
-        const colorMap = {
-          'completed': 'success',
-          'running': 'processing',
-          'failed': 'error',
-          'pending': 'default',
-          'paused': 'default',
-          'retry': 'default'
-        };
-        const textMap = {
-          'pending': t('records.gitSyncStatusPending'),
-          'running': t('records.gitSyncStatusSyncing'),
-          'completed': t('records.gitSyncStatusSynced'),
-          'failed': t('records.gitSyncStatusFailed'),
-          'paused': t('records.gitSyncStatusPaused'),
-          'retry': t('records.gitSyncStatusRetry')
-        };
+        const config = getSyncStatusConfig(notionSyncStatus, t);
         return (
-          <Tag color={colorMap[safeNotionSyncStatus] || 'default'}>
-            {textMap[safeNotionSyncStatus] || safeNotionSyncStatus}
+          <Tag color={config.color}>
+            {config.text}
           </Tag>
         );
       }
@@ -482,7 +423,7 @@ const Records = () => {
       key: 'topic_tags',
       width: 150,
       render: (topicTags) => {
-        if (topicTags && Array.isArray(topicTags) && topicTags.length > 0) {
+        if (topicTags && topicTags.length > 0) {
           return (
             <div>
               {topicTags.slice(0, 2).map((tag, index) => (
@@ -507,15 +448,10 @@ const Records = () => {
       key: 'submit_time',
       width: 150,
       render: (time) => {
-        try {
-          if (!time) return <Text type="secondary">-</Text>;
-          const dayjsTime = dayjs(time);
-          if (!dayjsTime.isValid()) return <Text type="secondary">-</Text>;
-          return <Text type="secondary">{dayjsTime.format('YYYY-MM-DD HH:mm')}</Text>;
-        } catch (error) {
-          console.error('Error rendering submit_time:', error, time);
-          return <Text type="secondary">-</Text>;
-        }
+        if (!time) return <Text type="secondary">-</Text>;
+        const dayjsTime = dayjs(time);
+        if (!dayjsTime.isValid()) return <Text type="secondary">-</Text>;
+        return <Text type="secondary">{dayjsTime.format('YYYY-MM-DD HH:mm')}</Text>;
       },
       sorter: (a, b) => {
         const timeA = a.submit_time ? new Date(a.submit_time) : new Date(0);
@@ -623,7 +559,7 @@ const Records = () => {
                 </Button>
             }
           >
-            {/* 3. Always show filter form directly */}
+            {/* Filter form */}
             <Card
               size="small"
               style={{ marginBottom: 16, backgroundColor: '#fafafa' }}
@@ -736,9 +672,6 @@ const Records = () => {
               />
             )}
 
-            {/* LeetCode Configuration Status */}
-            {/* Removed LeetCode configuration status alert */}
-
             {(geminiConfig === null && configStatus) && (
               <Alert
                 message={t('records.geminiConfigRequired')}
@@ -820,9 +753,6 @@ const Records = () => {
       </Title>
 
       <Tabs items={items} />
-
-      {/* View Record Modal */}
-      {/* Removed Modal 相关代码 */}
     </div>
   );
 };

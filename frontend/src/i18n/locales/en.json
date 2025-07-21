@@ -40,7 +40,11 @@
     "errorDetails": "Error Details",
     "view": "View",
     "id": "ID",
-    "noData": "No Data"
+    "noData": "No Data",
+    "info": "Main Info",
+    "meta": "Meta",
+    "createdAt": "Created At",
+    "updatedAt": "Updated At"
   },
   "auth": {
     "login": "Login",
@@ -220,7 +224,12 @@
       "completed": "Completed",
       "pending": "Pending",
       "completionRate": "Completion Rate"
-    }
+    },
+    "notification": "Notification",
+    "notificationStatus": "Notification Status",
+    "notificationType": "Notification Type",
+    "notificationSent": "Notification Sent",
+    "notificationSentAt": "Notification Sent At"
   },
   "syncTasks": {
     "title": "Sync Tasks",

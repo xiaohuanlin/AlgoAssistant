@@ -203,8 +203,10 @@ AlgoAssistant/
 - `GET /api/notion/status` - Check connection status
 
 ### Review System
-- `GET /api/review/today` - Get today's review problems
-- `POST /api/review/update` - Update review status
+- `POST /api/review/` - Create review for wrong problem
+- `GET /api/review/` - Get all reviews
+- `GET /api/review/due` - Get due reviews
+- `POST /api/review/{review_id}/mark-reviewed` - Mark as reviewed
 
 ### Sync Tasks
 - `GET /api/sync-tasks` - Get sync tasks
@@ -309,23 +311,6 @@ docker-compose up -d
 | `GEMINI_API_KEY` | Gemini API key for AI analysis | No |
 | `NOTION_TOKEN` | Notion API token | No |
 | `NOTION_DATABASE_ID` | Notion database ID | No |
-
-## 🔄 Recent Updates
-
-### v2.0.0 - AI Analysis Enhancement
-- ✨ **Enhanced AI Analysis**: Comprehensive code analysis with Gemini AI
-- 📝 **Markdown Rendering**: Rich text formatting for analysis results
-- 🎨 **Improved UI**: Modern component design with better UX
-- 📱 **Responsive Design**: Mobile-friendly interface
-- 🔧 **Code Refactoring**: Modular component architecture
-- 🌐 **Internationalization**: Full English/Chinese support
-
-### Key Improvements
-- **AIAnalysisCard Component**: Dedicated component for AI analysis display
-- **Collapsible Sections**: Organized information with expandable panels
-- **Progress Indicators**: Visual representation of scores and confidence
-- **Color-coded Categories**: Visual distinction between different analysis types
-- **Left-aligned Layout**: Improved readability and consistency
 
 ## 🤝 Contributing
 

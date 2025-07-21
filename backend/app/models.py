@@ -4,6 +4,7 @@ from enum import Enum
 from sqlalchemy import (
     JSON,
     BigInteger,
+    Boolean,
     Column,
     DateTime,
     Float,
@@ -15,6 +16,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 
+from app.schemas.notification import NotificationConfig
 from app.schemas.record import LanguageType, OJType, SyncStatus, SyncTaskType
 
 from .database import Base
@@ -57,6 +59,7 @@ class UserConfig(Base):
     leetcode_config = Column(PydanticJSON(LeetCodeConfig), nullable=True)
     notion_config = Column(PydanticJSON(NotionConfig), nullable=True)
     gemini_config = Column(PydanticJSON(GeminiConfig), nullable=True)
+    notification_config = Column(PydanticJSON(NotificationConfig), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     user = relationship(
@@ -161,9 +164,6 @@ class SyncTask(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     paused_at = Column(DateTime, nullable=True)  # When task was paused
     resumed_at = Column(DateTime, nullable=True)  # When task was resumed
-    record_ids = Column(
-        JSON, nullable=True
-    )  # List of submission_ids for this sync task
     type = Column(String(32), nullable=False, default=SyncTaskType.GITHUB_SYNC.value)
 
     # Relationships
@@ -194,7 +194,7 @@ class Review(Base):
     __tablename__ = "reviews"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    record_id = Column(Integer, ForeignKey("records.id"), nullable=False)
+    problem_id = Column(Integer, ForeignKey("leetcode_problems.id"), nullable=False)
     wrong_reason = Column(Text, nullable=True)  # Why the problem was wrong
     review_plan = Column(Text, nullable=True)  # Review plan or notes
     next_review_date = Column(
@@ -205,7 +205,16 @@ class Review(Base):
         + timedelta(days=1),
     )  # Next review date based on memory curve
     review_count = Column(Integer, default=0)  # Number of times reviewed
+
+    # Notification related fields
+    notification_sent = Column(
+        Boolean, default=False
+    )  # Whether notification has been sent
+    notification_sent_at = Column(DateTime, nullable=True)  # When notification was sent
+    notification_type = Column(String(32), default="email")  # email, push, sms, etc.
+    notification_status = Column(String(32), default="pending")  # pending, sent, failed
+
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     user = relationship("User", backref="reviews")
-    record = relationship("Record", backref="reviews")
+    problem = relationship("LeetCodeProblem", backref="reviews")

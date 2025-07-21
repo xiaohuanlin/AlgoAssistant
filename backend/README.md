@@ -68,10 +68,10 @@ This document provides a quick overview of all API endpoints in the AlgoAssistan
 ### 4. Review System (4 endpoints)
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| POST | `/api/review/mark/{record_id}` | Mark as wrong | ✅ |
-| GET | `/api/review/list` | List reviews | ✅ |
+| POST | `/api/review/` | Create review for wrong problem | ✅ |
+| GET | `/api/review/` | List all reviews | ✅ |
 | GET | `/api/review/due` | Get due reviews | ✅ |
-| POST | `/api/review/{review_id}/complete` | Mark as reviewed | ✅ |
+| POST | `/api/review/{review_id}/mark-reviewed` | Mark as reviewed | ✅ |
 
 ### 5. Platform Integrations (3 endpoints)
 | Method | Endpoint | Description | Auth Required |

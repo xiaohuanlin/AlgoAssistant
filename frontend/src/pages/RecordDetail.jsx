@@ -23,7 +23,6 @@ import AIAnalysisCard from '../components/AIAnalysisCard';
 const { Title, Text, Link } = Typography;
 
 const getLanguageForHighlight = (language) => {
-  if (!language || typeof language !== 'string') return 'plaintext';
   const lower = language.toLowerCase();
   if (lower.includes('python')) return 'python';
   if (lower.includes('java')) return 'java';
@@ -36,9 +35,8 @@ const getLanguageForHighlight = (language) => {
   return 'plaintext';
 };
 
-// 状态颜色映射
+// Status color mapping
 const getStatusColor = (status) => {
-  if (!status) return 'default';
   const lowerStatus = status.toLowerCase();
   switch (lowerStatus) {
     case 'accepted':
@@ -71,9 +69,8 @@ const getStatusColor = (status) => {
   }
 };
 
-// 状态图标映射
+// Status icon mapping
 const getStatusIcon = (status) => {
-  if (!status) return null;
   const lowerStatus = status.toLowerCase();
   switch (lowerStatus) {
     case 'accepted':
@@ -100,9 +97,8 @@ const getStatusIcon = (status) => {
   }
 };
 
-// 获取状态翻译文本
+// Get status translation text
 const getStatusText = (status, t) => {
-  if (!status) return '-';
   const lowerStatus = status.toLowerCase();
   switch (lowerStatus) {
     case 'accepted':
@@ -171,7 +167,7 @@ const RecordDetail = () => {
 
   return (
     <div style={{ maxWidth: 1200, margin: '24px auto', padding: '0 24px' }}>
-      {/* 页面标题 */}
+      {/* Page title */}
       <div style={{ marginBottom: 24 }}>
         <Title level={2} style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
           <BookOutlined style={{ color: '#1890ff' }} />
@@ -181,9 +177,9 @@ const RecordDetail = () => {
       </div>
 
       <Row gutter={[24, 24]}>
-        {/* 左侧列 - 主要信息 */}
+        {/* Left column - Main information */}
         <Col xs={24} lg={16}>
-          {/* 问题信息卡片 */}
+          {/* Problem information card */}
           <Card
             title={
               <Space>
@@ -198,97 +194,101 @@ const RecordDetail = () => {
               <Col xs={24} sm={12}>
                 <div style={{ marginBottom: 12 }}>
                   <Text strong>{t('records.problemTitle')}：</Text>
-                  <div style={{ marginTop: 4 }}>
-                    <Link
-                      href={record.submission_url || '#'}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ color: '#1890ff', fontSize: '14px' }}
-                    >
-                      {record.problem_title}
-                    </Link>
-                  </div>
+                  <Link href={record.submission_url} target="_blank" rel="noopener noreferrer">
+                    {record.problem_title}
+                  </Link>
                 </div>
+              </Col>
+              <Col xs={24} sm={12}>
                 <div style={{ marginBottom: 12 }}>
                   <Text strong>{t('records.problemNumber')}：</Text>
-                  <Text code style={{ marginLeft: 8 }}>{record.problem_number || '-'}</Text>
+                  <Text code>{record.problem_number}</Text>
                 </div>
+              </Col>
+              <Col xs={24} sm={12}>
                 <div style={{ marginBottom: 12 }}>
                   <Text strong>{t('records.ojType')}：</Text>
-                  <Tag color="blue" style={{ marginLeft: 8 }}>{record.oj_type}</Tag>
+                  <Tag color="blue">{record.oj_type}</Tag>
                 </div>
               </Col>
               <Col xs={24} sm={12}>
                 <div style={{ marginBottom: 12 }}>
                   <Text strong>{t('records.language')}：</Text>
-                  <Tag color="purple" style={{ marginLeft: 8 }}>{record.language}</Tag>
+                  <Tag color="green">{record.language}</Tag>
                 </div>
+              </Col>
+              <Col xs={24} sm={12}>
                 <div style={{ marginBottom: 12 }}>
                   <Text strong>{t('records.submitTime')}：</Text>
-                  <Text style={{ marginLeft: 8, fontFamily: 'monospace' }}>
-                    {record.submit_time ? dayjs(record.submit_time).format('YYYY-MM-DD HH:mm') : '-'}
-                  </Text>
+                  <Text>{dayjs(record.submit_time).format('YYYY-MM-DD HH:mm:ss')}</Text>
                 </div>
+              </Col>
+              <Col xs={24} sm={12}>
                 <div style={{ marginBottom: 12 }}>
-                  <Text strong>{t('records.submissionId')}：</Text>
-                  <Text code style={{ marginLeft: 8 }}>{record.submission_id || '-'}</Text>
+                  <Text strong>{t('records.executionResult')}：</Text>
+                  <Tag
+                    color={getStatusColor(record.execution_result)}
+                    icon={getStatusIcon(record.execution_result)}
+                  >
+                    {getStatusText(record.execution_result, t)}
+                  </Tag>
                 </div>
               </Col>
             </Row>
           </Card>
 
-          {/* 判题信息卡片 */}
+          {/* Judging information card */}
           <Card
             title={
               <Space>
                 <CheckCircleOutlined style={{ color: '#52c41a' }} />
-                {t('records.judgeInfo')}
+                {t('records.judgingInfo')}
               </Space>
             }
             style={{ marginBottom: 24 }}
             size="small"
           >
             <Row gutter={[16, 16]}>
-              <Col xs={24} sm={12}>
+              <Col xs={24} sm={8}>
                 <div style={{ marginBottom: 12 }}>
-                  <Text strong>{t('records.status')}：</Text>
-                  <div style={{ marginTop: 4 }}>
-                    <Tag
-                      color={getStatusColor(record.execution_result)}
-                      icon={getStatusIcon(record.execution_result)}
-                      style={{ fontSize: '12px', padding: '4px 8px' }}
-                    >
-                      {getStatusText(record.execution_result, t)}
-                    </Tag>
-                  </div>
-                </div>
-                <div style={{ marginBottom: 12 }}>
-                  <Text strong>{t('records.totalTestcases')}：</Text>
-                  <Text style={{ marginLeft: 8, fontFamily: 'monospace' }}>{record.total_testcases ?? '-'}</Text>
+                  <Text strong>{t('records.runtime')}：</Text>
+                  <Text>{record.runtime || '-'}</Text>
                 </div>
               </Col>
-              <Col xs={24} sm={12}>
+              <Col xs={24} sm={8}>
+                <div style={{ marginBottom: 12 }}>
+                  <Text strong>{t('records.memory')}：</Text>
+                  <Text>{record.memory || '-'}</Text>
+                </div>
+              </Col>
+              <Col xs={24} sm={8}>
+                <div style={{ marginBottom: 12 }}>
+                  <Text strong>{t('records.runtimePercentile')}：</Text>
+                  <Text>{record.runtime_percentile ? `${record.runtime_percentile}%` : '-'}</Text>
+                </div>
+              </Col>
+              <Col xs={24} sm={8}>
+                <div style={{ marginBottom: 12 }}>
+                  <Text strong>{t('records.memoryPercentile')}：</Text>
+                  <Text>{record.memory_percentile ? `${record.memory_percentile}%` : '-'}</Text>
+                </div>
+              </Col>
+              <Col xs={24} sm={8}>
                 <div style={{ marginBottom: 12 }}>
                   <Text strong>{t('records.totalCorrect')}：</Text>
-                  <Text style={{ marginLeft: 8, fontFamily: 'monospace' }}>{record.total_correct ?? '-'}</Text>
+                  <Text>{record.total_correct || '-'}</Text>
                 </div>
-                {record.runtime && (
-                  <div style={{ marginBottom: 12 }}>
-                    <Text strong>{t('records.runtime')}：</Text>
-                    <Text style={{ marginLeft: 8, fontFamily: 'monospace' }}>{record.runtime}ms</Text>
-                  </div>
-                )}
-                {record.memory && (
-                  <div style={{ marginBottom: 12 }}>
-                    <Text strong>{t('records.memory')}：</Text>
-                    <Text style={{ marginLeft: 8, fontFamily: 'monospace' }}>{record.memory}MB</Text>
-                  </div>
-                )}
+              </Col>
+              <Col xs={24} sm={8}>
+                <div style={{ marginBottom: 12 }}>
+                  <Text strong>{t('records.totalTestcases')}：</Text>
+                  <Text>{record.total_testcases || '-'}</Text>
+                </div>
               </Col>
             </Row>
           </Card>
 
-          {/* 代码卡片 */}
+          {/* Code card */}
           <Card
             title={
               <Space>
@@ -299,169 +299,158 @@ const RecordDetail = () => {
             style={{ marginBottom: 24 }}
             size="small"
           >
-            <div style={{
-              borderRadius: 6,
-              overflow: 'hidden',
-              background: '#000000',
-              border: '1px solid #333333'
-            }}>
-              <SyntaxHighlighter
-                language={getLanguageForHighlight(record.language)}
-                style={tomorrow}
-                customStyle={{
-                  margin: 0,
-                  fontSize: 13,
-                  lineHeight: 1.5,
-                  background: 'transparent'
-                }}
-              >
-                {record.code || ''}
-              </SyntaxHighlighter>
-            </div>
+            <SyntaxHighlighter
+              language={getLanguageForHighlight(record.language)}
+              style={tomorrow}
+              customStyle={{
+                margin: 0,
+                borderRadius: 6,
+                fontSize: '14px',
+                lineHeight: '1.5'
+              }}
+            >
+              {record.code || t('records.noCode')}
+            </SyntaxHighlighter>
           </Card>
 
-          {/* AI分析卡片 */}
+          {/* AI Analysis card */}
           {record.ai_analysis && (
-            <AIAnalysisCard aiAnalysis={record.ai_analysis} />
+            <AIAnalysisCard analysis={record.ai_analysis} />
           )}
         </Col>
 
-        {/* 右侧列 - 同步状态和其他信息 */}
+        {/* Right column - Sync status and other information */}
         <Col xs={24} lg={8}>
-          {/* 同步状态卡片 */}
+          {/* Sync status card */}
           <Card
             title={
               <Space>
                 <SyncOutlined style={{ color: '#fa8c16' }} />
-                {t('records.syncInfo')}
+                {t('records.syncStatus')}
               </Space>
             }
             style={{ marginBottom: 24 }}
             size="small"
           >
-            <Space direction="vertical" style={{ width: '100%' }} size="middle">
-              <div>
-                <Text strong>{t('records.ojSyncStatus')}：</Text>
-                <div style={{ marginTop: 4 }}>
+            <Row gutter={[16, 16]}>
+              <Col span={24}>
+                <div style={{ marginBottom: 12 }}>
+                  <Text strong>{t('records.ojSyncStatus')}：</Text>
                   <Tag
                     color={getStatusColor(record.oj_sync_status)}
                     icon={getStatusIcon(record.oj_sync_status)}
-                    style={{ fontSize: '12px', padding: '4px 8px' }}
                   >
                     {getStatusText(record.oj_sync_status, t)}
                   </Tag>
                 </div>
-              </div>
-
-              <div>
-                <Text strong>{t('records.githubSyncStatus')}：</Text>
-                <div style={{ marginTop: 4 }}>
+              </Col>
+              <Col span={24}>
+                <div style={{ marginBottom: 12 }}>
+                  <Text strong>{t('records.githubSyncStatus')}：</Text>
                   <Tag
                     color={getStatusColor(record.github_sync_status)}
                     icon={getStatusIcon(record.github_sync_status)}
-                    style={{ fontSize: '12px', padding: '4px 8px' }}
                   >
                     {getStatusText(record.github_sync_status, t)}
                   </Tag>
                 </div>
-              </div>
-
-              <div>
-                <Text strong>{t('records.aiSyncStatus')}：</Text>
-                <div style={{ marginTop: 4 }}>
+              </Col>
+              <Col span={24}>
+                <div style={{ marginBottom: 12 }}>
+                  <Text strong>{t('records.aiSyncStatus')}：</Text>
                   <Tag
                     color={getStatusColor(record.ai_sync_status)}
                     icon={getStatusIcon(record.ai_sync_status)}
-                    style={{ fontSize: '12px', padding: '4px 8px' }}
                   >
-                    {record.ai_sync_status ? getStatusText(record.ai_sync_status, t) : t('records.notAnalyzed')}
+                    {getStatusText(record.ai_sync_status, t)}
                   </Tag>
                 </div>
-              </div>
-
-              {record.git_file_path && (
-                <div>
-                  <Text strong>{t('records.gitFilePath')}：</Text>
-                  <div style={{ marginTop: 4 }}>
-                    <Text code style={{ fontSize: '12px', wordBreak: 'break-all' }}>
-                      {record.git_file_path}
-                    </Text>
-                  </div>
+              </Col>
+              <Col span={24}>
+                <div style={{ marginBottom: 12 }}>
+                  <Text strong>{t('records.notionSyncStatus')}：</Text>
+                  <Tag
+                    color={getStatusColor(record.notion_sync_status)}
+                    icon={getStatusIcon(record.notion_sync_status)}
+                  >
+                    {getStatusText(record.notion_sync_status, t)}
+                  </Tag>
                 </div>
-              )}
-            </Space>
+              </Col>
+            </Row>
           </Card>
 
-          {/* 其他信息卡片 */}
+          {/* Other information card */}
           <Card
             title={
               <Space>
-                <FileTextOutlined style={{ color: '#52c41a' }} />
+                <FileTextOutlined style={{ color: '#13c2c2' }} />
                 {t('records.otherInfo')}
               </Space>
             }
             style={{ marginBottom: 24 }}
             size="small"
           >
-            <Space direction="vertical" style={{ width: '100%' }} size="middle">
-              {record.notion_url && (
-                <div>
+            <Row gutter={[16, 16]}>
+              <Col span={24}>
+                <div style={{ marginBottom: 12 }}>
+                  <Text strong>{t('records.submissionUrl')}：</Text>
+                  {record.submission_url ? (
+                    <Link href={record.submission_url} target="_blank" rel="noopener noreferrer">
+                      <LinkOutlined /> {t('records.viewSubmission')}
+                    </Link>
+                  ) : (
+                    <Text type="secondary">-</Text>
+                  )}
+                </div>
+              </Col>
+              <Col span={24}>
+                <div style={{ marginBottom: 12 }}>
+                  <Text strong>{t('records.gitFilePath')}：</Text>
+                  {record.git_file_path ? (
+                    <Link href={record.git_file_path} target="_blank" rel="noopener noreferrer">
+                      <CloudOutlined /> {t('records.viewInGit')}
+                    </Link>
+                  ) : (
+                    <Text type="secondary">-</Text>
+                  )}
+                </div>
+              </Col>
+              <Col span={24}>
+                <div style={{ marginBottom: 12 }}>
                   <Text strong>{t('records.notionUrl')}：</Text>
-                  <div style={{ marginTop: 4 }}>
-                    <Link
-                      href={record.notion_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ color: '#1890ff', fontSize: '12px' }}
-                    >
+                  {record.notion_url ? (
+                    <Link href={record.notion_url} target="_blank" rel="noopener noreferrer">
                       <LinkOutlined /> {t('records.viewInNotion')}
                     </Link>
-                  </div>
+                  ) : (
+                    <Text type="secondary">-</Text>
+                  )}
                 </div>
-              )}
-
-              <div>
-                <Text strong>{t('records.createdAt')}：</Text>
-                <div style={{ marginTop: 4 }}>
-                  <Text style={{ fontSize: '12px', fontFamily: 'monospace' }}>
-                    {record.created_at ? dayjs(record.created_at).format('YYYY-MM-DD HH:mm') : '-'}
-                  </Text>
-                </div>
-              </div>
-
-              <div>
-                <Text strong>{t('records.updatedAt')}：</Text>
-                <div style={{ marginTop: 4 }}>
-                  <Text style={{ fontSize: '12px', fontFamily: 'monospace' }}>
-                    {record.updated_at ? dayjs(record.updated_at).format('YYYY-MM-DD HH:mm') : '-'}
-                  </Text>
-                </div>
-              </div>
-            </Space>
+              </Col>
+            </Row>
           </Card>
 
-          {/* 主题标签卡片 */}
-          <Card
-            title={
-              <Space>
-                <CloudOutlined style={{ color: '#1890ff' }} />
-                {t('records.topicTags')}
-              </Space>
-            }
-            size="small"
-          >
-            {record.topic_tags && Array.isArray(record.topic_tags) && record.topic_tags.length > 0 ? (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {record.topic_tags.map((tag, idx) => (
-                  <Tag key={idx} color="blue" style={{ margin: 0, fontSize: '12px' }}>
+          {/* Topic tags card */}
+          {record.topic_tags && record.topic_tags.length > 0 && (
+            <Card
+              title={
+                <Space>
+                  <BookOutlined style={{ color: '#1890ff' }} />
+                  {t('records.topicTags')}
+                </Space>
+              }
+              size="small"
+            >
+              <div>
+                {record.topic_tags.map((tag, index) => (
+                  <Tag key={index} color="blue" style={{ marginBottom: 8 }}>
                     {tag}
                   </Tag>
                 ))}
               </div>
-            ) : (
-              <Text type="secondary" style={{ fontSize: '12px' }}>-</Text>
-            )}
-          </Card>
+            </Card>
+          )}
         </Col>
       </Row>
     </div>

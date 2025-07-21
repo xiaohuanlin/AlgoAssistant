@@ -67,8 +67,8 @@ const AIAnalysis = () => {
 
   useEffect(() => {
     loadData();
-    // 设置定时刷新
-    const interval = setInterval(loadData, 10000); // 每10秒刷新一次
+    // Set up auto-refresh
+    const interval = setInterval(loadData, 10000); // Refresh every 10 seconds
     return () => clearInterval(interval);
   }, [loadData]);
 
@@ -249,7 +249,7 @@ const AIAnalysis = () => {
     },
   ];
 
-  // 只展示后端 schema 字段的 recordColumns
+  // Record columns showing only backend schema fields
   const recordColumns = [
     {
       title: t('records.problem'),

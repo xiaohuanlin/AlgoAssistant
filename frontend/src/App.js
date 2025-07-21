@@ -9,11 +9,13 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Records from './pages/Records';
 import Review from './pages/Review';
+import ReviewDetail from './pages/ReviewDetail';
 import SyncTasks from './pages/SyncTasks';
 import AIAnalysis from './pages/AIAnalysis';
 import Settings from './pages/Settings';
 import PrivateRoute from './components/PrivateRoute';
 import { GitSyncProvider } from './contexts/GitSyncContext';
+import { ConfigProvider as AppConfigProvider } from './contexts/ConfigContext';
 import './i18n';
 import './styles/App.css';
 import GeminiIntegration from './pages/GeminiIntegration';
@@ -39,9 +41,11 @@ function App() {
                 path="/"
                 element={
                   <PrivateRoute>
-                    <Layout>
-                      <Dashboard />
-                    </Layout>
+                    <AppConfigProvider>
+                      <Layout>
+                        <Dashboard />
+                      </Layout>
+                    </AppConfigProvider>
                   </PrivateRoute>
                 }
               />
@@ -49,9 +53,11 @@ function App() {
                 path="/records"
                 element={
                   <PrivateRoute>
-                    <Layout>
-                      <Records />
-                    </Layout>
+                    <AppConfigProvider>
+                      <Layout>
+                        <Records />
+                      </Layout>
+                    </AppConfigProvider>
                   </PrivateRoute>
                 }
               />
@@ -59,9 +65,11 @@ function App() {
                 path="/records/:id"
                 element={
                   <PrivateRoute>
-                    <Layout>
-                      <RecordDetail />
-                    </Layout>
+                    <AppConfigProvider>
+                      <Layout>
+                        <RecordDetail />
+                      </Layout>
+                    </AppConfigProvider>
                   </PrivateRoute>
                 }
               />
@@ -69,9 +77,23 @@ function App() {
                 path="/review"
                 element={
                   <PrivateRoute>
-                    <Layout>
-                      <Review />
-                    </Layout>
+                    <AppConfigProvider>
+                      <Layout>
+                        <Review />
+                      </Layout>
+                    </AppConfigProvider>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/review/:id"
+                element={
+                  <PrivateRoute>
+                    <AppConfigProvider>
+                      <Layout>
+                        <ReviewDetail />
+                      </Layout>
+                    </AppConfigProvider>
                   </PrivateRoute>
                 }
               />
@@ -79,9 +101,11 @@ function App() {
                 path="/sync-tasks"
                 element={
                   <PrivateRoute>
-                    <Layout>
-                      <SyncTasks />
-                    </Layout>
+                    <AppConfigProvider>
+                      <Layout>
+                        <SyncTasks />
+                      </Layout>
+                    </AppConfigProvider>
                   </PrivateRoute>
                 }
               />
@@ -89,9 +113,11 @@ function App() {
                 path="/ai-analysis"
                 element={
                   <PrivateRoute>
-                    <Layout>
-                      <AIAnalysis />
-                    </Layout>
+                    <AppConfigProvider>
+                      <Layout>
+                        <AIAnalysis />
+                      </Layout>
+                    </AppConfigProvider>
                   </PrivateRoute>
                 }
               />
@@ -99,19 +125,23 @@ function App() {
                 path="/settings"
                 element={
                   <PrivateRoute>
-                    <Layout>
-                      <Settings />
-                    </Layout>
+                    <AppConfigProvider>
+                      <Layout>
+                        <Settings />
+                      </Layout>
+                    </AppConfigProvider>
                   </PrivateRoute>
                 }
               />
               <Route
-                path="/gemini"
+                path="/gemini-integration"
                 element={
                   <PrivateRoute>
-                    <Layout>
-                      <GeminiIntegration />
-                    </Layout>
+                    <AppConfigProvider>
+                      <Layout>
+                        <GeminiIntegration />
+                      </Layout>
+                    </AppConfigProvider>
                   </PrivateRoute>
                 }
               />

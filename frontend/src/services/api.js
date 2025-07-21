@@ -68,12 +68,17 @@ export const API_ENDPOINTS = {
 
   // Review System
   REVIEW: {
-    MARK_WRONG: (recordId) => `/api/review/mark/${recordId}`,
-    LIST: '/api/review/list',
+    LIST: '/api/review/',
+    FILTER: '/api/review/filter',
     DUE: '/api/review/due',
     DUE_REVIEWS: '/api/review/due',
-    MARK_REVIEWED: (reviewId) => `/api/review/${reviewId}/complete`,
-    COMPLETE: (reviewId) => `/api/review/${reviewId}/complete`,
+    CREATE: '/api/review/',
+    DETAIL: (reviewId) => `/api/review/${reviewId}`,
+    UPDATE: (reviewId) => `/api/review/${reviewId}`,
+    MARK_REVIEWED: (reviewId) => `/api/review/${reviewId}/mark-reviewed`,
+    BATCH_MARK_REVIEWED: '/api/review/batch-mark-reviewed',
+    BATCH_DELETE: '/api/review/batch-delete',
+    BATCH_UPDATE: '/api/review/batch-update',
   },
 
   // Platform Integrations
