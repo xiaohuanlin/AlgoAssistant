@@ -108,10 +108,10 @@ const GitHubIntegrationModal = ({ visible, onCancel, onSuccess, initialValues })
     setTesting(true);
     try {
       const response = await gitSyncService.testGitConnection(values);
-      if (response.status === 'success') {
+      if (response.connected) {
         message.success(t('git.connectionSuccess'));
       } else {
-        message.error(t('git.connectionFailed') + ': ' + response.message);
+        message.error(t('git.connectionFailed') + ': ' + (response.message || ''));
       }
     } catch (error) {
       message.error(t('git.connectionError') + ': ' + error.message);

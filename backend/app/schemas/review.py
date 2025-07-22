@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 
 class ReviewBase(BaseModel):
-    problem_id: int = Field(..., description="LeetCode problem id")
+    problem_id: int = Field(..., description="Problem id")
     wrong_reason: Optional[str] = Field(None, description="Why the problem was wrong")
     review_plan: Optional[str] = Field(None, description="Review plan or notes")
     next_review_date: Optional[datetime] = Field(
@@ -42,6 +42,8 @@ class ReviewUpdate(BaseModel):
 class ReviewOut(ReviewBase):
     id: int
     user_id: int
+    problem_id: int
+    problem_title: Optional[str] = Field(None, description="Title of the problem")
     notification_sent: bool
     notification_sent_at: Optional[datetime]
     notification_type: str
@@ -51,6 +53,7 @@ class ReviewOut(ReviewBase):
 
     class Config:
         orm_mode = True
+        from_attributes = True
 
 
 class ReviewFilter(BaseModel):

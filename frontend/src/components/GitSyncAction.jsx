@@ -37,36 +37,27 @@ const GitSyncAction = ({ record, onSync, disabled }) => {
     }
   };
 
-  // If already synced, show button to jump to repo
-  if (record?.git_sync_status === 'synced' && record?.git_file_path) {
+  if (record?.github_sync_status === 'completed') {
     return (
-      <Tooltip title={t('git.viewRepo')}>
+      <Tooltip title={t('git.synced')}>
         <Button
-          type="link"
+          type="default"
           size="small"
-          href={record.git_file_path}
-          target="_blank"
-          rel="noopener noreferrer"
           icon={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
+          disabled
           style={{ padding: '4px 8px', height: 'auto', lineHeight: '1.2' }}
-          disabled={disabled}
         >
-          {t('git.viewRepo')}
+          {t('git.synced')}
         </Button>
       </Tooltip>
     );
-  }
-
-  // If already synced, do not show button
-  if (record?.git_sync_status === 'synced') {
-    return null;
   }
 
   // If config check is not finished, show loading state
   if (configLoading) {
     return (
       <Button
-        type="text"
+        type="default"
         size="small"
         disabled
         icon={<SyncOutlined spin />}
@@ -87,7 +78,7 @@ const GitSyncAction = ({ record, onSync, disabled }) => {
     return (
       <Tooltip title={t('git.configRequired')}>
         <Button
-          type="text"
+          type="default"
           size="small"
           disabled
           icon={<SyncOutlined />}
@@ -138,17 +129,17 @@ const GitSyncAction = ({ record, onSync, disabled }) => {
     }
   };
 
-  const isDisabled = disabled || record?.git_sync_status === 'syncing';
+  const isDisabled = disabled || record?.github_sync_status === 'syncing';
 
   return (
-    <Tooltip title={getSyncStatusTooltip(record?.git_sync_status)}>
+    <Tooltip title={getSyncStatusTooltip(record?.github_sync_status)}>
       <Button
-        type="text"
+        type="default"
         size="small"
         loading={loading}
         disabled={isDisabled}
         onClick={handleSync}
-        icon={getSyncStatusIcon(record?.git_sync_status)}
+        icon={getSyncStatusIcon(record?.github_sync_status)}
         style={{
           padding: '4px 8px',
           height: 'auto',
@@ -156,7 +147,7 @@ const GitSyncAction = ({ record, onSync, disabled }) => {
           color: disabled ? '#999' : undefined
         }}
       >
-        {getSyncStatusText(record?.git_sync_status)}
+        {getSyncStatusText(record?.github_sync_status)}
       </Button>
     </Tooltip>
   );

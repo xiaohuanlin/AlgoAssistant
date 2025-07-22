@@ -108,7 +108,7 @@ class ReviewService {
    */
   async markAsReviewed(reviewId) {
     try {
-      const response = await api.put(API_ENDPOINTS.REVIEW.MARK_REVIEWED(reviewId));
+      const response = await api.post(API_ENDPOINTS.REVIEW.MARK_REVIEWED(reviewId));
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -165,8 +165,11 @@ class ReviewService {
    */
   async updateReview(reviewId, reviewData) {
     try {
-      const response = await api.put(`/api/review/${reviewId}`, reviewData);
-      return handleApiSuccess(response);
+      const response = await api.post(API_ENDPOINTS.REVIEW.BATCH_UPDATE, {
+        ids: [reviewId],
+        update: reviewData
+      });
+      return handleApiSuccess(response)[0];
     } catch (error) {
       throw new Error(handleApiError(error));
     }
@@ -193,6 +196,20 @@ class ReviewService {
         pending: pendingCount,
         completionRate: totalReviews > 0 ? Math.round((completedCount / totalReviews) * 100) : 0,
       };
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
+
+  /**
+   * Get review statistics from backend
+   * @param {number} days - Number of days for trend analysis
+   * @returns {Promise<Object>} Review statistics
+   */
+  async getStats(days = 7) {
+    try {
+      const response = await api.get(API_ENDPOINTS.REVIEW.STATS, { params: { days } });
+      return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
     }

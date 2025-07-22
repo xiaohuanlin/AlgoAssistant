@@ -1,19 +1,9 @@
 from datetime import datetime, timedelta
 from enum import Enum
 
-from sqlalchemy import (
-    JSON,
-    BigInteger,
-    Boolean,
-    Column,
-    DateTime,
-    Float,
-    ForeignKey,
-    Integer,
-    String,
-    Table,
-    Text,
-)
+from sqlalchemy import JSON, BigInteger, Boolean, Column, DateTime
+from sqlalchemy import Enum as SqlEnum
+from sqlalchemy import Float, ForeignKey, Integer, String, Table, Text, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from app.schemas.notification import NotificationConfig
@@ -67,21 +57,6 @@ class UserConfig(Base):
     )
 
 
-class LeetCodeProblem(Base):
-    """Model for LeetCode problems."""
-
-    __tablename__ = "leetcode_problems"
-
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String(255), nullable=False)
-    title_slug = Column(String(255), nullable=False, unique=True, index=True)
-    content = Column(Text, nullable=True)  # Problem description
-    difficulty = Column(String(20), nullable=True)  # Easy, Medium, Hard
-    topic_tags = Column(JSON, nullable=True)  # Array of topic tags
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-
 class Record(Base):
     """Model for problem solving records."""
 
@@ -91,8 +66,8 @@ class Record(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     problem_id = Column(
-        Integer, ForeignKey("leetcode_problems.id"), nullable=True
-    )  # Reference to LeetCode problem
+        Integer, ForeignKey("problems.id"), nullable=True
+    )  # Reference to Problem
 
     # Basic submission information
     oj_type = Column(String(32), default=OJType.leetcode.value)
@@ -135,7 +110,7 @@ class Record(Base):
     # Relationships
     user = relationship("User", backref="records", cascade="none", passive_updates=True)
     problem = relationship(
-        "LeetCodeProblem", backref="records", cascade="none", passive_updates=True
+        "Problem", backref="records", cascade="none", passive_updates=True
     )
     tags = relationship(
         "Tag",
@@ -192,9 +167,12 @@ class Tag(Base):
 
 class Review(Base):
     __tablename__ = "reviews"
+    __table_args__ = (
+        UniqueConstraint("user_id", "problem_id", name="uq_user_problem"),
+    )
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    problem_id = Column(Integer, ForeignKey("leetcode_problems.id"), nullable=False)
+    problem_id = Column(Integer, ForeignKey("problems.id"), nullable=False)
     wrong_reason = Column(Text, nullable=True)  # Why the problem was wrong
     review_plan = Column(Text, nullable=True)  # Review plan or notes
     next_review_date = Column(
@@ -217,4 +195,26 @@ class Review(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     user = relationship("User", backref="reviews")
-    problem = relationship("LeetCodeProblem", backref="reviews")
+    problem = relationship("Problem", backref="reviews")
+
+
+class ProblemSource(Enum):
+    leetcode = "leetcode"
+    custom = "custom"
+
+
+class Problem(Base):
+    __tablename__ = "problems"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    source = Column(
+        SqlEnum(ProblemSource), nullable=False, default=ProblemSource.custom
+    )
+    source_id = Column(String(64), nullable=True)
+    title = Column(String(256), nullable=False)
+    title_slug = Column(String(256), nullable=True)
+    difficulty = Column(String(16), nullable=True)
+    tags = Column(JSON, nullable=True)  # e.g. ["array", "dp"]
+    description = Column(Text, nullable=True)
+    url = Column(String(512), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

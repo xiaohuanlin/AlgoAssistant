@@ -84,6 +84,7 @@ class RecordCreate(BaseModel):
     ai_analysis: Optional[GeminiAIAnalysisSchema] = Field(
         None, description="The analysis of the solution"
     )
+    # The following fields are only allowed to be written by sync tasks, not by user manual creation
     oj_sync_status: SyncStatus = Field(
         default=SyncStatus.PENDING, description="The status of the OJ synchronization"
     )
@@ -109,6 +110,9 @@ class RecordCreate(BaseModel):
     git_file_path: Optional[str] = Field(
         None, description="The path of the solution in the git repository"
     )
+
+    class Config:
+        orm_mode = True
 
 
 class RecordListOut(BaseModel):
@@ -168,25 +172,27 @@ class RecordDetailOut(BaseModel):
     submit_time: datetime = Field(
         ..., description="The time when the solution was submitted"
     )
-    runtime: str = Field(
-        ..., description="The runtime of the solution, e.g., 100ms, 1s, etc."
+    runtime: Optional[str] = Field(
+        None, description="The runtime of the solution, e.g., 100ms, 1s, etc."
     )
-    memory: str = Field(
+    memory: Optional[str] = Field(
         ..., description="The memory of the solution, e.g., 100MB, 1GB, etc."
     )
-    runtime_percentile: float = Field(
+    runtime_percentile: Optional[float] = Field(
         ..., description="The runtime percentile of the solution, e.g., 50%, 90%, etc."
     )
-    memory_percentile: float = Field(
-        ..., description="The memory percentile of the solution, e.g., 50%, 90%, etc."
+    memory_percentile: Optional[float] = Field(
+        None, description="The memory percentile of the solution, e.g., 50%, 90%, etc."
     )
-    total_correct: int = Field(
-        ..., description="The total number of correct submissions"
+    total_correct: Optional[int] = Field(
+        None, description="The total number of correct submissions"
     )
-    total_testcases: int = Field(..., description="The total number of test cases")
-    topic_tags: List[str] = Field(..., description="The tags of the problem")
-    ai_analysis: GeminiAIAnalysisSchema = Field(
-        ..., description="The analysis of the solution"
+    total_testcases: Optional[int] = Field(
+        None, description="The total number of test cases"
+    )
+    topic_tags: Optional[List[str]] = Field(None, description="The tags of the problem")
+    ai_analysis: Optional[GeminiAIAnalysisSchema] = Field(
+        None, description="The analysis of the solution"
     )
     oj_sync_status: SyncStatus = Field(
         ..., description="The status of the OJ synchronization"
@@ -464,3 +470,43 @@ class TagWikiUpdateRequest(BaseModel):
         max_length=2000,
         description="New wiki content for the tag. Should include concept explanation, implementation details, and common use cases. Supports markdown formatting.",
     )
+
+
+class RecordManualCreate(BaseModel):
+    """Schema for manual creation of a problem record by user. Only allowed fields are exposed."""
+
+    problem_id: int = Field(..., description="The ID of the problem")
+    oj_type: str = Field(..., description="The type of the online judge platform")
+    execution_result: str = Field(
+        ...,
+        description="The result of the solution, e.g., Accepted, Wrong Answer, Time Limit Exceeded, etc.",
+    )
+    language: str = Field(
+        ..., description="The language of the solution, e.g., Python, Java, C++, etc."
+    )
+    code: Optional[str] = Field(None, description="The code of the solution")
+    submit_time: datetime = Field(
+        ..., description="The time when the solution was submitted"
+    )
+    runtime: Optional[str] = Field(
+        None, description="The runtime of the solution, e.g., 100ms, 1s, etc."
+    )
+    memory: Optional[str] = Field(
+        None, description="The memory of the solution, e.g., 100MB, 1GB, etc."
+    )
+    runtime_percentile: Optional[float] = Field(
+        None, description="The runtime percentile of the solution, e.g., 50%, 90%, etc."
+    )
+    memory_percentile: Optional[float] = Field(
+        None, description="The memory percentile of the solution, e.g., 50%, 90%, etc."
+    )
+    total_correct: Optional[int] = Field(
+        None, description="The total number of correct submissions"
+    )
+    total_testcases: Optional[int] = Field(
+        None, description="The total number of test cases"
+    )
+    topic_tags: Optional[List[str]] = Field(None, description="The tags of the problem")
+
+    class Config:
+        orm_mode = True

@@ -28,26 +28,27 @@ import { FilterOutlined, ClearOutlined } from '@ant-design/icons';
 import reviewService from '../services/reviewService';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
+import { Line } from '@ant-design/charts';
+import { Segmented } from 'antd';
 
 const { TextArea } = Input;
 
-const notificationTypeOptions = [
-  { label: 'Email', value: 'email' },
-  { label: 'Push', value: 'push' },
-  { label: 'SMS', value: 'sms' },
-];
-
-const notificationStatusOptions = [
-  { label: 'Pending', value: 'pending' },
-  { label: 'Sent', value: 'sent' },
-  { label: 'Failed', value: 'failed' },
-];
-
 const Review = () => {
   const { t } = useTranslation();
+  const notificationTypeOptions = [
+    { label: t('review.type.email', 'Email'), value: 'email' },
+    { label: t('review.type.push', 'Push'), value: 'push' },
+    { label: t('review.type.sms', 'SMS'), value: 'sms' },
+  ];
+  const notificationStatusOptions = [
+    { label: t('review.status.pending', 'Pending to Send'), value: 'pending' },
+    { label: t('review.status.sent', 'Sent'), value: 'sent' },
+    { label: t('review.status.failed', 'Failed'), value: 'failed' },
+  ];
   const [reviews, setReviews] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(false);
+  const [trendLoading, setTrendLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingReview, setEditingReview] = useState(null);
   const [form] = Form.useForm();
@@ -56,11 +57,13 @@ const Review = () => {
   const [filters, setFilters] = useState({});
   const [sorter, setSorter] = useState({ field: 'created_at', order: 'descend' });
   const [filterForm] = Form.useForm();
+  const [trendDays, setTrendDays] = useState(14);
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const fetchReviews = React.useCallback(async (params = {}) => {
     setLoading(true);
     try {
-      const { total, items } = await reviewService.getReviews({
+      const { total, items } = await reviewService.filterReviews({
         limit: params.pageSize || pagination.pageSize,
         offset: ((params.current || pagination.current) - 1) * (params.pageSize || pagination.pageSize),
         sort_by: params.sortField || sorter.field,
@@ -74,6 +77,21 @@ const Review = () => {
     }
   }, [pagination.current, pagination.pageSize, sorter.field, sorter.order, filters]);
 
+  // Fetch stats and trend
+  const fetchStats = React.useCallback(async (days = trendDays) => {
+    setTrendLoading(true);
+    try {
+      const data = await reviewService.getStats(days);
+      setStats(data);
+    } finally {
+      setTrendLoading(false);
+    }
+  }, [trendDays]);
+
+  useEffect(() => {
+    fetchStats(trendDays);
+  }, [fetchStats, trendDays]);
+
   useEffect(() => {
     fetchReviews();
   }, [fetchReviews]);
@@ -81,10 +99,10 @@ const Review = () => {
   const handleMarkAsReviewed = async (reviewId) => {
     try {
       await reviewService.markAsReviewed(reviewId);
-      message.success(t('review.markAsReviewedSuccess', 'Review completed!'));
+      message.success(t('review.markAsReviewedSuccess'));
       fetchReviews();
     } catch (error) {
-      message.error(t('review.markAsReviewedError', 'Failed to mark review as completed: ') + error.message);
+      message.error(t('review.markAsReviewedError') + error.message);
     }
   };
 
@@ -107,13 +125,13 @@ const Review = () => {
         ...values,
         next_review_date: values.next_review_date ? values.next_review_date.toISOString() : undefined,
       });
-      message.success(t('review.updateReviewSuccess', 'Review record updated successfully!'));
+      message.success(t('review.updateReviewSuccess'));
       setModalVisible(false);
       setEditingReview(null);
       form.resetFields();
       fetchReviews();
     } catch (error) {
-      message.error(t('review.updateReviewError', 'Failed to update review record: ') + error.message);
+      message.error(t('review.updateReviewError') + error.message);
     }
   };
 
@@ -127,12 +145,16 @@ const Review = () => {
     await reviewService.batchMarkReviewed(selectedRowKeys);
     setSelectedRowKeys([]);
     fetchReviews();
+    fetchStats(trendDays);
+    message.success(t('review.batchMarkReviewedSuccess'));
   };
 
   const handleBatchDelete = async () => {
     await reviewService.batchDelete(selectedRowKeys);
     setSelectedRowKeys([]);
     fetchReviews();
+    fetchStats(trendDays);
+    message.success(t('review.batchDeleteSuccess'));
   };
 
   const handleFilter = (values) => {
@@ -142,6 +164,8 @@ const Review = () => {
       filterParams.end_date = values.timeRange[1].endOf('day').toISOString();
       delete filterParams.timeRange;
     }
+    if (filterParams.min_review_count === '' || filterParams.min_review_count == null) delete filterParams.min_review_count;
+    if (filterParams.max_review_count === '' || filterParams.max_review_count == null) delete filterParams.max_review_count;
     setFilters(filterParams);
     setPagination((prev) => ({ ...prev, current: 1 }));
   };
@@ -149,6 +173,23 @@ const Review = () => {
   const handleClearFilters = () => {
     filterForm.resetFields();
     setFilters({});
+    setPagination({ current: 1, pageSize: pagination.pageSize, total: 0 });
+  };
+
+  const handleStatusFilter = (val) => {
+    setStatusFilter(val);
+    let newFilters = { ...filters };
+    if (val === 'pending') {
+      newFilters.review_count = 0;
+    } else if (val === 'completed') {
+      newFilters.review_count = 1;
+    } else if (val === 'overdue') {
+      newFilters.overdue = true;
+    } else {
+      delete newFilters.review_count;
+      delete newFilters.overdue;
+    }
+    setFilters(newFilters);
     setPagination((prev) => ({ ...prev, current: 1 }));
   };
 
@@ -173,9 +214,9 @@ const Review = () => {
     const now = new Date();
     const nextReview = new Date(review.next_review_date);
     if (nextReview < now) {
-      return t('review.overdue', 'Overdue');
+      return t('review.overdue');
     } else if (nextReview.getTime() - now.getTime() < 24 * 60 * 60 * 1000) {
-      return t('review.dueToday', 'Due today');
+      return t('review.dueToday');
     } else {
       return reviewService.formatReviewDate(review.next_review_date);
     }
@@ -183,13 +224,27 @@ const Review = () => {
 
   const columns = [
     {
-      title: t('review.problemId', 'Problem ID'),
+      title: t('review.problemId'),
       dataIndex: 'problem_id',
       key: 'problem_id',
       width: 80,
+      render: (id) => (
+        <Button type="link" onClick={() => window.location.href = `/problem/${id}`}>{id}</Button>
+      ),
     },
     {
-      title: t('review.wrongReason', 'Wrong Reason'),
+      title: t('records.problemTitle'),
+      dataIndex: 'problem_title',
+      key: 'problem_title',
+      ellipsis: true,
+      render: (text, record) => (
+        <Tooltip title={text}>
+          <Button type="link" onClick={() => window.location.href = `/problem/${record.problem_id}`}>{text}</Button>
+        </Tooltip>
+      ),
+    },
+    {
+      title: t('review.wrongReason'),
       dataIndex: 'wrong_reason',
       key: 'wrong_reason',
       ellipsis: true,
@@ -200,18 +255,7 @@ const Review = () => {
       ),
     },
     {
-      title: t('review.reviewPlan', 'Review Plan'),
-      dataIndex: 'review_plan',
-      key: 'review_plan',
-      ellipsis: true,
-      render: (text) => (
-        <Tooltip title={text}>
-          <span>{text}</span>
-        </Tooltip>
-      ),
-    },
-    {
-      title: t('review.reviewCount', 'Review Count'),
+      title: t('review.reviewCount'),
       dataIndex: 'review_count',
       key: 'review_count',
       width: 100,
@@ -220,9 +264,24 @@ const Review = () => {
           {count}
         </Tag>
       ),
+      filters: [
+        { text: t('review.status.pending', 'Pending'), value: 'pending' },
+        { text: t('review.status.completed', 'Completed'), value: 'completed' },
+        { text: t('review.status.overdue', 'Overdue'), value: 'overdue' },
+      ],
+      onFilter: (value, record) => {
+        if (value === 'pending') return record.review_count === 0;
+        if (value === 'completed') return record.review_count > 0;
+        if (value === 'overdue') {
+          const now = new Date();
+          const nextReview = new Date(record.next_review_date);
+          return nextReview < now;
+        }
+        return true;
+      },
     },
     {
-      title: t('review.nextReview', 'Next Review'),
+      title: t('review.nextReview'),
       dataIndex: 'next_review_date',
       key: 'next_review_date',
       width: 120,
@@ -233,31 +292,32 @@ const Review = () => {
       ),
     },
     {
-      title: t('review.notificationStatus', 'Notification Status'),
+      title: t('review.notificationStatus'),
       dataIndex: 'notification_status',
       key: 'notification_status',
       width: 100,
       render: (status) => (
         <Tag color={status === 'sent' ? 'green' : status === 'failed' ? 'red' : 'default'}>
-          {status}
+          {t(`review.status.${status}`, status)}
         </Tag>
       ),
     },
     {
-      title: t('review.notificationType', 'Notification Type'),
+      title: t('review.notificationType'),
       dataIndex: 'notification_type',
       key: 'notification_type',
       width: 100,
+      render: (type) => t(`review.type.${type}`, type),
     },
     {
-      title: t('review.notificationSentAt', 'Notification Time'),
+      title: t('review.notificationSentAt'),
       dataIndex: 'notification_sent_at',
       key: 'notification_sent_at',
       width: 160,
       render: (val) => val ? dayjs(val).format('YYYY-MM-DD HH:mm') : '-',
     },
     {
-      title: t('common.actions', 'Actions'),
+      title: t('common.actions'),
       key: 'actions',
       width: 200,
       render: (_, record) => (
@@ -268,20 +328,20 @@ const Review = () => {
             icon={<CheckCircleOutlined />}
             onClick={() => handleMarkAsReviewed(record.id)}
           >
-            {t('review.markAsReviewed', 'Mark Reviewed')}
+            {t('review.markAsReviewed')}
           </Button>
           <Button
             size="small"
             icon={<EditOutlined />}
             onClick={() => handleEditReview(record)}
           >
-            {t('common.edit', 'Edit')}
+            {t('common.edit')}
           </Button>
           <Button
             size="small"
             onClick={() => window.location.href = `/review/${record.id}`}
           >
-            {t('common.view', 'View')}
+            {t('common.view')}
           </Button>
         </Space>
       ),
@@ -290,82 +350,48 @@ const Review = () => {
 
   return (
     <div>
-      {/* Statistics cards */}
-      <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title={t('review.stats.total', 'Total Reviews')}
-              value={stats.total || 0}
-              prefix={<BookOutlined />}
-              valueStyle={{ color: '#1890ff' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title={t('review.stats.pending', 'Pending')}
-              value={stats.pending || 0}
-              prefix={<ClockCircleOutlined />}
-              valueStyle={{ color: '#faad14' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title={t('review.stats.completed', 'Completed')}
-              value={stats.completed || 0}
-              prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title={t('review.stats.due', 'Overdue')}
-              value={stats.due || 0}
-              prefix={<ExclamationCircleOutlined />}
-              valueStyle={{ color: '#ff4d4f' }}
-            />
-          </Card>
-        </Col>
-      </Row>
-
       {/* Filter form */}
-      <Card size="small" style={{ marginBottom: 16, backgroundColor: '#fafafa' }} title={<Space><FilterOutlined />{t('records.filters', 'Filters')}</Space>} extra={<Button size="small" icon={<ClearOutlined />} onClick={handleClearFilters}>{t('records.clearFilters', 'Clear Filters')}</Button>}>
+      <Card size="small" style={{ marginBottom: 16, backgroundColor: '#fafafa' }} title={<Space><FilterOutlined />{t('records.filters')}</Space>} extra={<Button size="small" icon={<ClearOutlined />} onClick={handleClearFilters}>{t('records.clearFilters')}</Button>}>
         <Form form={filterForm} layout="vertical" onFinish={handleFilter} initialValues={filters}>
           <Row gutter={[16, 0]}>
             <Col span={6} style={{ minWidth: 160 }}>
-              <Form.Item name="problem_id" label={t('review.problemId', 'Problem ID')}>
-                <Input placeholder={t('review.problemId', 'Enter Problem ID')} type="number" />
+              <Form.Item name="problem_id" label={t('review.problemId')}>
+                <Input placeholder={t('review.problemId')} type="number" />
               </Form.Item>
             </Col>
             <Col span={6} style={{ minWidth: 160 }}>
-              <Form.Item name="review_count" label={t('review.reviewCount', 'Review Count')}>
-                <Input placeholder={t('review.reviewCount', 'Enter Review Count')} type="number" />
+              <Form.Item name="problem_title" label={t('records.problemTitle')}>
+                <Input placeholder={t('records.problemTitlePlaceholder')} />
+              </Form.Item>
+            </Col>
+            <Col span={6} style={{ minWidth: 160 }}>
+              <Form.Item name="min_review_count" label={t('review.minReviewCount', 'Min Review Count')}>
+                <Input placeholder={t('review.minReviewCount', 'Min Review Count')} type="number" />
+              </Form.Item>
+            </Col>
+            <Col span={6} style={{ minWidth: 160 }}>
+              <Form.Item name="max_review_count" label={t('review.maxReviewCount', 'Max Review Count')}>
+                <Input placeholder={t('review.maxReviewCount', 'Max Review Count')} type="number" />
               </Form.Item>
             </Col>
             <Col span={6} style={{ minWidth: 180 }}>
-              <Form.Item name="notification_status" label={t('review.notificationStatus', 'Notification Status')}>
-                <Select placeholder={t('review.notificationStatus', 'Select Status')} allowClear options={notificationStatusOptions.map(opt => ({ ...opt, label: t(`review.status.${opt.value}`, opt.label) }))} />
+              <Form.Item name="notification_status" label={t('review.notificationStatus')}>
+                <Select placeholder={t('review.notificationStatus')} allowClear options={notificationStatusOptions.map(opt => ({ ...opt, label: t(`review.status.${opt.value}`, opt.label) }))} />
               </Form.Item>
             </Col>
             <Col span={6} style={{ minWidth: 180 }}>
-              <Form.Item name="notification_type" label={t('review.notificationType', 'Notification Type')}>
-                <Select placeholder={t('review.notificationType', 'Select Type')} allowClear options={notificationTypeOptions.map(opt => ({ ...opt, label: t(`review.type.${opt.value}`, opt.label) }))} />
+              <Form.Item name="notification_type" label={t('review.notificationType')}>
+                <Select placeholder={t('review.notificationType')} allowClear options={notificationTypeOptions.map(opt => ({ ...opt, label: t(`review.type.${opt.value}`, opt.label) }))} />
               </Form.Item>
             </Col>
             <Col span={6} style={{ minWidth: 220 }}>
-              <Form.Item name="timeRange" label={t('review.nextReview', 'Next Review Date')}>
+              <Form.Item name="timeRange" label={t('review.nextReview')}>
                 <DatePicker.RangePicker showTime style={{ width: '100%' }} />
               </Form.Item>
             </Col>
             <Col span={6} style={{ minWidth: 120, display: 'flex', alignItems: 'flex-end' }}>
               <Form.Item>
-                <Button type="primary" htmlType="submit">{t('records.filter', 'Filter')}</Button>
+                <Button type="primary" htmlType="submit">{t('records.filter')}</Button>
               </Form.Item>
             </Col>
           </Row>
@@ -373,11 +399,15 @@ const Review = () => {
       </Card>
       {/* Batch operation buttons */}
       <Space style={{ marginBottom: 16 }}>
-        <Button onClick={handleBatchMark} disabled={!selectedRowKeys.length}>{t('review.batchMarkReviewed', 'Batch Mark Reviewed')}</Button>
-        <Button onClick={handleBatchDelete} disabled={!selectedRowKeys.length}>{t('review.batchDelete', 'Batch Delete')}</Button>
+        <Tooltip title={selectedRowKeys.length ? '' : t('review.selectToBatchMark')}>
+          <Button onClick={handleBatchMark} disabled={!selectedRowKeys.length}>{t('review.batchMarkReviewed')}</Button>
+        </Tooltip>
+        <Tooltip title={selectedRowKeys.length ? '' : t('review.selectToBatchDelete')}>
+          <Button onClick={handleBatchDelete} disabled={!selectedRowKeys.length}>{t('review.batchDelete')}</Button>
+        </Tooltip>
       </Space>
       {/* All review records */}
-      <Card title={t('review.allReviews', 'All Review Records')}>
+      <Card title={t('review.allReviews')}>
         <Table
           rowSelection={rowSelection}
           columns={columns}
@@ -389,18 +419,23 @@ const Review = () => {
             onChange: (page, pageSize) => setPagination({ ...pagination, current: page, pageSize }),
             showSizeChanger: true,
             showQuickJumper: true,
-            showTotal: (total, range) => t('records.pagination.showing', { start: range[0], end: range[1], total }),
+            showTotal: (total, range) => t('review.pagination.showing', { start: range[0], end: range[1], total }),
           }}
           onChange={(pagination, filters, sorter) => {
             setPagination({ ...pagination, current: pagination.current, pageSize: pagination.pageSize });
             setSorter({ field: sorter.field || 'created_at', order: sorter.order || 'descend' });
           }}
+          locale={{
+            emptyText: loading ? t('common.loading') : t('review.noData'),
+          }}
+          scroll={{ x: 'max-content' }}
+          tableLayout="fixed"
         />
       </Card>
 
       {/* Edit review record modal */}
       <Modal
-        title={t('review.editReview', 'Edit Review Record')}
+        title={t('review.editReview')}
         open={modalVisible}
         onOk={form.submit}
         onCancel={handleCancelEdit}

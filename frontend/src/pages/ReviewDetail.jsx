@@ -87,12 +87,30 @@ const ReviewDetail = () => {
         <Col xs={24} md={16}>
           <Card title={<Space><BookOutlined />{t('common.info') || 'Main Info'}</Space>} style={{ marginBottom: 24 }} size="small">
             <Row gutter={[16, 16]}>
-              <Col span={12}><Text strong>{t('records.problemId') || 'Problem ID'}:</Text> <Text>{review.problem_id}</Text></Col>
-              <Col span={12}><Text strong>{t('common.id') || 'User ID'}:</Text> <Text>{review.user_id}</Text></Col>
-              <Col span={24}><Text strong>{t('review.wrongReason')}:</Text> <Text>{review.wrong_reason || '-'}</Text></Col>
-              <Col span={24}><Text strong>{t('review.reviewPlan')}:</Text> <Text>{review.review_plan || '-'}</Text></Col>
-              <Col span={12}><Text strong>{t('review.reviewCount')}:</Text> <Tag color={review.review_count > 0 ? 'green' : 'default'}>{review.review_count}</Tag></Col>
-              <Col span={12}><Text strong>{t('review.nextReview')}:</Text> <Text>{review.next_review_date ? dayjs(review.next_review_date).format('YYYY-MM-DD HH:mm') : '-'}</Text></Col>
+              <Col span={12}>
+                <div style={{ marginBottom: 8 }}>
+                  <Text strong>{t('records.problemId') || 'Problem ID'}:</Text> <Text>{review.problem_id}</Text>
+                </div>
+                <div style={{ marginBottom: 8 }}>
+                  <Text strong>{t('common.id') || 'User ID'}:</Text> <Text>{review.user_id}</Text>
+                </div>
+                <div style={{ marginBottom: 8 }}>
+                  <Text strong>{t('review.reviewCount')}:</Text> <Tag color={review.review_count > 0 ? 'green' : 'default'}>{review.review_count}</Tag>
+                </div>
+                <div style={{ marginBottom: 8 }}>
+                  <Text strong>{t('review.nextReview')}:</Text> <Text>{review.next_review_date ? dayjs(review.next_review_date).format('YYYY-MM-DD HH:mm') : '-'}</Text>
+                </div>
+              </Col>
+              <Col span={12}>
+                <div style={{ marginBottom: 8 }}>
+                  <Text strong>{t('review.wrongReason')}:</Text>
+                  <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{review.wrong_reason || '-'}</div>
+                </div>
+                <div style={{ marginBottom: 8 }}>
+                  <Text strong>{t('review.reviewPlan')}:</Text>
+                  <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{review.review_plan || '-'}</div>
+                </div>
+              </Col>
             </Row>
           </Card>
         </Col>

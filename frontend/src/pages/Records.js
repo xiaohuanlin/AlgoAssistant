@@ -26,7 +26,8 @@ import {
   CloseCircleOutlined,
   SyncOutlined,
   FilterOutlined,
-  ClearOutlined
+  ClearOutlined,
+  PlusOutlined
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 
@@ -104,7 +105,7 @@ const getSyncStatusConfig = (status, t) => {
 
 const Records = () => {
   const { t } = useTranslation();
-  const { hasGitConfig, getGeminiConfig } = useConfig();
+  const { hasGitConfig, hasNotionConfig, getGeminiConfig } = useConfig();
   const [loading, setLoading] = useState(false);
   const [records, setRecords] = useState([]);
   const [stats, setStats] = useState({});
@@ -510,13 +511,14 @@ const Records = () => {
                 icon={<SyncOutlined />}
                 size="small"
                 onClick={() => handleOJSync(record)}
+                disabled={record.oj_sync_status === 'completed'}
               >
                 {t('records.syncToOJ')}
               </Button>
             </Tooltip>
-            <GitSyncAction record={record} onSync={() => loadRecords()} disabled={!actionEnabled} />
+            <GitSyncAction record={record} onSync={() => loadRecords()} disabled={record.github_sync_status === 'completed' || !actionEnabled} />
             <GeminiSyncAction record={record} onSync={() => loadRecords()} geminiConfig={geminiConfig} disabled={!actionEnabled} />
-            <NotionSyncAction record={record} onSync={() => loadRecords()} disabled={!actionEnabled} />
+            <NotionSyncAction record={record} onSync={() => loadRecords()} disabled={!hasNotionConfig() || !actionEnabled} />
           </Space>
         );
       }
@@ -529,161 +531,18 @@ const Records = () => {
       label: t('records.recordList'),
       children: (
         <>
-          {/* Statistics */}
-          <Spin spinning={loading}>
-            <Row gutter={16} style={{ marginBottom: 24 }}>
-              <Col xs={24} sm={12} lg={6}>
-                <Statistic title={t('records.totalSubmissions')} value={stats.total || 0} />
-              </Col>
-              <Col xs={24} sm={12} lg={6}>
-                <Statistic title={t('records.uniqueProblems')} value={stats.unique_problems || 0} />
-              </Col>
-              <Col xs={24} sm={12} lg={6}>
-                <Statistic title={t('records.solvedProblems')} value={stats.solved || 0} />
-              </Col>
-              <Col xs={24} sm={12} lg={6}>
-                <Statistic title={t('records.successRate')} value={stats.successRate || 0} suffix="%" precision={1} />
-              </Col>
-              <Col xs={24} sm={12} lg={6}>
-                <Statistic title={t('records.languages')} value={stats.languages || 0} />
-              </Col>
-            </Row>
-          </Spin>
-
           {/* Record List */}
-          <Card
-            title={t('records.recordList')}
-            extra={
-              <Button onClick={() => setFilters(prev => ({ ...prev }))} loading={loading}>
-                  {t('common.refresh')}
-                </Button>
-            }
-          >
-            {/* Filter form */}
-            <Card
-              size="small"
-              style={{ marginBottom: 16, backgroundColor: '#fafafa' }}
-              title={
-                <Space>
-                  <FilterOutlined />
-                  {t('records.filters')}
-              </Space>
-            }
-              extra={
-                <Button
-                  size="small"
-                  icon={<ClearOutlined />}
-                  onClick={handleClearFilters}
-                >
-                  {t('records.clearFilters')}
-                </Button>
-              }
-            >
-              <Form
-                form={filterForm}
-                layout="vertical"
-                onFinish={handleFilter}
-                initialValues={filters}
-              >
-                <Row gutter={[16, 0]}>
-                  <Col span={6} style={{ minWidth: 200 }}>
-                    <Form.Item name="problem_title" label={t('records.problemTitle')}>
-                      <Input placeholder={t('records.enterProblemTitle')} />
-                    </Form.Item>
-                  </Col>
-                  <Col span={6} style={{ minWidth: 160 }}>
-                    <Form.Item name="problem_id" label={t('records.problemId')}>
-                      <Input placeholder={t('records.enterProblemId')} type="number" />
-                    </Form.Item>
-                  </Col>
-                  <Col span={6} style={{ minWidth: 180 }}>
-                    <Form.Item name="status" label={t('records.status')}>
-                      <Select placeholder={t('records.selectStatus')} allowClear>
-                        <Select.Option value="Accepted">{t('records.accepted')}</Select.Option>
-                        <Select.Option value="Wrong Answer">{t('records.wrongAnswer')}</Select.Option>
-                        <Select.Option value="Time Limit Exceeded">{t('records.timeLimitExceeded')}</Select.Option>
-                        <Select.Option value="Runtime Error">{t('records.runtimeError')}</Select.Option>
-                        <Select.Option value="Memory Limit Exceeded">{t('records.memoryLimitExceeded')}</Select.Option>
-                      </Select>
-                    </Form.Item>
-                  </Col>
-                  <Col span={6} style={{ minWidth: 160 }}>
-                    <Form.Item name="language" label={t('records.language')}>
-                      <Select placeholder={t('records.selectLanguage')} allowClear>
-                        <Select.Option value="python">{t('records.python')}</Select.Option>
-                        <Select.Option value="java">{t('records.java')}</Select.Option>
-                        <Select.Option value="cpp">{t('records.cpp')}</Select.Option>
-                        <Select.Option value="c">{t('records.c')}</Select.Option>
-                        <Select.Option value="javascript">{t('records.javascript')}</Select.Option>
-                        <Select.Option value="typescript">{t('records.typescript')}</Select.Option>
-                        <Select.Option value="go">{t('records.go')}</Select.Option>
-                        <Select.Option value="rust">{t('records.rust')}</Select.Option>
-                      </Select>
-                    </Form.Item>
-                  </Col>
-                  <Col span={6} style={{ minWidth: 180 }}>
-                    <Form.Item name="oj_sync_status" label={t('records.ojSyncStatus')}>
-                      <Select placeholder={t('records.selectOjSyncStatus')} allowClear>
-                        <Select.Option value="pending">{t('records.gitSyncStatusPending')}</Select.Option>
-                        <Select.Option value="syncing">{t('records.gitSyncStatusSyncing')}</Select.Option>
-                        <Select.Option value="synced">{t('records.gitSyncStatusSynced')}</Select.Option>
-                        <Select.Option value="failed">{t('records.gitSyncStatusFailed')}</Select.Option>
-                        <Select.Option value="paused">{t('records.gitSyncStatusPaused')}</Select.Option>
-                        <Select.Option value="retry">{t('records.gitSyncStatusRetry')}</Select.Option>
-                      </Select>
-                    </Form.Item>
-                  </Col>
-                  <Col span={6} style={{ minWidth: 180 }}>
-                    <Form.Item name="ai_sync_status" label={t('records.aiSyncStatus')}>
-                      <Select placeholder={t('records.selectAiSyncStatus')} allowClear>
-                        <Select.Option value="pending">{t('records.gitSyncStatusPending')}</Select.Option>
-                        <Select.Option value="syncing">{t('records.gitSyncStatusSyncing')}</Select.Option>
-                        <Select.Option value="synced">{t('records.gitSyncStatusSynced')}</Select.Option>
-                        <Select.Option value="failed">{t('records.gitSyncStatusFailed')}</Select.Option>
-                        <Select.Option value="paused">{t('records.gitSyncStatusPaused')}</Select.Option>
-                        <Select.Option value="retry">{t('records.gitSyncStatusRetry')}</Select.Option>
-                      </Select>
-                    </Form.Item>
-                  </Col>
-                  <Col span={6} style={{ minWidth: 220 }}>
-                    <Form.Item name="timeRange" label={t('records.submitTime')}>
-                      <RangePicker style={{ width: '100%' }} placeholder={[t('records.startDate'), t('records.endDate')]} />
-                    </Form.Item>
-                  </Col>
-                  <Col span={6} style={{ minWidth: 120, display: 'flex', alignItems: 'flex-end' }}>
-                    <Form.Item>
-                      <Button type="primary" htmlType="submit">
-                        {t('records.filter')}
-                      </Button>
-                    </Form.Item>
-                  </Col>
-                </Row>
-              </Form>
-            </Card>
-
-            {/* Git Configuration Status */}
-            {configStatus && !configStatus.configured && (
-              <Alert
-                message={t('git.configRequired')}
-                description={t('git.configRequiredDesc') || configStatus.message}
-                type="warning"
-                showIcon
-                style={{ marginBottom: 16 }}
-              />
-            )}
-
-            {(geminiConfig === null && configStatus) && (
-              <Alert
-                message={t('records.geminiConfigRequired')}
-                description={t('records.geminiConfigRequiredDesc')}
-                type="warning"
-                showIcon
-                style={{ marginBottom: 16 }}
-              />
-            )}
-
-            {/* Batch Sync Controls */}
+          <Card>
             <Row gutter={16} style={{ marginBottom: 16 }} align="middle">
+              <Col>
+                <Button
+                  type="primary"
+                  onClick={() => navigate('/records/create')}
+                  icon={<PlusOutlined />}
+                >
+                  {t('records.createRecord') || 'Create Record'}
+                </Button>
+              </Col>
               <Col>
                 <Text strong>{t('git.syncOrder')}:</Text>
                 <Select
@@ -712,6 +571,51 @@ const Records = () => {
                 </Text>
               </Col>
             </Row>
+            <Form
+              form={filterForm}
+              layout="inline"
+              onFinish={handleFilter}
+              style={{ marginBottom: 16 }}
+            >
+              <Form.Item name="problem_title" label={t('records.problem')}>
+                <Input placeholder={t('records.searchByTitle') || 'Search by title'} allowClear />
+              </Form.Item>
+              <Form.Item name="execution_result" label={t('records.status')}>
+                <Select allowClear style={{ width: 140 }}>
+                  <Select.Option value="Accepted">Accepted</Select.Option>
+                  <Select.Option value="Wrong Answer">Wrong Answer</Select.Option>
+                  <Select.Option value="Time Limit Exceeded">Time Limit Exceeded</Select.Option>
+                  <Select.Option value="Runtime Error">Runtime Error</Select.Option>
+                  <Select.Option value="Compile Error">Compile Error</Select.Option>
+                  <Select.Option value="Other">Other</Select.Option>
+                </Select>
+              </Form.Item>
+              <Form.Item name="language" label={t('records.language')}>
+                <Select allowClear style={{ width: 120 }}>
+                  <Select.Option value="python">python</Select.Option>
+                  <Select.Option value="java">java</Select.Option>
+                  <Select.Option value="cpp">cpp</Select.Option>
+                  <Select.Option value="c">c</Select.Option>
+                  <Select.Option value="javascript">javascript</Select.Option>
+                  <Select.Option value="typescript">typescript</Select.Option>
+                  <Select.Option value="go">go</Select.Option>
+                  <Select.Option value="rust">rust</Select.Option>
+                  <Select.Option value="other">other</Select.Option>
+                </Select>
+              </Form.Item>
+              <Form.Item name="timeRange" label={t('records.submitTime')}>
+                <RangePicker />
+              </Form.Item>
+              <Form.Item name="tags" label={t('records.topicTags')}>
+                <Select mode="tags" style={{ width: 160 }} allowClear placeholder={t('records.topicTags')} />
+              </Form.Item>
+              <Form.Item>
+                <Button type="primary" htmlType="submit">{t('common.filter') || 'Filter'}</Button>
+              </Form.Item>
+              <Form.Item>
+                <Button onClick={handleClearFilters}>{t('common.clear') || 'Clear'}</Button>
+              </Form.Item>
+            </Form>
             <Spin spinning={loading}>
               <Table
                 columns={columns}

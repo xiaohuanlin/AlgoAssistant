@@ -99,7 +99,7 @@ def get_config(db: Session = Depends(get_db), current_user=Depends(get_current_u
     service = UserConfigService(db)
     config = service.get(current_user.id)
     if not config:
-        raise HTTPException(status_code=404, detail="User config not found")
+        config = service.create(current_user.id, UserConfigCreate())
     return config
 
 

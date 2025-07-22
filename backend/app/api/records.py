@@ -1,3 +1,5 @@
+import random
+import time
 from datetime import datetime
 from typing import List, Optional
 
@@ -13,6 +15,7 @@ from app.schemas import (
     RecordDeleteResponse,
     RecordDetailOut,
     RecordListOut,
+    RecordManualCreate,
     RecordStatsOut,
     RecordUpdate,
     TagAssignRequest,
@@ -30,13 +33,24 @@ router = APIRouter(prefix="/api/records", tags=["records"])
 
 @router.post("/", response_model=RecordDetailOut)
 def create_record(
-    record: RecordCreate,
+    record: RecordManualCreate,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    """Create a new problem record."""
+    """Create a new problem record. Only allowed fields can be set by user, sync-related fields are auto-generated."""
+    user_fields = record.dict()
+    user_fields["oj_sync_status"] = SyncStatus.COMPLETED
+    user_fields["github_sync_status"] = SyncStatus.PENDING
+    user_fields["ai_sync_status"] = SyncStatus.PENDING
+    user_fields["notion_sync_status"] = SyncStatus.PENDING
+    user_fields["submission_id"] = int(f"{int(time.time())}")
+    user_fields["submission_url"] = f"/manual/{user_fields['submission_id']}"
+    user_fields["notion_url"] = None
+    user_fields["notion_page_id"] = None
+    user_fields["git_file_path"] = None
+    user_fields["ai_analysis"] = None
     service = RecordService(db)
-    db_record = service.create_record(current_user.id, record)
+    db_record = service.create_record(current_user.id, RecordCreate(**user_fields))
     return service.to_record_detail_out(db_record)
 
 
@@ -105,8 +119,8 @@ def list_records(
     if language:
         query = query.filter(models.Record.language == language)
     if problem_title:
-        query = query.join(models.LeetCodeProblem).filter(
-            models.LeetCodeProblem.title.ilike(f"%{problem_title}%")
+        query = query.join(models.Problem).filter(
+            models.Problem.title.ilike(f"%{problem_title}%")
         )
     if problem_id:
         query = query.filter(models.Record.problem_id == problem_id)

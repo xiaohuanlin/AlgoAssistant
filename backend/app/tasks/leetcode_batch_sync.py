@@ -3,8 +3,9 @@ from typing import Optional
 from app import schemas
 from app.celery_app import celery_app
 from app.deps import get_db, get_redis_client
-from app.models import LeetCodeProblem, OJType, Record, SyncStatus, SyncTask
+from app.models import OJType, Problem, Record, SyncStatus, SyncTask
 from app.services.leetcode_service import LeetCodeService
+from app.services.problem_service import ProblemService
 from app.services.record_service import RecordService
 from app.services.sync_task_service import SyncTaskService
 from app.services.user_config_service import UserConfigService
@@ -24,6 +25,7 @@ def leetcode_batch_sync_task(task_id: int):
     record_service = RecordService(db)
     sync_count = 0
     failed_count = 0
+    problem_service = ProblemService(db)
     try:
         sync_task: Optional[SyncTask] = sync_task_service.get(task_id)
         if not sync_task:
@@ -60,46 +62,42 @@ def leetcode_batch_sync_task(task_id: int):
                     sync_count += 1
                     continue
                 try:
-                    leetcode_problem: Optional[
-                        LeetCodeProblem
-                    ] = record_service.get_leetcode_problem(
+                    problem = problem_service.get_problem_by_title_slug(
                         submission["problem_title_slug"]
                     )
-
-                    if not leetcode_problem:
-                        problem = service.fetch_problem_detail(
-                            submission["problem_title_slug"]
+                    if not problem:
+                        problem = problem_service.create_problem(
+                            schemas.ProblemCreate(
+                                source=schemas.ProblemSource.leetcode,
+                                url=f"https://leetcode.com/problems/{submission['problem_title_slug']}/",
+                            ),
+                            user=sync_task.user,
                         )
-                        if not problem:
-                            logger.error(
-                                f"LeetCode problem {submission['problem_title_slug']} not found"
-                            )
-                            continue
-                        leetcode_problem = record_service.create_leetcode_problem(
-                            schemas.LeetCodeProblemCreate(
-                                id=problem["id"],
-                                title=problem["title"],
-                                title_slug=problem["title_slug"],
-                                difficulty=problem["difficulty"],
-                                topic_tags=problem["topic_tags"],
-                                content=problem["content"],
-                            )
-                        )
-
-                    record_service.create_record(
+                    detail = service.fetch_user_submissions_detail(int(record_id))
+                    new_record = record_service.create_record(
                         sync_task.user_id,
                         schemas.RecordCreate(
-                            problem_id=leetcode_problem.id,
+                            problem_id=problem.id,
                             oj_type=OJType.leetcode.value,
+                            oj_sync_status=SyncStatus.COMPLETED.value,
                             execution_result=submission["status"],
                             language=submission["language"],
+                            code=detail.get("code"),
                             submit_time=submission["submit_time"],
                             runtime=submission["runtime"],
                             memory=submission["memory"],
+                            runtime_percentile=detail.get("runtime_percentile"),
+                            memory_percentile=detail.get("memory_percentile"),
+                            total_correct=detail.get("total_correct"),
+                            total_testcases=detail.get("total_testcases"),
+                            topic_tags=detail.get("topic_tags"),
                             submission_id=submission["submission_id"],
                             submission_url=submission["submission_url"],
                         ),
                     )
+                    if not detail:
+                        new_record.oj_sync_status = SyncStatus.FAILED.value
+                        db.commit()
                     sync_count += 1
                 except Exception as e:
                     logger.exception(

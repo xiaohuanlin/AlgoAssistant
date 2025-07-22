@@ -20,3 +20,4 @@ redis
 google-genai
 beautifulsoup4
 notion-client
+markdownify

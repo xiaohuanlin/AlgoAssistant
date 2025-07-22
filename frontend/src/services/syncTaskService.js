@@ -141,18 +141,6 @@ class SyncTaskService {
   }
 
   /**
-   * Create AI analysis task
-   * @param {Array<number>} recordIds - Record ID list
-   * @returns {Promise<Object>} Created task
-   */
-  async createAIAnalysisTask(recordIds) {
-    return this.createTask({
-      type: 'ai_analysis',
-      record_ids: recordIds,
-    });
-  }
-
-  /**
    * Create Gemini sync task
    * @param {Array<number>} recordIds - Record ID list
    * @returns {Promise<Object>} Created task

@@ -79,6 +79,7 @@ export const API_ENDPOINTS = {
     BATCH_MARK_REVIEWED: '/api/review/batch-mark-reviewed',
     BATCH_DELETE: '/api/review/batch-delete',
     BATCH_UPDATE: '/api/review/batch-update',
+    STATS: '/api/review/stats',
   },
 
   // Platform Integrations
@@ -86,7 +87,7 @@ export const API_ENDPOINTS = {
     LEETCODE_TEST: '/api/leetcode/test-connection',
     NOTION_TEST: '/api/notion/test_connection',
     GITHUB_TEST: '/api/github/test_connection',
-    GEMINI_TEST: '/api/gemini/test_connection',
+    GEMINI_TEST: '/api/gemini/test-connection',
   },
 
   // Google OAuth
@@ -166,6 +167,16 @@ export const API_ENDPOINTS = {
     DETAIL: (taskId) => `/api/ai_analysis/${taskId}`,
     DELETE: (taskId) => `/api/ai_analysis/${taskId}`,
     STATS: '/api/ai_analysis/stats',
+  },
+
+  // Problem Bank
+  PROBLEM: {
+    LIST: '/api/problem/',
+    CREATE: '/api/problem/',
+    DETAIL: (id) => `/api/problem/${id}`,
+    UPDATE: (id) => `/api/problem/${id}`,
+    DELETE: (id) => `/api/problem/${id}`,
+    BATCH_CREATE: '/api/problem/batch-create',
   },
 };
 

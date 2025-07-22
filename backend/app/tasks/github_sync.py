@@ -2,7 +2,7 @@ import re
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
-from bs4 import BeautifulSoup
+from markdownify import markdownify as md
 
 from app.celery_app import celery_app
 from app.deps import get_db
@@ -21,20 +21,6 @@ class GitHubSyncTask:
         self.db = db
         self.config = config
         self.service = GitHubService(config)
-
-    def _clean_html_content(self, html_content: str) -> str:
-        """Clean HTML content, keep pure text and line breaks"""
-        if not html_content:
-            return ""
-
-        try:
-            soup = BeautifulSoup(html_content, "html.parser")
-            text = soup.get_text(separator="\n", strip=True)
-            text = re.sub(r"\n\s*\n\s*\n", "\n\n", text)
-            return text.strip()
-        except Exception as e:
-            logger.warning(f"Failed to clean HTML content: {e}")
-            return re.sub(r"<[^>]+>", "", html_content).strip()
 
     def _get_file_extension(self, language: str) -> str:
         """Get file extension based on programming language."""
@@ -87,7 +73,7 @@ class GitHubSyncTask:
 
         # Add id prefix if provided for better ordering
         if id:
-            safe_title = f"{id:04d}-{safe_title}"
+            safe_title = f"{id}.{safe_title}"
 
         file_template = self.config.file_template
         if file_template:
@@ -113,11 +99,11 @@ class GitHubSyncTask:
         for record in records:
             problem_title = record.problem.title if record.problem else str(record.id)
             file_path = self._generate_file_path(
-                problem_title, record.language, record.submit_time, record.id
+                problem_title, record.language, record.submit_time, record.problem.id
             )
             code = record.code
             content = self._format_code_content(
-                record.language, problem_title, record.problem.content, code
+                record.language, problem_title, record.problem.description, code
             )
             files_data.append({"file_path": file_path, "code": content})
         return files_data
@@ -125,23 +111,23 @@ class GitHubSyncTask:
     def _format_code_content(
         self, language: str, problem_title: str, problem_description: str, code: str
     ) -> str:
-        # Clean HTML content
-        clean_description = self._clean_html_content(problem_description)
+        markdown_desc = md(problem_description or "")
+        markdown_desc = re.sub(r"\n{3,}", "\n\n", markdown_desc.strip())
 
         language = language.lower()
         if language in ["python", "python3"]:
-            return f'"""\n{problem_title}\n\n{clean_description}\n\nLeetCode Problem\n"""\n\n{code}\n\n# Test cases\nif __name__ == "__main__":\n    # Add your test cases here\n    pass\n'
+            return f'"""\n{problem_title}\n\n{markdown_desc}\n\nLeetCode Problem\n"""\n\n{code}\n\n# Test cases\nif __name__ == "__main__":\n    # Add your test cases here\n    pass\n'
         elif language == "java":
             class_name = "Solution"
             class_match = re.search(r"class\s+(\w+)", code)
             if class_match:
                 class_name = class_match.group(1)
-            return f"""/**\n * {problem_title}\n *\n * {clean_description}\n *\n * LeetCode Problem\n */\n\n{code}\n\n// Test class\nclass Main {{\n    public static void main(String[] args) {{\n        // Add your test cases here\n        {class_name} solution = new {class_name}();\n    }}\n}}\n"""
+            return f"""/**\n * {problem_title}\n *\n * {markdown_desc}\n *\n * LeetCode Problem\n */\n\n{code}\n\n// Test class\nclass Main {{\n    public static void main(String[] args) {{\n        // Add your test cases here\n        {class_name} solution = new {class_name}();\n    }}\n}}\n"""
         elif language in ["cpp", "c++"]:
-            return f"""/**\n * {problem_title}\n *\n * {clean_description}\n *\n * LeetCode Problem\n */\n\n#include <iostream>\n#include <vector>\n#include <string>\nusing namespace std;\n\n{code}\n\n// Test function\nint main() {{\n    // Add your test cases here\n    return 0;\n}}\n"""
+            return f"""/**\n * {problem_title}\n *\n * {markdown_desc}\n *\n * LeetCode Problem\n */\n\n#include <iostream>\n#include <vector>\n#include <string>\nusing namespace std;\n\n{code}\n\n// Test function\nint main() {{\n    // Add your test cases here\n    return 0;\n}}\n"""
         else:
             comment_symbol = "#" if language in ["python", "python3"] else "//"
-            return f"{comment_symbol} {problem_title}\n{comment_symbol}\n{comment_symbol} {clean_description}\n{comment_symbol}\n{comment_symbol} LeetCode Problem\n\n{code}\n"
+            return f"{comment_symbol} {problem_title}\n{comment_symbol}\n{comment_symbol} {markdown_desc}\n{comment_symbol}\n{comment_symbol} LeetCode Problem\n\n{code}\n"
 
     def _generate_commit_message(
         self, problem_title: str, submit_time: datetime

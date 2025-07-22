@@ -60,6 +60,12 @@ const Layout = ({ children }) => {
       onClick: () => navigate('/')
     },
     {
+      key: '/problem',
+      icon: <BookOutlined />,
+      label: t('navigation.problem'),
+      onClick: () => navigate('/problem')
+    },
+    {
       key: '/records',
       icon: <FileTextOutlined />,
       label: t('navigation.records'),
@@ -78,12 +84,6 @@ const Layout = ({ children }) => {
       onClick: () => navigate('/sync-tasks')
     },
     {
-      key: '/ai-analysis',
-      icon: <RobotOutlined />,
-      label: t('navigation.aiAnalysis'),
-      onClick: () => navigate('/ai-analysis')
-    },
-    {
       key: '/settings',
       icon: <SettingOutlined />,
       label: t('navigation.settings'),
@@ -94,14 +94,12 @@ const Layout = ({ children }) => {
   // Get currently selected menu item
   const getSelectedKeys = () => {
     const pathname = location.pathname;
-    // Exact path matching
     if (pathname === '/') return ['/'];
+    if (pathname.startsWith('/problem')) return ['/problem'];
     if (pathname === '/records') return ['/records'];
     if (pathname === '/review') return ['/review'];
     if (pathname === '/sync-tasks') return ['/sync-tasks'];
-    if (pathname === '/ai-analysis') return ['/ai-analysis'];
     if (pathname === '/settings') return ['/settings'];
-    // If no exact match, return empty array
     return [];
   };
 

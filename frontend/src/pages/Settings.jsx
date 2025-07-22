@@ -20,11 +20,13 @@ import configService from '../services/configService';
 import authService from '../services/authService';
 
 import GeminiIntegrationModal from '../components/GeminiIntegrationModal';
+import { useConfig } from '../contexts/ConfigContext';
 
 const { Title, Text } = Typography;
 
 const Settings = () => {
     const { t } = useTranslation();
+    const { refreshConfigs } = useConfig();
     const [gitConfig, setGitConfig] = useState(null);
     const [leetcodeConfig, setLeetCodeConfig] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -124,6 +126,7 @@ const Settings = () => {
                 username: values.username || ''
             };
             await configService.updateLeetCodeConfig(configData);
+            await refreshConfigs();
             // Reload configs to ensure data consistency
             await loadConfigs();
         } catch (error) {

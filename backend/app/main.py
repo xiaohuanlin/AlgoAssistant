@@ -10,6 +10,7 @@ from app.api import (
     google,
     leetcode,
     notion,
+    problem,
     records,
     review,
     sync_task,
@@ -46,6 +47,7 @@ app.include_router(google.router)
 app.include_router(review.router)
 app.include_router(sync_task.router)
 app.include_router(gemini.router)
+app.include_router(problem.router)
 
 
 @app.get("/")

@@ -45,7 +45,7 @@ const GeminiSyncAction = ({ record, onSync, geminiConfig, disabled }) => {
     return (
       <Tooltip title={t('gemini.alreadySynced')}>
         <Button
-          type="text"
+          type="default"
           size="small"
           disabled
           icon={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
@@ -67,7 +67,7 @@ const GeminiSyncAction = ({ record, onSync, geminiConfig, disabled }) => {
     return (
       <Tooltip title={t('gemini.configRequired')}>
         <Button
-          type="text"
+          type="default"
           size="small"
           disabled
           icon={<RobotOutlined />}
@@ -121,7 +121,7 @@ const GeminiSyncAction = ({ record, onSync, geminiConfig, disabled }) => {
   return (
     <Tooltip title={getSyncStatusTooltip(record?.ai_sync_status)}>
       <Button
-        type="text"
+        type="default"
         size="small"
         loading={loading}
         disabled={isDisabled}

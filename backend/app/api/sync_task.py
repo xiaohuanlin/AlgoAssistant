@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.deps import get_db
-from app.models import Record, SyncStatus, SyncTask, SyncTaskType
+from app.models import Record, SyncStatus, SyncTaskType
 from app.schemas import SyncTaskCreate, SyncTaskOut
 from app.services.sync_task_service import SyncTaskService
 from app.tasks import TaskManager
@@ -161,7 +161,7 @@ async def retry_sync_task(
 async def get_review_candidates(
     task_id: int, user_id: int = 1, db: Session = Depends(get_db)
 ):
-    """Get records that need review from a completed sync task."""
+    """Get records that need review from a completed sync task and auto-generate reviews for failed submissions."""
     sync_task_service = SyncTaskService(db)
     task = sync_task_service.get(task_id)
 
@@ -179,7 +179,6 @@ async def get_review_candidates(
     if not task.record_ids:
         return {"task_id": task_id, "candidates": []}
 
-    # Get records that need review (failed submissions)
     candidates = []
     for record_id in task.record_ids:
         record = db.query(Record).filter(Record.id == record_id).first()

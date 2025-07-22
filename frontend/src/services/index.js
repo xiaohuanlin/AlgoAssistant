@@ -5,7 +5,6 @@ export { default as leetcodeService } from './leetcodeService';
 export { default as gitSyncService } from './gitSyncService';
 export { default as notionService } from './notionService';
 export { default as syncTaskService } from './syncTaskService';
-export { default as aiAnalysisService } from './aiAnalysisService';
 export { default as reviewService } from './reviewService';
 export { default as googleService } from './googleService';
 

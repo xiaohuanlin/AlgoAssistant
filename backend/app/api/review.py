@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
@@ -65,9 +66,7 @@ async def get_reviews(
         sort_by=sort_by,
         sort_order=sort_order,
     )
-    return ReviewListOut(
-        total=total, items=[ReviewOut.model_validate(r) for r in reviews]
-    )
+    return ReviewListOut(total=total, items=reviews)
 
 
 @router.get("/due", response_model=List[ReviewOut])
@@ -89,13 +88,14 @@ async def get_due_reviews(
 
 @router.get("/filter", response_model=ReviewListOut)
 async def filter_reviews(
-    problem_id: int = None,
-    notification_status: str = None,
-    notification_type: str = None,
-    min_review_count: int = None,
-    max_review_count: int = None,
-    start_date: str = None,
-    end_date: str = None,
+    problem_id: int | None = None,
+    problem_title: str | None = None,
+    notification_status: str | None = None,
+    notification_type: str | None = None,
+    min_review_count: int | None = None,
+    max_review_count: int | None = None,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     limit: int = Query(
@@ -112,6 +112,7 @@ async def filter_reviews(
     service = ReviewService(db)
     filters = {
         "problem_id": problem_id,
+        "problem_title": problem_title,
         "notification_status": notification_status,
         "notification_type": notification_type,
         "min_review_count": min_review_count,
@@ -127,9 +128,7 @@ async def filter_reviews(
         sort_order=sort_order,
         **filters,
     )
-    return ReviewListOut(
-        total=total, items=[ReviewOut.model_validate(r) for r in reviews]
-    )
+    return ReviewListOut(total=total, items=reviews)
 
 
 @router.post("/batch-update", response_model=List[ReviewOut])
@@ -166,6 +165,17 @@ async def batch_mark_as_reviewed(
     service = ReviewService(db)
     count = service.batch_mark_as_reviewed(user_id=current_user.id, ids=ids)
     return {"marked": count}
+
+
+@router.get("/stats")
+async def get_review_stats(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    days: int = Query(7, description="Number of days for trend analysis"),
+):
+    service = ReviewService(db)
+    stats = service.get_review_stats(user_id=current_user.id, days=days)
+    return stats
 
 
 @router.get("/{review_id}", response_model=ReviewOut)

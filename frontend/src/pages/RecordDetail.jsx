@@ -11,14 +11,14 @@ import {
   BookOutlined,
   LinkOutlined,
   FileTextOutlined,
-  CloudOutlined
+  CloudOutlined,
+  RobotOutlined
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import recordsService from '../services/recordsService';
 import dayjs from 'dayjs';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import AIAnalysisCard from '../components/AIAnalysisCard';
 
 const { Title, Text, Link } = Typography;
 
@@ -314,9 +314,82 @@ const RecordDetail = () => {
           </Card>
 
           {/* AI Analysis card */}
-          {record.ai_analysis && (
-            <AIAnalysisCard analysis={record.ai_analysis} />
-          )}
+          <Card
+            title={
+              <Space>
+                <RobotOutlined style={{ color: '#faad14' }} />
+                {t('records.aiAnalysis', 'AI Analysis')}
+              </Space>
+            }
+            style={{ marginBottom: 24 }}
+            size="small"
+          >
+            {record.ai_analysis ? (
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ marginBottom: 8 }}>
+                  <Text strong>{t('records.aiSummary', 'Summary')}：</Text>
+                  <Text>{record.ai_analysis.summary}</Text>
+                </div>
+                <div style={{ marginBottom: 8 }}>
+                  <Text strong>{t('records.aiSolutionTypes', 'Solution Types')}：</Text>
+                  <Text>{record.ai_analysis.solution_types?.join(', ') || '-'}</Text>
+                </div>
+                <div style={{ marginBottom: 8 }}>
+                  <Text strong>{t('records.aiTimeComplexity', 'Time Complexity')}：</Text>
+                  <Text>{record.ai_analysis.time_complexity}</Text>
+                  <Text strong style={{ marginLeft: 16 }}>{t('records.aiSpaceComplexity', 'Space Complexity')}：</Text>
+                  <Text>{record.ai_analysis.space_complexity}</Text>
+                </div>
+                <div style={{ marginBottom: 8 }}>
+                  <Text strong>{t('records.aiAlgorithmType', 'Algorithm Type')}：</Text>
+                  <Text>{record.ai_analysis.algorithm_type}</Text>
+                </div>
+                <div style={{ marginBottom: 8 }}>
+                  <Text strong>{t('records.aiCodeQualityScore', 'Code Quality Score')}：</Text>
+                  <Text>{record.ai_analysis.code_quality_score}</Text>
+                  <Text strong style={{ marginLeft: 16 }}>{t('records.aiStyleScore', 'Style Score')}：</Text>
+                  <Text>{record.ai_analysis.style_score}</Text>
+                  <Text strong style={{ marginLeft: 16 }}>{t('records.aiCorrectnessConfidence', 'Correctness Confidence')}：</Text>
+                  <Text>{record.ai_analysis.correctness_confidence}</Text>
+                </div>
+                <div style={{ marginBottom: 8 }}>
+                  <Text strong>{t('records.aiStepAnalysis', 'Step Analysis')}：</Text>
+                  <ul style={{ margin: 0, paddingLeft: 20, textAlign: 'left' }}>
+                    {record.ai_analysis.step_analysis?.map((step, idx) => (
+                      <li key={idx}>{step}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div style={{ marginBottom: 8 }}>
+                  <Text strong>{t('records.aiImprovementSuggestions', 'Improvement Suggestions')}：</Text>
+                  <Text>{record.ai_analysis.improvement_suggestions}</Text>
+                </div>
+                <div style={{ marginBottom: 8 }}>
+                  <Text strong>{t('records.aiEdgeCasesCovered', 'Edge Cases Covered')}：</Text>
+                  <Text>{record.ai_analysis.edge_cases_covered?.join(', ') || '-'}</Text>
+                </div>
+                <div style={{ marginBottom: 8 }}>
+                  <Text strong>{t('records.aiRelatedProblems', 'Related Problems')}：</Text>
+                  <Text>{record.ai_analysis.related_problems?.join(', ') || '-'}</Text>
+                </div>
+                <div style={{ marginBottom: 8 }}>
+                  <Text strong>{t('records.aiRiskAreas', 'Risk Areas')}：</Text>
+                  <Text>{record.ai_analysis.risk_areas?.join(', ') || '-'}</Text>
+                </div>
+                <div style={{ marginBottom: 8 }}>
+                  <Text strong>{t('records.aiLearningPoints', 'Learning Points')}：</Text>
+                  <Text>{record.ai_analysis.learning_points?.join(', ') || '-'}</Text>
+                </div>
+                <div style={{ marginBottom: 8 }}>
+                  <Text strong>{t('records.aiModelVersion', 'Model Version')}：</Text>
+                  <Text>{record.ai_analysis.model_version}</Text>
+                </div>
+              </div>
+            ) : (
+              <Text type="secondary">{t('records.noAIAnalysis', 'No AI analysis available')}</Text>
+            )}
+          </Card>
+
         </Col>
 
         {/* Right column - Sync status and other information */}
