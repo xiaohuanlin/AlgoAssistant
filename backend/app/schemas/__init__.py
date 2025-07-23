@@ -12,7 +12,9 @@ from .google import (
 from .leetcode import LeetCodeConfig, LeetCodeConnectionTestOut
 from .notification import (
     EmailSettings,
-    NotificationChannelConfig,
+    EmailChannelConfig,
+    PushChannelConfig,
+    SmsChannelConfig,
     NotificationConfig,
     NotificationConfigResponse,
     NotificationConfigUpdate,
@@ -53,6 +55,9 @@ from .user import (
 )
 
 __all__ = [
+    EmailChannelConfig,
+    PushChannelConfig,
+    SmsChannelConfig,
     UserCreate,
     UserLogin,
     UserLoginResponse,
@@ -77,7 +82,6 @@ __all__ = [
     NotificationConfig,
     NotificationConfigUpdate,
     NotificationConfigResponse,
-    NotificationChannelConfig,
     EmailSettings,
     PushSettings,
     SmsSettings,

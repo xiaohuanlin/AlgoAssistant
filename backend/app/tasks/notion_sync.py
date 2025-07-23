@@ -59,9 +59,6 @@ def notion_sync_task(task_id: int):
             .filter(
                 Record.id.in_(record_ids),
                 Record.user_id == sync_task.user_id,
-                Record.notion_sync_status.in_(
-                    [SyncStatus.PENDING.value, SyncStatus.FAILED.value]
-                ),
             )
             .all()
         )

@@ -323,14 +323,6 @@ const Review = () => {
       render: (_, record) => (
         <Space>
           <Button
-            type="primary"
-            size="small"
-            icon={<CheckCircleOutlined />}
-            onClick={() => handleMarkAsReviewed(record.id)}
-          >
-            {t('review.markAsReviewed')}
-          </Button>
-          <Button
             size="small"
             icon={<EditOutlined />}
             onClick={() => handleEditReview(record)}
@@ -399,9 +391,6 @@ const Review = () => {
       </Card>
       {/* Batch operation buttons */}
       <Space style={{ marginBottom: 16 }}>
-        <Tooltip title={selectedRowKeys.length ? '' : t('review.selectToBatchMark')}>
-          <Button onClick={handleBatchMark} disabled={!selectedRowKeys.length}>{t('review.batchMarkReviewed')}</Button>
-        </Tooltip>
         <Tooltip title={selectedRowKeys.length ? '' : t('review.selectToBatchDelete')}>
           <Button onClick={handleBatchDelete} disabled={!selectedRowKeys.length}>{t('review.batchDelete')}</Button>
         </Tooltip>

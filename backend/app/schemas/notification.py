@@ -27,31 +27,27 @@ class SmsSettings(BaseModel):
     phone_number: str = Field(..., description="Phone number for SMS notifications")
     provider: str = Field(default="twilio", description="SMS provider")
 
-
-class NotificationChannelConfig(BaseModel):
-    """Configuration for a single notification channel."""
-
+class EmailChannelConfig(BaseModel):
     enabled: bool = Field(default=False, description="Whether this channel is enabled")
-    settings: EmailSettings | PushSettings | SmsSettings = Field(
-        ..., description="Channel-specific settings"
-    )
-    frequency: str = Field(
-        default="daily", description="Notification frequency: daily, weekly"
-    )
+    settings: EmailSettings = Field(..., description="Email channel settings")
+    frequency: str = Field(default="daily", description="Notification frequency: daily, weekly")
+
+class PushChannelConfig(BaseModel):
+    enabled: bool = Field(default=False, description="Whether this channel is enabled")
+    settings: PushSettings = Field(..., description="Push channel settings")
+    frequency: str = Field(default="daily", description="Notification frequency: daily, weekly")
+
+class SmsChannelConfig(BaseModel):
+    enabled: bool = Field(default=False, description="Whether this channel is enabled")
+    settings: SmsSettings = Field(..., description="SMS channel settings")
+    frequency: str = Field(default="daily", description="Notification frequency: daily, weekly")
 
 
 class NotificationConfig(BaseModel):
     """Complete notification configuration."""
-
-    email: Optional[NotificationChannelConfig] = Field(
-        default=None, description="Email notification configuration"
-    )
-    push: Optional[NotificationChannelConfig] = Field(
-        default=None, description="Push notification configuration"
-    )
-    sms: Optional[NotificationChannelConfig] = Field(
-        default=None, description="SMS notification configuration"
-    )
+    email: Optional[EmailChannelConfig] = Field(default=None, description="Email notification configuration")
+    push: Optional[PushChannelConfig] = Field(default=None, description="Push notification configuration")
+    sms: Optional[SmsChannelConfig] = Field(default=None, description="SMS notification configuration")
 
 
 class NotificationConfigUpdate(BaseModel):

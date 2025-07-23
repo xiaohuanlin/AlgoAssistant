@@ -513,7 +513,7 @@ const Records = () => {
                 onClick={() => handleOJSync(record)}
                 disabled={record.oj_sync_status === 'completed'}
               >
-                {t('records.syncToOJ')}
+                {record.oj_sync_status === 'completed' ? t('git.synced') : t('records.syncToOJ')}
               </Button>
             </Tooltip>
             <GitSyncAction record={record} onSync={() => loadRecords()} disabled={record.github_sync_status === 'completed' || !actionEnabled} />

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, Row, Col, Tag, Typography, Spin, message, Space, Button } from 'antd';
+import { Card, Row, Col, Tag, Typography, Spin, message, Space, Button, Table } from 'antd';
 import {
   BookOutlined,
   ArrowLeftOutlined,
@@ -13,6 +13,8 @@ import {
 import reviewService from '../services/reviewService';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
+import CreateRecord from './CreateRecord';
+import { Modal } from 'antd';
 
 const { Title, Text } = Typography;
 
@@ -47,19 +49,21 @@ const ReviewDetail = () => {
   const navigate = useNavigate();
   const [review, setReview] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showCreateRecordModal, setShowCreateRecordModal] = useState(false);
+
+  const fetchDetail = async () => {
+    setLoading(true);
+    try {
+      const detail = await reviewService.getReviewById(id);
+      setReview(detail);
+    } catch (error) {
+      message.error('Failed to load review detail');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchDetail = async () => {
-      setLoading(true);
-      try {
-        const detail = await reviewService.getReviewById(id);
-        setReview(detail);
-      } catch (error) {
-        message.error('Failed to load review detail');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchDetail();
   }, [id]);
 
@@ -70,38 +74,80 @@ const ReviewDetail = () => {
     return <Card style={{ margin: 32 }}><Text type="danger">Failed to load review detail</Text></Card>;
   }
 
+  const submissionColumns = [
+    {
+      title: t('records.submitTime'),
+      dataIndex: 'submit_time',
+      key: 'submit_time',
+      render: (val) => dayjs(val).format('YYYY-MM-DD HH:mm'),
+    },
+    {
+      title: t('records.executionResult'),
+      dataIndex: 'execution_result',
+      key: 'execution_result',
+    },
+    {
+      title: t('records.language'),
+      dataIndex: 'language',
+      key: 'language',
+    },
+    {
+      title: t('records.ojType'),
+      dataIndex: 'oj_type',
+      key: 'oj_type',
+    },
+    {
+      title: t('records.submissionUrl'),
+      dataIndex: 'submission_url',
+      key: 'submission_url',
+      render: (url) => url ? <a href={url} target="_blank" rel="noopener noreferrer">{t('common.view')}</a> : '-',
+    },
+  ];
+
+  const handleMarkReviewed = () => {
+    setShowCreateRecordModal(true);
+  };
+
+  const handleRecordCreated = async () => {
+    try {
+      await reviewService.markAsReviewed(review.id);
+      await fetchDetail();
+      message.success(t('review.markAsReviewedSuccess'));
+    } catch (e) {
+      message.error(t('review.markReviewFailed'));
+    } finally {
+      setShowCreateRecordModal(false);
+    }
+  };
+
   return (
-    <div style={{ maxWidth: 900, margin: '24px auto', padding: '0 24px' }}>
+    <div style={{ maxWidth: 1100, margin: '24px auto', padding: '0 24px' }}>
       <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 16 }}>
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/review')}>
           {t('common.back')}
         </Button>
-        <Title level={2} style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <Title level={3} style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
           <BookOutlined style={{ color: '#1890ff' }} />
-          {t('review.title')}
-          <Text code style={{ fontSize: '24px', fontWeight: 'normal' }}>#{review.id}</Text>
+          {review.problem_title || t('records.problemTitle')}
+          <Text code style={{ fontSize: '18px', fontWeight: 'normal' }}>#{review.problem_id}</Text>
         </Title>
+        <Tag color="blue">Review #{review.id}</Tag>
       </div>
       <Row gutter={[24, 24]}>
-        {/* Left column - Main info */}
         <Col xs={24} md={16}>
-          <Card title={<Space><BookOutlined />{t('common.info') || 'Main Info'}</Space>} style={{ marginBottom: 24 }} size="small">
+          <Card
+            title={<Space><BookOutlined />{t('review.title')}</Space>}
+            style={{ marginBottom: 24 }}
+            size="small"
+          >
             <Row gutter={[16, 16]}>
               <Col span={12}>
-                <div style={{ marginBottom: 8 }}>
-                  <Text strong>{t('records.problemId') || 'Problem ID'}:</Text> <Text>{review.problem_id}</Text>
-                </div>
-                <div style={{ marginBottom: 8 }}>
-                  <Text strong>{t('common.id') || 'User ID'}:</Text> <Text>{review.user_id}</Text>
-                </div>
                 <div style={{ marginBottom: 8 }}>
                   <Text strong>{t('review.reviewCount')}:</Text> <Tag color={review.review_count > 0 ? 'green' : 'default'}>{review.review_count}</Tag>
                 </div>
                 <div style={{ marginBottom: 8 }}>
                   <Text strong>{t('review.nextReview')}:</Text> <Text>{review.next_review_date ? dayjs(review.next_review_date).format('YYYY-MM-DD HH:mm') : '-'}</Text>
                 </div>
-              </Col>
-              <Col span={12}>
                 <div style={{ marginBottom: 8 }}>
                   <Text strong>{t('review.wrongReason')}:</Text>
                   <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{review.wrong_reason || '-'}</div>
@@ -111,27 +157,48 @@ const ReviewDetail = () => {
                   <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{review.review_plan || '-'}</div>
                 </div>
               </Col>
+              <Col span={12}>
+                <div style={{ marginBottom: 8 }}>
+                  <Text strong>{t('common.createdAt')}:</Text> <Text>{dayjs(review.created_at).format('YYYY-MM-DD HH:mm')}</Text>
+                </div>
+                <div style={{ marginBottom: 8 }}>
+                  <Text strong>{t('common.updatedAt')}:</Text> <Text>{dayjs(review.updated_at).format('YYYY-MM-DD HH:mm')}</Text>
+                </div>
+                <div style={{ marginBottom: 8 }}>
+                  <Text strong>{t('common.id')}:</Text> <Text>{review.user_id}</Text>
+                </div>
+              </Col>
             </Row>
+            <div style={{ marginTop: 24 }}>
+              <Button type="primary" onClick={handleMarkReviewed}>
+                {t('review.markAsReviewed')}
+              </Button>
+            </div>
           </Card>
         </Col>
-        {/* Right column - Notification & meta info */}
         <Col xs={24} md={8}>
-          <Card title={<Space><InfoCircleOutlined />{t('review.notification') || 'Notification'}</Space>} style={{ marginBottom: 24 }} size="small">
+          <Card title={<Space><InfoCircleOutlined />{t('review.notification')}</Space>} style={{ marginBottom: 24 }} size="small">
             <Row gutter={[8, 8]}>
-              <Col span={24}><Text strong>{t('review.notificationStatus') || 'Status'}:</Text> <Tag color={getStatusColor(review.notification_status)}>{review.notification_status}</Tag></Col>
-              <Col span={24}><Text strong>{t('review.notificationType') || 'Type'}:</Text> <Tag icon={getNotificationTypeIcon(review.notification_type)}>{review.notification_type}</Tag></Col>
-              <Col span={24}><Text strong>{t('review.notificationSent') || 'Sent'}:</Text> <Tag color={review.notification_sent ? 'green' : 'default'}>{review.notification_sent ? t('common.yes') : t('common.no')}</Tag></Col>
-              <Col span={24}><Text strong>{t('review.notificationSentAt') || 'Sent At'}:</Text> <Text>{review.notification_sent_at ? dayjs(review.notification_sent_at).format('YYYY-MM-DD HH:mm') : '-'}</Text></Col>
-            </Row>
-          </Card>
-          <Card title={<Space><ClockCircleOutlined />{t('common.meta') || 'Meta'}</Space>} size="small">
-            <Row gutter={[8, 8]}>
-              <Col span={24}><Text strong>{t('common.createdAt') || 'Created At'}:</Text> <Text>{dayjs(review.created_at).format('YYYY-MM-DD HH:mm')}</Text></Col>
-              <Col span={24}><Text strong>{t('common.updatedAt') || 'Updated At'}:</Text> <Text>{dayjs(review.updated_at).format('YYYY-MM-DD HH:mm')}</Text></Col>
+              <Col span={24}><Text strong>{t('review.notificationStatus')}:</Text> <Tag color={getStatusColor(review.notification_status)}>{review.notification_status}</Tag></Col>
+              <Col span={24}><Text strong>{t('review.notificationType')}:</Text> <Tag icon={getNotificationTypeIcon(review.notification_type)}>{review.notification_type}</Tag></Col>
+              <Col span={24}><Text strong>{t('review.notificationSent')}:</Text> <Tag color={review.notification_sent ? 'green' : 'default'}>{review.notification_sent ? t('common.yes') : t('common.no')}</Tag></Col>
+              <Col span={24}><Text strong>{t('review.notificationSentAt')}:</Text> <Text>{review.notification_sent_at ? dayjs(review.notification_sent_at).format('YYYY-MM-DD HH:mm') : '-'}</Text></Col>
             </Row>
           </Card>
         </Col>
       </Row>
+      <Card title={t('review.relatedRecords') || '相关提交记录'} style={{ marginTop: 32 }}>
+        <Table
+          dataSource={review.submissions || []}
+          columns={submissionColumns}
+          rowKey="id"
+          pagination={false}
+          size="small"
+        />
+      </Card>
+      <Modal open={showCreateRecordModal} onCancel={() => setShowCreateRecordModal(false)} footer={null} destroyOnClose>
+        <CreateRecord problemId={review.problem_id} onSuccess={handleRecordCreated} />
+      </Modal>
     </div>
   );
 };

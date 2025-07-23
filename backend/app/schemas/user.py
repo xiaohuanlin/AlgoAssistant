@@ -8,6 +8,7 @@ from app.schemas.github import GitHubConfig
 from app.schemas.google import GoogleConfig
 from app.schemas.leetcode import LeetCodeConfig
 from app.schemas.notion import NotionConfig
+from app.schemas.notification import NotificationConfig
 
 
 class UserBase(BaseModel):
@@ -144,6 +145,10 @@ class UserConfigBase(BaseModel):
         None,
         description="Google OAuth settings for authentication and calendar integration.",
     )
+    notification_config: Optional[NotificationConfig] = Field(
+        None,
+        description="Notification settings for email, push, and SMS notifications.",
+    )
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -169,6 +174,10 @@ class UserConfigCreate(BaseModel):
     google_config: Optional[GoogleConfig] = Field(
         None,
         description="Google OAuth configuration including encrypted access token for authentication and calendar integration.",
+    )
+    notification_config: Optional[NotificationConfig] = Field(
+        None,
+        description="Notification settings for email, push, and SMS notifications.",
     )
 
 
@@ -200,6 +209,10 @@ class UserConfigOut(BaseModel):
     google_config: Optional[GoogleConfig] = Field(
         None,
         description="Google settings excluding sensitive OAuth token for security.",
+    )
+    notification_config: Optional[NotificationConfig] = Field(
+        None,
+        description="Notification settings for email, push, and SMS notifications.",
     )
     created_at: datetime = Field(
         ...,

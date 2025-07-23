@@ -21,6 +21,7 @@ import authService from '../services/authService';
 
 import GeminiIntegrationModal from '../components/GeminiIntegrationModal';
 import { useConfig } from '../contexts/ConfigContext';
+import NotificationConfigModal from '../components/NotificationConfigModal';
 
 const { Title, Text } = Typography;
 
@@ -36,6 +37,8 @@ const Settings = () => {
     const [notionModalVisible, setNotionModalVisible] = useState(false);
     const [geminiConfig, setGeminiConfig] = useState(null);
     const [geminiModalVisible, setGeminiModalVisible] = useState(false);
+    const [notificationConfig, setNotificationConfig] = useState(null);
+    const [notificationModalVisible, setNotificationModalVisible] = useState(false);
 
     useEffect(() => {
         if (authService.isAuthenticated()) {
@@ -91,6 +94,13 @@ const Settings = () => {
                 });
             } else {
                 setGeminiConfig(null);
+            }
+
+            // Set Notification config
+            if (allConfigs.notification_config) {
+                setNotificationConfig({ notification_config: allConfigs.notification_config });
+            } else {
+                setNotificationConfig(null);
             }
         } catch (error) {
             console.error('Error loading configs:', error);
@@ -191,6 +201,23 @@ const Settings = () => {
                             onCancel={() => setGeminiModalVisible(false)}
                             onSuccess={async () => { setGeminiModalVisible(false); await loadConfigs(); }}
                             initialValues={geminiConfig}
+                        />
+                    </Col>
+                    {/* Notification Config Integration */}
+                    <Col xs={24} lg={12}>
+                        <IntegrationCard
+                            title={t('notificationConfig.title') || '通知设置'}
+                            icon={<WarningOutlined style={{ fontSize: '18px', color: '#faad14' }} />}
+                            description={t('notificationConfig.description') || '配置邮件、推送、短信等通知方式'}
+                            status={notificationConfig?.notification_config?.email?.enabled || notificationConfig?.notification_config?.push?.enabled || notificationConfig?.notification_config?.sms?.enabled ? 'configured' : 'not_configured'}
+                            onConfigure={() => setNotificationModalVisible(true)}
+                            loading={loading}
+                        />
+                        <NotificationConfigModal
+                            visible={notificationModalVisible}
+                            onCancel={() => setNotificationModalVisible(false)}
+                            onSuccess={async () => { setNotificationModalVisible(false); await loadConfigs(); }}
+                            initialValues={notificationConfig}
                         />
                     </Col>
                 </Row>

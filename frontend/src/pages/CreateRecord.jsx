@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, Select, DatePicker, message, Spin, Switch } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import problemService from '../services/problemService';
@@ -17,7 +17,7 @@ const executionResultOptions = [
   'Accepted', 'Wrong Answer', 'Time Limit Exceeded', 'Runtime Error', 'Compile Error', 'Other'
 ];
 
-const CreateRecord = () => {
+const CreateRecord = ({ problemId, onSuccess }) => {
   const [form] = Form.useForm();
   const [problemOptions, setProblemOptions] = useState([]);
   const [fetching, setFetching] = useState(false);
@@ -27,6 +27,14 @@ const CreateRecord = () => {
   const [codeValue, setCodeValue] = useState('');
   const [languageValue, setLanguageValue] = useState('python');
   const [completionEnabled, setCompletionEnabled] = useState(false);
+
+  useEffect(() => {
+    if (problemId) {
+      // 如果传入 problemId，设置初始值并禁用题目选择
+      form.setFieldsValue({ problem_id: problemId });
+      setProblemOptions([{ value: problemId, label: `ID: ${problemId}` }]);
+    }
+  }, [problemId, form]);
 
   const handleProblemSearch = async (value) => {
     setFetching(true);
@@ -68,7 +76,11 @@ const CreateRecord = () => {
       };
       await recordsService.createRecord(payload);
       message.success(t('records.createSuccess'));
-      navigate('/records');
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        navigate('/records');
+      }
     } catch (e) {
       message.error(e.message || t('common.error'));
     } finally {
@@ -89,6 +101,7 @@ const CreateRecord = () => {
           layout="vertical"
           onFinish={handleFinish}
           style={{ maxWidth: 600, margin: '0 auto', marginTop: 32 }}
+          initialValues={problemId ? { problem_id: problemId } : {}}
         >
           <Form.Item
             name="problem_id"
@@ -102,6 +115,7 @@ const CreateRecord = () => {
               onSearch={handleProblemSearch}
               options={problemOptions}
               notFoundContent={fetching ? <Spin size="small" /> : null}
+              disabled={!!problemId}
             />
           </Form.Item>
           <Form.Item

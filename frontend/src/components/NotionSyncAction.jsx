@@ -33,31 +33,11 @@ const NotionSyncAction = ({ record, onSync, disabled = false }) => {
     }
   };
 
-  const getButtonText = () => {
-    if (record.notion_sync_status === 'completed') {
-      return t('notion.resync');
-    }
-    if (record.notion_sync_status === 'running') {
-      return t('notion.syncing');
-    }
-    if (record.notion_sync_status === 'failed') {
-      return t('notion.retry');
-    }
-    return t('notion.sync');
-  };
+  const getButtonText = () => t('notion.sync');
 
   const getTooltipText = () => {
     if (disabled) {
       return t('records.pleaseSyncOJFirst');
-    }
-    if (record.notion_sync_status === 'completed') {
-      return t('notion.resyncTooltip');
-    }
-    if (record.notion_sync_status === 'running') {
-      return t('notion.syncingTooltip');
-    }
-    if (record.notion_sync_status === 'failed') {
-      return t('notion.retryTooltip');
     }
     return t('notion.syncTooltip');
   };

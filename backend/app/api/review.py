@@ -16,6 +16,7 @@ from app.schemas.review import (
     ReviewUpdate,
 )
 from app.services.review_service import ReviewService
+from app.services.record_service import RecordService
 
 router = APIRouter(prefix="/api/review", tags=["review"])
 
@@ -189,7 +190,15 @@ async def get_review_detail(
     review = service.get_review_by_id(review_id)
     if not review or review.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Review not found")
-    return review
+    record_service = RecordService(db)
+    records = db.query(models.Record).filter(
+        models.Record.user_id == current_user.id,
+        models.Record.problem_id == review.problem_id
+    ).order_by(models.Record.submit_time.desc()).all()
+    submissions = [record_service.to_record_list_out(r) for r in records]
+    review_out = ReviewOut.from_orm(review)
+    review_out.submissions = submissions
+    return review_out
 
 
 @router.post("/{review_id}/mark-reviewed", response_model=ReviewOut)

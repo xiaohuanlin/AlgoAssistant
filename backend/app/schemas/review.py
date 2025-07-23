@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
+from app.schemas.record import RecordListOut
 
 
 class ReviewBase(BaseModel):
@@ -50,6 +51,7 @@ class ReviewOut(ReviewBase):
     notification_status: str
     created_at: datetime
     updated_at: datetime
+    submissions: Optional[List[RecordListOut]] = Field(None, description="All submissions for this problem by the user")
 
     class Config:
         orm_mode = True

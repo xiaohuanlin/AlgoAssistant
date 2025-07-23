@@ -221,7 +221,8 @@
     "nextReviewDate": "Next Review Date",
     "actions": "Actions",
     "minReviewCount": "Min Review Count",
-    "maxReviewCount": "Max Review Count"
+    "maxReviewCount": "Max Review Count",
+    "relatedRecords": "Related Submissions"
   },
   "syncTasks": {
     "title": "Sync Tasks",
@@ -677,7 +678,8 @@
     "notSynced": "Not Synced",
     "invalidRecord": "Invalid Record",
     "viewRepo": "View Repository",
-    "unknownError": "Unknown Error"
+    "unknownError": "Unknown Error",
+    "synced": "Synced to GitHub repository."
   },
   "settings": {
     "title": "Settings",

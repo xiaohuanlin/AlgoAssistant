@@ -29,6 +29,7 @@ class UserConfigService:
             notion_config=config.notion_config,
             gemini_config=config.gemini_config,
             google_config=config.google_config,
+            notification_config=config.notification_config,
         )
         self.db.add(db_config)
         self.db.commit()
@@ -58,6 +59,8 @@ class UserConfigService:
             db_config.gemini_config = config.gemini_config
         if config.google_config:
             db_config.google_config = config.google_config
+        if config.notification_config:
+            db_config.notification_config = config.notification_config
         self.db.commit()
         self.db.refresh(db_config)
         return db_config
