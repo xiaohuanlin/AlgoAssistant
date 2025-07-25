@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Card, Row, Col, Tag, Typography, Spin, message, Space } from 'antd';
+import { Card, Row, Col, Tag, Typography, Spin, message, Space, Button } from 'antd';
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -202,7 +202,13 @@ const RecordDetail = () => {
               <Col xs={24} sm={12}>
                 <div style={{ marginBottom: 12 }}>
                   <Text strong>{t('records.problemNumber')}：</Text>
-                  <Text code>{record.problem_number}</Text>
+                  <Button
+                    type="link"
+                    style={{ padding: 0, height: 'auto' }}
+                    onClick={() => window.location.href = `/problem/${record.problem_number}`}
+                  >
+                    <Text code>{record.problem_number}</Text>
+                  </Button>
                 </div>
               </Col>
               <Col xs={24} sm={12}>

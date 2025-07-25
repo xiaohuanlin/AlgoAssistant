@@ -95,11 +95,11 @@ const Layout = ({ children }) => {
   const getSelectedKeys = () => {
     const pathname = location.pathname;
     if (pathname === '/') return ['/'];
-    if (pathname.startsWith('/problem')) return ['/problem'];
-    if (pathname === '/records') return ['/records'];
-    if (pathname === '/review') return ['/review'];
-    if (pathname === '/sync-tasks') return ['/sync-tasks'];
-    if (pathname === '/settings') return ['/settings'];
+    if (pathname === '/problem' || pathname.startsWith('/problem/')) return ['/problem'];
+    if (pathname === '/records' || pathname.startsWith('/records/')) return ['/records'];
+    if (pathname === '/review' || pathname.startsWith('/review/')) return ['/review'];
+    if (pathname === '/sync-tasks' || pathname.startsWith('/sync-tasks/')) return ['/sync-tasks'];
+    if (pathname === '/settings' || pathname.startsWith('/settings/')) return ['/settings'];
     return [];
   };
 

@@ -1,0 +1,232 @@
+/* Collapsible Card Styles */
+.collapsible-card {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.collapsible-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* Priority-based styling */
+.collapsible-card.priority-critical {
+  border-left: 4px solid #f5222d;
+}
+
+.collapsible-card.priority-important {
+  border-left: 4px solid #1890ff;
+}
+
+.collapsible-card.priority-secondary {
+  border-left: 4px solid #faad14;
+}
+
+.collapsible-card.priority-expandable {
+  border-left: 4px solid #52c41a;
+}
+
+/* Mobile Header */
+.collapsible-header-mobile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+}
+
+.collapsible-title-mobile {
+  font-size: 16px;
+  font-weight: 600;
+  color: #262626;
+  flex: 1;
+}
+
+.collapsible-actions-mobile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.expand-button-mobile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.expand-button-mobile:hover {
+  background-color: rgba(24, 144, 255, 0.1);
+  color: #1890ff;
+}
+
+.expand-button-mobile:focus {
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* Desktop Header */
+.collapsible-header-desktop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.collapsible-title-desktop {
+  font-size: 18px;
+  font-weight: 600;
+  color: #262626;
+}
+
+.collapsible-extra-desktop {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Content Animation */
+.collapsible-content {
+  transition: all 0.3s ease;
+}
+
+.collapsible-content.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.collapsible-content.hidden {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* Mobile Layout */
+.collapsible-card.mobile {
+  margin-bottom: 12px;
+}
+
+.collapsible-card.mobile .ant-card-head {
+  padding: 12px 16px;
+  min-height: auto;
+  border-bottom: none;
+}
+
+.collapsible-card.mobile .ant-card-body {
+  padding: 0 16px 16px 16px;
+}
+
+.collapsible-card.mobile.collapsed .ant-card-body {
+  padding: 0;
+}
+
+/* Desktop Layout */
+.collapsible-card.desktop {
+  margin-bottom: 24px;
+}
+
+.collapsible-card.desktop .ant-card-head {
+  padding: 16px 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.collapsible-card.desktop .ant-card-body {
+  padding: 24px;
+}
+
+/* Expanded/Collapsed States */
+.collapsible-card.expanded {
+  /* Add any specific expanded state styles */
+}
+
+.collapsible-card.collapsed {
+  /* Add any specific collapsed state styles */
+}
+
+.collapsible-card.collapsed .ant-card-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.collapsible-card.expanded .ant-card-body {
+  max-height: none;
+}
+
+/* Loading State */
+.collapsible-card .ant-card-loading-content {
+  padding: 16px;
+}
+
+/* Responsive adjustments */
+@media (min-width: 576px) and (max-width: 767px) {
+  .collapsible-card.mobile {
+    margin-bottom: 16px;
+  }
+
+  .collapsible-title-mobile {
+    font-size: 17px;
+  }
+
+  .collapsible-card.mobile .ant-card-head {
+    padding: 14px 18px;
+  }
+
+  .collapsible-card.mobile .ant-card-body {
+    padding: 0 18px 18px 18px;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .expand-button-mobile {
+    /* Increase touch target on touch devices */
+    min-width: 48px;
+    min-height: 48px;
+  }
+
+  .collapsible-card:hover {
+    /* Disable hover effects on touch devices */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+}
+
+/* Accessibility */
+.expand-button-mobile:focus-visible {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  .collapsible-card {
+    background-color: #1f1f1f;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .collapsible-title-mobile,
+  .collapsible-title-desktop {
+    color: #ffffff;
+  }
+
+  .collapsible-card.desktop .ant-card-head {
+    border-bottom-color: #434343;
+  }
+
+  .expand-button-mobile:hover {
+    background-color: rgba(24, 144, 255, 0.2);
+  }
+}
+
+/* Animation for smooth expand/collapse on mobile */
+@media (max-width: 575px) {
+  .collapsible-card.mobile .ant-card-body {
+    transition: padding 0.3s ease, max-height 0.3s ease;
+  }
+
+  .collapsible-content {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+}

@@ -302,7 +302,15 @@ const Records = () => {
       dataIndex: 'problem_number',
       key: 'problem_number',
       width: 80,
-      render: (problemNumber) => problemNumber ? <Text strong>{problemNumber}</Text> : <Text type="secondary">-</Text>
+      render: (problemNumber, record) => problemNumber ? (
+        <Button
+          type="link"
+          style={{ padding: 0, height: 'auto' }}
+          onClick={() => window.location.href = `/problem/${record.problem_number}`}
+        >
+          <Text strong>{problemNumber}</Text>
+        </Button>
+      ) : <Text type="secondary">-</Text>
     },
     {
       title: t('records.problem'),

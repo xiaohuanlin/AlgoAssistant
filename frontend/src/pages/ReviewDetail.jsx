@@ -129,9 +129,7 @@ const ReviewDetail = () => {
         <Title level={3} style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
           <BookOutlined style={{ color: '#1890ff' }} />
           {review.problem_title || t('records.problemTitle')}
-          <Text code style={{ fontSize: '18px', fontWeight: 'normal' }}>#{review.problem_id}</Text>
         </Title>
-        <Tag color="blue">Review #{review.id}</Tag>
       </div>
       <Row gutter={[24, 24]}>
         <Col xs={24} md={16}>

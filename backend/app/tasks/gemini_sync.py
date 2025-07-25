@@ -71,9 +71,7 @@ def gemini_sync_task(task_id: int):
                 db.commit()
                 success, analysis_result = gemini_service.analyze_code(
                     code=record.code,
-                    problem_description=f"LeetCode Problem {record.problem_id}"
-                    if record.problem_id
-                    else "Code Analysis",
+                    problem_description=record.problem.description,
                     language=record.language,
                 )
                 if not success:

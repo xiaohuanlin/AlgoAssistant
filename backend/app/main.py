@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app import models
 from app.api import (
+    dashboard,
     gemini,
     github,
     google,
@@ -39,6 +40,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(users.router)
+app.include_router(dashboard.router)
 app.include_router(records.router)
 app.include_router(leetcode.router)
 app.include_router(notion.router)
