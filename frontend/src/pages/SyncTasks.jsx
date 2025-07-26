@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card,
-  Table,
   Button,
   message,
   Tag,
@@ -24,8 +23,6 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined,
   SyncOutlined,
-  FilterOutlined,
-  ClearOutlined,
   PlusOutlined,
   DeleteOutlined,
   ReloadOutlined,
@@ -33,6 +30,7 @@ import {
   PlayCircleOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
+import { DataTable, StatusIndicator } from '../components/common';
 
 import syncTaskService from '../services/syncTaskService';
 import recordsService from '../services/recordsService';
@@ -43,35 +41,50 @@ const { RangePicker } = DatePicker;
 const { Option } = Select;
 
 const SyncTasks = () => {
+  const { t } = useTranslation();
+  const { hasLeetCodeConfig, hasGitConfig, hasGeminiConfig } = useConfig();
+
+  // State management
   const [tasks, setTasks] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const { t } = useTranslation();
-  const { hasLeetCodeConfig, hasGitConfig, hasGeminiConfig } = useConfig();
   const [unsyncedRecords, setUnsyncedRecords] = useState([]);
   const [recordsLoading, setRecordsLoading] = useState(false);
   const [selectedTaskType, setSelectedTaskType] = useState(null);
   const [filters, setFilters] = useState({});
   const [leetcodeProfile, setLeetCodeProfile] = useState(null);
   const [leetcodeProfileLoading, setLeetCodeProfileLoading] = useState(false);
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [batchLoading, setBatchLoading] = useState(false);
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
   const [form] = Form.useForm();
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (newFilters = {}) => {
     setLoading(true);
     try {
+      const queryFilters = { ...filters, ...newFilters };
       const [tasksData, statsData] = await Promise.all([
-        syncTaskService.getTasks(filters),
+        syncTaskService.getTasks({
+          ...queryFilters,
+          limit: pagination.pageSize,
+          offset: (pagination.current - 1) * pagination.pageSize
+        }),
         syncTaskService.getTaskStats(),
       ]);
-      setTasks(tasksData);
+      setTasks(tasksData.items || tasksData);
       setStats(statsData);
+      setPagination(prev => ({
+        ...prev,
+        total: tasksData.total || tasksData.length
+      }));
     } catch (error) {
-      message.error(t('syncTasks.loadTaskDataFailed') + ': ' + error.message);
+      message.error(t('syncTasks.loadError'));
+      console.error('Load sync tasks error:', error);
     } finally {
       setLoading(false);
     }
-  }, [t, filters]);
+  }, [t, filters, pagination.current, pagination.pageSize]);
 
   const loadSelectableRecords = useCallback(async (type) => {
     setRecordsLoading(true);
@@ -113,7 +126,7 @@ const SyncTasks = () => {
 
   useEffect(() => {
     if (modalVisible && selectedTaskType === 'leetcode_batch_sync') {
-      // 使用ConfigContext检查LeetCode配置
+      // Check LeetCode configuration using ConfigContext
       if (hasLeetCodeConfig()) {
         const loadLeetCodeProfile = async () => {
           setLeetCodeProfileLoading(true);
@@ -135,7 +148,7 @@ const SyncTasks = () => {
   const handleTaskTypeChange = (value) => {
     setSelectedTaskType(value);
 
-    // 使用ConfigContext检查配置
+    // Check configuration using ConfigContext
     if (value === 'leetcode_batch_sync' || value === 'leetcode_detail_sync') {
       if (!hasLeetCodeConfig()) {
         message.warning(t('leetcode.configRequiredDesc'));
@@ -203,6 +216,29 @@ const SyncTasks = () => {
     }
   };
 
+  const handleBatchDelete = async () => {
+    if (selectedRowKeys.length === 0) {
+      message.warning(t('syncTasks.selectTasksFirst'));
+      return;
+    }
+
+    setBatchLoading(true);
+    try {
+      await Promise.all(selectedRowKeys.map(id => syncTaskService.deleteTask(id)));
+      message.success(t('syncTasks.batchDeleteSuccess'));
+      setSelectedRowKeys([]);
+      loadData();
+    } catch (error) {
+      message.error(t('syncTasks.batchDeleteError'));
+    } finally {
+      setBatchLoading(false);
+    }
+  };
+
+  const handleSelectionChange = (selectedRowKeys) => {
+    setSelectedRowKeys(selectedRowKeys);
+  };
+
   const handleRetryTask = async (taskId) => {
     try {
       await syncTaskService.retryTask(taskId);
@@ -256,20 +292,23 @@ const SyncTasks = () => {
       title: t('syncTasks.taskType'),
       dataIndex: 'type',
       key: 'type',
-      width: 120,
+      width: 150,
       render: (type) => (
-        <Tag color="blue">{syncTaskService.getTypeText(type, t)}</Tag>
+        <Tag color="blue">
+          {syncTaskService.getTypeText(type, t)}
+        </Tag>
       ),
     },
     {
       title: t('syncTasks.statusLabel'),
       dataIndex: 'status',
       key: 'status',
-      width: 100,
+      width: 120,
       render: (status) => (
-        <Badge
-          status={syncTaskService.getStatusColor(status)}
-          text={syncTaskService.getStatusText(status, t)}
+        <StatusIndicator
+          status={status}
+          type="task"
+          size="small"
         />
       ),
     },
@@ -325,47 +364,51 @@ const SyncTasks = () => {
       dataIndex: 'created_at',
       key: 'created_at',
       width: 160,
-      render: (date) => new Date(date).toLocaleString(),
-    },
-    {
-      title: t('syncTasks.updatedAt'),
-      dataIndex: 'updated_at',
-      key: 'updated_at',
-      width: 160,
-      render: (date) => new Date(date).toLocaleString(),
+      render: (date) => (
+        <span style={{ fontSize: '12px' }}>
+          {new Date(date).toLocaleString()}
+        </span>
+      ),
     },
     {
       title: t('syncTasks.actions'),
       key: 'actions',
       width: 200,
+      fixed: 'right',
       render: (_, task) => (
         <Space>
           {syncTaskService.canRetry(task.status) && (
-            <Button
-              size="small"
-              icon={<SyncOutlined />}
-              onClick={() => handleRetryTask(task.id)}
-            >
-              {t('syncTasks.retry')}
-            </Button>
+            <Tooltip title={t('syncTasks.retry')}>
+              <Button
+                icon={<SyncOutlined />}
+                size="small"
+                onClick={() => handleRetryTask(task.id)}
+              >
+                {t('syncTasks.retry')}
+              </Button>
+            </Tooltip>
           )}
           {syncTaskService.canPause(task.status) && (
-            <Button
-              size="small"
-              icon={<PauseCircleOutlined />}
-              onClick={() => handlePauseTask(task.id)}
-            >
-              {t('syncTasks.pause')}
-            </Button>
+            <Tooltip title={t('syncTasks.pause')}>
+              <Button
+                icon={<PauseCircleOutlined />}
+                size="small"
+                onClick={() => handlePauseTask(task.id)}
+              >
+                {t('syncTasks.pause')}
+              </Button>
+            </Tooltip>
           )}
           {syncTaskService.canResume(task.status) && (
-            <Button
-              size="small"
-              icon={<PlayCircleOutlined />}
-              onClick={() => handleResumeTask(task.id)}
-            >
-              {t('syncTasks.resume')}
-            </Button>
+            <Tooltip title={t('syncTasks.resume')}>
+              <Button
+                icon={<PlayCircleOutlined />}
+                size="small"
+                onClick={() => handleResumeTask(task.id)}
+              >
+                {t('syncTasks.resume')}
+              </Button>
+            </Tooltip>
           )}
           <Popconfirm
             title={t('syncTasks.confirmDeleteTask')}
@@ -374,8 +417,8 @@ const SyncTasks = () => {
             cancelText={t('common.cancel')}
           >
             <Button
-              size="small"
               icon={<DeleteOutlined />}
+              size="small"
               danger
               disabled={task.status === 'running'}
             >
@@ -387,23 +430,93 @@ const SyncTasks = () => {
     },
   ];
 
-      // Filter form submission
   const handleFilter = (values) => {
-    const { created_at_range, ...rest } = values;
-    let filterParams = { ...rest };
-    if (created_at_range && created_at_range.length === 2) {
-      filterParams.created_at_start = created_at_range[0].startOf('day').toISOString();
-      filterParams.created_at_end = created_at_range[1].endOf('day').toISOString();
-    }
-    setFilters(filterParams);
-  };
-  const handleReset = () => {
-    setFilters({});
-    form.resetFields();
+    const newFilters = {};
+    Object.keys(values).forEach(key => {
+      if (values[key] !== undefined && values[key] !== null && values[key] !== '') {
+        if (key === 'created_at_range' && values[key]?.length === 2) {
+          newFilters.created_at_start = values[key][0].startOf('day').toISOString();
+          newFilters.created_at_end = values[key][1].endOf('day').toISOString();
+        } else {
+          newFilters[key] = values[key];
+        }
+      }
+    });
+    setFilters(newFilters);
+    setPagination(prev => ({ ...prev, current: 1 }));
+    loadData(newFilters);
   };
 
+  // Filter configuration
+  const filterConfig = [
+    {
+      key: 'id',
+      label: t('syncTasks.filter.id'),
+      type: 'input',
+      placeholder: t('syncTasks.filter.idPlaceholder'),
+      value: filters.id,
+      onChange: (value) => setFilters(prev => ({ ...prev, id: value }))
+    },
+    {
+      key: 'type',
+      label: t('syncTasks.filter.type'),
+      type: 'select',
+      placeholder: t('syncTasks.filter.typePlaceholder'),
+      value: filters.type,
+      onChange: (value) => setFilters(prev => ({ ...prev, type: value })),
+      options: [
+        { label: t('syncTasks.taskTypes.github_sync'), value: 'github_sync' },
+        { label: t('syncTasks.taskTypes.leetcode_batch_sync'), value: 'leetcode_batch_sync' },
+        { label: t('syncTasks.taskTypes.leetcode_detail_sync'), value: 'leetcode_detail_sync' },
+        { label: t('syncTasks.taskTypes.notion_sync'), value: 'notion_sync' },
+        { label: t('syncTasks.taskTypes.ai_analysis'), value: 'ai_analysis' },
+        { label: t('syncTasks.taskTypes.gemini_sync'), value: 'gemini_sync' }
+      ]
+    },
+    {
+      key: 'status',
+      label: t('syncTasks.filter.status'),
+      type: 'select',
+      placeholder: t('syncTasks.filter.statusPlaceholder'),
+      value: filters.status,
+      onChange: (value) => setFilters(prev => ({ ...prev, status: value })),
+      options: [
+        { label: t('syncTasks.status.pending'), value: 'pending' },
+        { label: t('syncTasks.status.running'), value: 'running' },
+        { label: t('syncTasks.status.completed'), value: 'completed' },
+        { label: t('syncTasks.status.failed'), value: 'failed' },
+        { label: t('syncTasks.status.paused'), value: 'paused' }
+      ]
+    },
+    {
+      key: 'created_at_range',
+      label: t('syncTasks.filter.createdAt'),
+      type: 'dateRange',
+      value: filters.created_at_range,
+      onChange: (value) => setFilters(prev => ({ ...prev, created_at_range: value }))
+    }
+  ];
+
+  // Actions configuration
+  const actions = [
+    {
+      text: t('syncTasks.createTask'),
+      type: 'primary',
+      icon: <PlusOutlined />,
+      onClick: () => setModalVisible(true)
+    },
+    {
+      text: `${t('syncTasks.batchDelete')} (${selectedRowKeys.length})`,
+      icon: <DeleteOutlined />,
+      onClick: handleBatchDelete,
+      loading: batchLoading,
+      disabled: selectedRowKeys.length === 0,
+      danger: true
+    }
+  ];
+
   return (
-    <div>
+    <div style={{ padding: '24px' }}>
       {/* Statistics Cards */}
       <Row gutter={16} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} lg={6}>
@@ -448,115 +561,26 @@ const SyncTasks = () => {
         </Col>
       </Row>
 
-      {/* Filter Bar*/}
-      <Card
-        size="small"
-        style={{ marginBottom: 16, backgroundColor: '#fafafa' }}
-        title={
-          <Space>
-            <FilterOutlined />
-            {t('syncTasks.filters')}
-          </Space>
-        }
-        extra={
-          <Button
-            size="small"
-            icon={<ClearOutlined />}
-            onClick={handleReset}
-          >
-            {t('common.reset')}
-          </Button>
-        }
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleFilter}
-          initialValues={filters}
-        >
-          <Row gutter={[16, 0]}>
-            <Col span={6} style={{ minWidth: 160 }}>
-              <Form.Item name="id" label={t('syncTasks.filter.id')}>
-                <Input placeholder={t('syncTasks.filter.idPlaceholder')} allowClear />
-              </Form.Item>
-            </Col>
-            <Col span={6} style={{ minWidth: 180 }}>
-              <Form.Item name="type" label={t('syncTasks.filter.type')}>
-                <Select allowClear placeholder={t('syncTasks.filter.typePlaceholder')}>
-                  <Option value="github_sync">{t('syncTasks.taskTypes.github_sync')}</Option>
-                  <Option value="leetcode_batch_sync">{t('syncTasks.taskTypes.leetcode_batch_sync')}</Option>
-                  <Option value="leetcode_detail_sync">{t('syncTasks.taskTypes.leetcode_detail_sync')}</Option>
-                  <Option value="notion_sync">{t('syncTasks.taskTypes.notion_sync')}</Option>
-                  <Option value="ai_analysis">{t('syncTasks.taskTypes.ai_analysis')}</Option>
-                  <Option value="gemini_sync" disabled={!hasGeminiConfig}>
-                    {t('syncTasks.taskTypes.gemini_sync')} {!hasGeminiConfig && `(${t('syncTasks.geminiConfigRequired')})`}
-                  </Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={6} style={{ minWidth: 180 }}>
-              <Form.Item name="status" label={t('syncTasks.filter.status')}>
-                <Select allowClear placeholder={t('syncTasks.filter.statusPlaceholder')}>
-                  <Option value="pending">{t('syncTasks.status.pending')}</Option>
-                  <Option value="running">{t('syncTasks.status.running')}</Option>
-                  <Option value="completed">{t('syncTasks.status.completed')}</Option>
-                  <Option value="failed">{t('syncTasks.status.failed')}</Option>
-                  <Option value="paused">{t('syncTasks.status.paused')}</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={6} style={{ minWidth: 220 }}>
-              <Form.Item name="created_at_range" label={t('syncTasks.filter.createdAt')}>
-                <RangePicker style={{ width: '100%' }} placeholder={[t('syncTasks.filter.startDate'), t('syncTasks.filter.endDate')]} />
-              </Form.Item>
-            </Col>
-            <Col span={6} style={{ minWidth: 120, display: 'flex', alignItems: 'flex-end' }}>
-              <Form.Item>
-                <Button type="primary" htmlType="submit">
-                  {t('common.search')}
-                </Button>
-              </Form.Item>
-            </Col>
-          </Row>
-        </Form>
-      </Card>
-
-      {/* Task List */}
-      <Card
-        title={t('syncTasks.syncTasks')}
-        extra={
-          <Space>
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={loadData}
-              loading={loading}
-            >
-              {t('common.refresh')}
-            </Button>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => setModalVisible(true)}
-            >
-              {t('syncTasks.createTask')}
-            </Button>
-          </Space>
-        }
-      >
-        <Table
-          columns={columns}
-          dataSource={tasks}
-          rowKey="id"
-          loading={loading}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) =>
-              t('syncTasks.pagination.showing', { start: range[0], end: range[1], total }),
-          }}
-        />
-      </Card>
+      {/* Main Data Table */}
+      <DataTable
+        title={t('syncTasks.title')}
+        subtitle={t('syncTasks.syncTasksList')}
+        data={tasks}
+        columns={columns}
+        loading={loading}
+        pagination={{
+          ...pagination,
+          onChange: (page, pageSize) => {
+            setPagination(prev => ({ ...prev, current: page, pageSize }));
+          }
+        }}
+        filters={filterConfig}
+        selectedRowKeys={selectedRowKeys}
+        onSelectionChange={handleSelectionChange}
+        onRefresh={() => loadData()}
+        onFilterChange={handleFilter}
+        actions={actions}
+      />
 
       {/* Create Task Modal */}
       <Modal

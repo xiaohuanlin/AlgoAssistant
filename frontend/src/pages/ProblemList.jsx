@@ -1,27 +1,27 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Table, Button, message, Tag, Typography, Space, Form, Input, Select, Modal, Upload, Switch } from 'antd';
-import { BookOutlined, EyeOutlined, PlusOutlined, FilterOutlined, ClearOutlined, UploadOutlined } from '@ant-design/icons';
+import { Button, message, Tag, Modal, Upload, Switch, Space } from 'antd';
+import { BookOutlined, EyeOutlined, PlusOutlined, UploadOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import problemService from '../services/problemService';
 import { useNavigate } from 'react-router-dom';
+import DataTable from '../components/common/DataTable';
+import ActionButton from '../components/common/ActionButton';
 
-const { Title } = Typography;
-const { Option } = Select;
 
 const ProblemList = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [problems, setProblems] = useState({ items: [], total: 0 });
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 20 });
-  const [filters, setFilters] = useState({});
-  const [form] = Form.useForm();
+  const [problems, setProblems] = useState([]);
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
   const [importModalVisible, setImportModalVisible] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState(null);
   const [importedCount, setImportedCount] = useState(0);
   const [fileList, setFileList] = useState([]);
   const [onlySelf, setOnlySelf] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
+  const [filters, setFilters] = useState({});
 
   const fetchProblems = useCallback(async () => {
     setLoading(true);
@@ -31,34 +31,21 @@ const ProblemList = () => {
         limit: pagination.pageSize,
         ...filters,
         only_self: onlySelf,
+        title: searchValue || undefined,
       };
       const data = await problemService.getProblems(params);
-      setProblems(data);
+      setProblems(data.items);
+      setPagination(prev => ({ ...prev, total: data.total }));
     } catch (error) {
       message.error(t('problem.loadError') + ': ' + error.message);
     } finally {
       setLoading(false);
     }
-  }, [pagination, filters, onlySelf, t]);
+  }, [pagination.current, pagination.pageSize, filters, onlySelf, searchValue, t]);
 
   useEffect(() => {
     fetchProblems();
   }, [fetchProblems]);
-
-  const handleTableChange = (pagination) => {
-    setPagination({ current: pagination.current, pageSize: pagination.pageSize });
-  };
-
-  const handleFilter = (values) => {
-    setFilters(values);
-    setPagination((prev) => ({ ...prev, current: 1 }));
-  };
-
-  const handleClearFilters = () => {
-    form.resetFields();
-    setFilters({});
-    setPagination((prev) => ({ ...prev, current: 1 }));
-  };
 
   const handleViewDetail = (problem) => {
     navigate(`/problem/${problem.id}`);
@@ -88,7 +75,29 @@ const ProblemList = () => {
 
   const handleOnlySelfChange = (checked) => {
     setOnlySelf(checked);
-    setPagination((prev) => ({ ...prev, current: 1 }));
+    setPagination(prev => ({ ...prev, current: 1 }));
+  };
+
+  const handleTableChange = (newPagination) => {
+    setPagination(prev => ({
+      ...prev,
+      current: newPagination.current,
+      pageSize: newPagination.pageSize,
+    }));
+  };
+
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value,
+    }));
+    setPagination(prev => ({ ...prev, current: 1 }));
+  };
+
+  const clearFilters = () => {
+    setFilters({});
+    setSearchValue('');
+    setPagination(prev => ({ ...prev, current: 1 }));
   };
 
   const importModal = (
@@ -121,12 +130,12 @@ const ProblemList = () => {
   );
 
   const difficultyColor = {
-    Easy: 'green',
-    Medium: 'orange',
-    Hard: 'red',
+    Easy: 'success',
+    Medium: 'warning',
+    Hard: 'error',
   };
   const sourceColor = {
-    leetcode: 'blue',
+    leetcode: 'processing',
     custom: 'default',
   };
 
@@ -136,7 +145,9 @@ const ProblemList = () => {
       dataIndex: 'title',
       key: 'title',
       render: (text, record) => (
-        <Button type="link" onClick={() => handleViewDetail(record)}>{text}</Button>
+        <ActionButton type="link" variant="link" onClick={() => handleViewDetail(record)}>
+          {text}
+        </ActionButton>
       ),
     },
     {
@@ -168,70 +179,95 @@ const ProblemList = () => {
       key: 'actions',
       render: (_, record) => (
         <Space>
-          <Button icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>{t('common.view')}</Button>
+          <ActionButton type="view" onClick={() => handleViewDetail(record)} />
         </Space>
       ),
     },
   ];
 
+  const dataTableFilters = [
+    {
+      key: 'source',
+      label: t('problem.source'),
+      type: 'select',
+      placeholder: t('problem.sourcePlaceholder'),
+      value: filters.source,
+      onChange: (value) => handleFilterChange('source', value),
+      options: [
+        { label: 'LeetCode', value: 'leetcode' },
+        { label: 'Custom', value: 'custom' },
+      ],
+    },
+    {
+      key: 'difficulty',
+      label: t('problem.difficulty'),
+      type: 'select',
+      placeholder: t('problem.difficultyPlaceholder'),
+      value: filters.difficulty,
+      onChange: (value) => handleFilterChange('difficulty', value),
+      options: [
+        { label: 'Easy', value: 'Easy' },
+        { label: 'Medium', value: 'Medium' },
+        { label: 'Hard', value: 'Hard' },
+      ],
+    },
+  ];
+
+  const searchConfig = {
+    placeholder: t('problem.searchPlaceholder'),
+    value: searchValue,
+    onChange: setSearchValue,
+  };
+
+  const headerActions = [
+    {
+      text: (
+        <Switch
+          checked={onlySelf}
+          onChange={handleOnlySelfChange}
+          checkedChildren={t('problem.onlySelf')}
+          unCheckedChildren={t('problem.allUsers')}
+        />
+      ),
+      type: 'default',
+    },
+    {
+      text: t('problem.batchImport'),
+      icon: <UploadOutlined />,
+      onClick: () => setImportModalVisible(true),
+    },
+    {
+      text: t('common.create'),
+      type: 'primary',
+      icon: <PlusOutlined />,
+      onClick: () => navigate('/problem/create'),
+    },
+  ];
+
   return (
-    <Card
-      title={<Title level={3}><BookOutlined /> {t('problem.listTitle')}</Title>}
-      extra={null}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
-        <Form
-          form={form}
-          layout="inline"
-          onFinish={handleFilter}
-          style={{ flex: 1 }}
-        >
-          <Form.Item name="title">
-            <Input placeholder={t('problem.titlePlaceholder')} allowClear />
-          </Form.Item>
-          <Form.Item name="source">
-            <Select placeholder={t('problem.sourcePlaceholder')} allowClear style={{ width: 120 }}>
-              <Option value="leetcode">LeetCode</Option>
-              <Option value="custom">Custom</Option>
-            </Select>
-          </Form.Item>
-          <Form.Item name="difficulty">
-            <Select placeholder={t('problem.difficultyPlaceholder')} allowClear style={{ width: 120 }}>
-              <Option value="Easy">Easy</Option>
-              <Option value="Medium">Medium</Option>
-              <Option value="Hard">Hard</Option>
-            </Select>
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" icon={<FilterOutlined />}>{t('common.filter')}</Button>
-          </Form.Item>
-          <Form.Item>
-            <Button onClick={handleClearFilters} icon={<ClearOutlined />}>{t('common.clear')}</Button>
-          </Form.Item>
-        </Form>
-        <Space style={{ marginLeft: 16 }}>
-          <Switch checked={onlySelf} onChange={handleOnlySelfChange} checkedChildren={t('problem.onlySelf')} unCheckedChildren={t('problem.allUsers')} style={{ marginRight: 8 }} />
-          <Button icon={<UploadOutlined />} onClick={() => setImportModalVisible(true)}>{t('problem.batchImport')}</Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/problem/create')}>
-            {t('common.create')}
-          </Button>
-        </Space>
-      </div>
-      <Table
-        rowKey="id"
+    <div>
+      <DataTable
+        title={t('problem.listTitle')}
+        subtitle={t('problem.subtitle')}
+        data={problems}
         columns={columns}
-        dataSource={problems.items}
         loading={loading}
         pagination={{
           current: pagination.current,
           pageSize: pagination.pageSize,
-          total: problems.total,
-          showSizeChanger: true,
+          total: pagination.total,
+          onChange: (current, pageSize) => {
+            setPagination(prev => ({ ...prev, current, pageSize }));
+          },
         }}
-        onChange={handleTableChange}
+        filters={dataTableFilters}
+        searchConfig={searchConfig}
+        actions={headerActions}
+        onRefresh={fetchProblems}
+        onFilterChange={clearFilters}
       />
       {importModal}
-    </Card>
+    </div>
   );
 };
 

@@ -78,6 +78,7 @@ export const API_ENDPOINTS = {
     MARK_REVIEWED: (reviewId) => `/api/review/${reviewId}/mark-reviewed`,
     BATCH_MARK_REVIEWED: '/api/review/batch-mark-reviewed',
     BATCH_DELETE: '/api/review/batch-delete',
+    DELETE_ALL: '/api/review/delete-all',
     BATCH_UPDATE: '/api/review/batch-update',
     STATS: '/api/review/stats',
   },

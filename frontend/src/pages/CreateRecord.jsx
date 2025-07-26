@@ -6,6 +6,7 @@ import recordsService from '../services/recordsService';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import MonacoEditor from '@monaco-editor/react';
+import StatusIndicator from '../components/common/StatusIndicator';
 
 const { Option } = Select;
 
@@ -15,7 +16,7 @@ const languageOptions = [
 const ojTypeOptions = ['leetcode', 'nowcoder', 'other'];
 const executionResultOptions = [
   'Accepted', 'Wrong Answer', 'Time Limit Exceeded', 'Runtime Error', 'Compile Error', 'Other'
-];
+]; // Keep values as-is for API compatibility, StatusIndicator will handle translation
 
 const CreateRecord = ({ problemId, onSuccess }) => {
   const [form] = Form.useForm();
@@ -28,30 +29,73 @@ const CreateRecord = ({ problemId, onSuccess }) => {
   const [languageValue, setLanguageValue] = useState('python');
   const [completionEnabled, setCompletionEnabled] = useState(false);
 
-  useEffect(() => {
-    if (problemId) {
-      // 如果传入 problemId，设置初始值并禁用题目选择
-      form.setFieldsValue({ problem_id: problemId });
-      setProblemOptions([{ value: problemId, label: `ID: ${problemId}` }]);
-    }
-  }, [problemId, form]);
-
   const handleProblemSearch = async (value) => {
     setFetching(true);
     try {
-      const data = await problemService.getProblems({ title: value, limit: 20 });
-      setProblemOptions(
-        data.map((p) => ({
-          value: p.id,
-          label: `${p.title} (${p.difficulty || ''})`,
-        }))
-      );
+      let params;
+      if (value) {
+        // Search by title when user types
+        params = {
+          title: value,
+          limit: 20,
+          sort_by: 'created_at',
+          sort_order: 'desc'
+        };
+      } else {
+        // Load problems with records (user's problems) when no search value
+        params = {
+          limit: 20,
+          records_only: true,  // Show problems user has records for
+          sort_by: 'created_at',
+          sort_order: 'desc'
+        };
+      }
+
+      const response = await problemService.getProblems(params);
+      const data = Array.isArray(response) ? response : response.items || [];
+
+      // If no problems found with records_only, try again without the filter
+      if (data.length === 0 && !value && params.records_only) {
+        const fallbackParams = {
+          limit: 20,
+          sort_by: 'created_at',
+          sort_order: 'desc'
+        };
+        const fallbackResponse = await problemService.getProblems(fallbackParams);
+        const fallbackData = Array.isArray(fallbackResponse) ? fallbackResponse : fallbackResponse.items || [];
+
+        setProblemOptions(
+          fallbackData.map((p) => ({
+            value: p.id,
+            label: `${p.title}${p.difficulty ? ` (${p.difficulty})` : ''}${p.source ? ` [${p.source}]` : ''}`,
+          }))
+        );
+      } else {
+        setProblemOptions(
+          data.map((p) => ({
+            value: p.id,
+            label: `${p.title}${p.difficulty ? ` (${p.difficulty})` : ''}${p.source ? ` [${p.source}]` : ''}`,
+          }))
+        );
+      }
     } catch (e) {
+      message.error(t('records.loadProblemsError') || 'Failed to load problems');
       setProblemOptions([]);
     } finally {
       setFetching(false);
     }
   };
+
+  useEffect(() => {
+    if (problemId) {
+      // If problemId is passed, set initial value and disable problem selection
+      form.setFieldsValue({ problem_id: problemId });
+      setProblemOptions([{ value: problemId, label: `ID: ${problemId}` }]);
+    } else {
+      // Load initial problems when component mounts
+      handleProblemSearch('');
+    }
+  }, [problemId, form]);
 
   const getMonacoLang = (language) => {
     if (!language) return 'plaintext';
@@ -107,15 +151,28 @@ const CreateRecord = ({ problemId, onSuccess }) => {
             name="problem_id"
             label={t('records.problem')}
             rules={[{ required: true, message: t('records.problemIdRequired') }]}
+            extra={t('records.problemSelectionHint') || 'Select from your problems or search by title'}
           >
             <Select
               showSearch
-              placeholder={t('records.problemTitlePlaceholder')}
+              allowClear
+              placeholder={t('records.problemSelectionPlaceholder') || 'Select a problem or search by title'}
               filterOption={false}
               onSearch={handleProblemSearch}
               options={problemOptions}
-              notFoundContent={fetching ? <Spin size="small" /> : null}
+              notFoundContent={fetching ? <Spin size="small" /> : (problemOptions.length === 0 ? t('records.noProblemsFound') || 'No problems found. Try searching or enter an ID.' : null)}
               disabled={!!problemId}
+              mode={problemOptions.length === 0 ? undefined : undefined} // Allow manual entry when no options
+              dropdownRender={(menu) => (
+                <>
+                  {menu}
+                  {!fetching && problemOptions.length === 0 && (
+                    <div style={{ padding: '8px', borderTop: '1px solid #f0f0f0', color: '#666', fontSize: '12px' }}>
+                      💡 {t('records.noProblemsHint') || 'No problems found. You can search by title or enter a problem ID directly.'}
+                    </div>
+                  )}
+                </>
+              )}
             />
           </Form.Item>
           <Form.Item
@@ -137,7 +194,13 @@ const CreateRecord = ({ problemId, onSuccess }) => {
           >
             <Select>
               {executionResultOptions.map((r) => (
-                <Option key={r} value={r}>{r}</Option>
+                <Option key={r} value={r}>
+                  <StatusIndicator
+                    status={r}
+                    type="execution"
+                    showText={true}
+                  />
+                </Option>
               ))}
             </Select>
           </Form.Item>
@@ -160,7 +223,7 @@ const CreateRecord = ({ problemId, onSuccess }) => {
           <Form.Item name="code" label={t('records.code')}>
             <div style={{ position: 'relative', borderRadius: 6, overflow: 'hidden', marginBottom: 8, minHeight: 320, width: '100%' }}>
               <div style={{ position: 'absolute', top: 8, right: 12, zIndex: 2, display: 'flex', alignItems: 'center' }}>
-                <span style={{ marginRight: 6, color: '#aaa', fontSize: 13 }}>{t('records.codeCompletion') || '补全'}</span>
+                <span style={{ marginRight: 6, color: '#aaa', fontSize: 13 }}>{t('records.codeCompletion') || 'Completion'}</span>
                 <Switch size="small" checked={completionEnabled} onChange={setCompletionEnabled} />
               </div>
               <MonacoEditor

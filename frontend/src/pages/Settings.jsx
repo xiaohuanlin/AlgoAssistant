@@ -12,7 +12,7 @@ import {
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 
-import IntegrationCard from '../components/IntegrationCard';
+import { ConfigCard } from '../components/common';
 import LeetCodeIntegrationModal from '../components/LeetCodeIntegrationModal';
 import GitHubIntegrationModal from '../components/GitHubIntegrationModal';
 import NotionIntegrationModal from '../components/NotionIntegrationModal';
@@ -152,7 +152,7 @@ const Settings = () => {
                 <Row gutter={[16, 16]}>
                     {/* LeetCode Integration */}
                     <Col xs={24} lg={12}>
-                        <IntegrationCard
+                        <ConfigCard
                             title={t('settings.leetcodeIntegration')}
                             icon={<CodeOutlined style={{ fontSize: '18px', color: '#1890ff' }} />}
                             description={t('settings.leetcodeDescription')}
@@ -164,7 +164,7 @@ const Settings = () => {
 
                     {/* GitHub Integration */}
                     <Col xs={24} lg={12}>
-                        <IntegrationCard
+                        <ConfigCard
                             title={t('git.configTitle')}
                             icon={<GithubOutlined style={{ fontSize: '18px', color: '#1890ff' }} />}
                             description={t('settings.githubDescription')}
@@ -176,7 +176,7 @@ const Settings = () => {
 
                     {/* Notion Integration */}
                     <Col xs={24} lg={12}>
-                        <IntegrationCard
+                        <ConfigCard
                             title={t('settings.notionIntegration')}
                             icon={<BookOutlined style={{ fontSize: '18px', color: '#1890ff' }} />}
                             description={t('settings.notionDescription')}
@@ -188,7 +188,7 @@ const Settings = () => {
 
                     {/* Gemini Integration */}
                     <Col xs={24} lg={12}>
-                        <IntegrationCard
+                        <ConfigCard
                             title={t('gemini.title')}
                             icon={<RobotOutlined style={{ fontSize: '18px', color: '#1890ff' }} />}
                             description={t('gemini.subtitle')}
@@ -205,10 +205,10 @@ const Settings = () => {
                     </Col>
                     {/* Notification Config Integration */}
                     <Col xs={24} lg={12}>
-                        <IntegrationCard
-                            title={t('notificationConfig.title') || '通知设置'}
+                        <ConfigCard
+                            title={t('settings.notificationSettings') || 'Notification Settings'}
                             icon={<WarningOutlined style={{ fontSize: '18px', color: '#faad14' }} />}
-                            description={t('notificationConfig.description') || '配置邮件、推送、短信等通知方式'}
+                            description={t('settings.notificationDescription') || 'Configure email, push, SMS and other notification methods'}
                             status={notificationConfig?.notification_config?.email?.enabled || notificationConfig?.notification_config?.push?.enabled || notificationConfig?.notification_config?.sms?.enabled ? 'configured' : 'not_configured'}
                             onConfigure={() => setNotificationModalVisible(true)}
                             loading={loading}

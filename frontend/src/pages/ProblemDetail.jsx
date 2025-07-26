@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, Row, Col, Tag, Typography, Spin, message, Space, Button, Table, Badge, Divider } from 'antd';
+import { Card, Row, Col, Tag, Typography, Spin, message, Space, Button, Divider } from 'antd';
 import { BookOutlined, ArrowLeftOutlined, LinkOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import problemService from '../services/problemService';
+import DataTable from '../components/common/DataTable';
+import ProblemStatistics from '../components/problem/ProblemStatistics';
 
 const { Title, Text, Link, Paragraph } = Typography;
 
@@ -32,7 +34,7 @@ const ProblemDetail = () => {
     try {
       const data = await problemService.getProblem(id);
       setProblem(data);
-      // 获取用户相关 records 和 reviews
+      // Get user related records and reviews
       const userData = await problemService.getProblemUserRecords(id);
       setRecords(userData.records || []);
       setReviews(userData.reviews || []);
@@ -47,6 +49,7 @@ const ProblemDetail = () => {
     fetchDetail();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
 
   const recordColumns = [
     { title: t('record.id'), dataIndex: 'id', key: 'id' },
@@ -82,7 +85,7 @@ const ProblemDetail = () => {
           {problem.title}
         </Title>
       </div>
-      <Card style={{ marginBottom: 24, borderRadius: 12, boxShadow: '0 2px 8px #f0f1f2' }} bodyStyle={{ padding: 24 }}>
+      <Card style={{ marginBottom: 24, borderRadius: 12, boxShadow: '0 2px 8px #f0f1f2' }} styles={{ body: { padding: 24 } }}>
         <Row gutter={[24, 24]} align="top" justify="start">
           <Col xs={24} sm={12} md={8}>
             <Space direction="vertical" size={12} style={{ width: '100%' }}>
@@ -132,30 +135,33 @@ const ProblemDetail = () => {
           </Col>
         </Row>
       </Card>
-      <Card style={{ marginBottom: 24 }} size="small">
-        <Title level={5}>{t('problem.relatedRecords')}</Title>
-        <Table
-          rowKey="id"
+
+      <Card
+        title={t('problem.statistics')}
+        style={{ marginBottom: 24, borderRadius: 12, boxShadow: '0 2px 8px #f0f1f2' }}
+        styles={{ body: { padding: 24 } }}
+      >
+        <ProblemStatistics problemId={id} />
+      </Card>
+
+      <div style={{ marginBottom: 24 }}>
+        <DataTable
+          title={t('problem.relatedRecords')}
+          data={records}
           columns={recordColumns}
-          dataSource={records}
-          pagination={false}
           size="small"
-          scroll={{ x: 'max-content' }}
-          tableLayout="fixed"
+          pagination={false}
         />
-      </Card>
-      <Card size="small">
-        <Title level={5}>{t('problem.relatedReviews')}</Title>
-        <Table
-          rowKey="id"
+      </div>
+      <div>
+        <DataTable
+          title={t('problem.relatedReviews')}
+          data={reviews}
           columns={reviewColumns}
-          dataSource={reviews}
-          pagination={false}
           size="small"
-          scroll={{ x: 'max-content' }}
-          tableLayout="fixed"
+          pagination={false}
         />
-      </Card>
+      </div>
     </div>
   );
 };

@@ -144,6 +144,19 @@ class ReviewService {
   }
 
   /**
+   * Delete all review plans
+   * @returns {Promise<{deleted: number}>}
+   */
+  async deleteAll() {
+    try {
+      const response = await api.post(API_ENDPOINTS.REVIEW.DELETE_ALL);
+      return handleApiSuccess(response);
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
+
+  /**
    * Create a new review
    * @param {ReviewCreate} reviewData
    * @returns {Promise<ReviewOut>}

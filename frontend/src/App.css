@@ -2,7 +2,7 @@
   text-align: left;
 }
 
-/* 全局加载状态 */
+/* Global loading state */
 .loading-container {
   display: flex;
   justify-content: center;
@@ -10,27 +10,27 @@
   min-height: 200px;
 }
 
-/* 错误状态 */
+/* Error state */
 .error-container {
   text-align: center;
   padding: 40px;
   color: #ff4d4f;
 }
 
-/* 空状态 */
+/* Empty state */
 .empty-container {
   text-align: center;
   padding: 40px;
   color: #999;
 }
 
-/* 页面标题样式 */
+/* Page title styles */
 .page-title {
   margin-bottom: 24px;
   color: #262626;
 }
 
-/* 卡片网格布局 */
+/* Card grid layout */
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -38,7 +38,7 @@
   margin-top: 24px;
 }
 
-/* 响应式布局 */
+/* Responsive layout */
 @media (max-width: 768px) {
   .card-grid {
     grid-template-columns: 1fr;
@@ -46,7 +46,7 @@
   }
 }
 
-/* 动画效果 */
+/* Animation effects */
 .fade-in {
   animation: fadeIn 0.3s ease-in;
 }
@@ -62,7 +62,7 @@
   }
 }
 
-/* 工具类 */
+/* Utility classes */
 .text-center {
   text-align: center;
 }
@@ -93,4 +93,4 @@
 
 .p-24 {
   padding: 24px;
-} 
+}

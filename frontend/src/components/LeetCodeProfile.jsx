@@ -109,7 +109,7 @@ const LeetCodeProfile = () => {
       <Row gutter={[16, 16]}>
         {/* Basic Information */}
         <Col xs={24} md={12}>
-          <Card size="small" title="Basic Information">
+          <Card size="small" title={t('leetcode.basicInformation')}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
               <Avatar
                 size={64}
@@ -138,25 +138,25 @@ const LeetCodeProfile = () => {
 
         {/* Statistics */}
         <Col xs={24} md={12}>
-          <Card size="small" title="Statistics">
+          <Card size="small" title={t('leetcode.statistics')}>
             <Row gutter={[8, 8]}>
               <Col span={12}>
                 <Statistic
-                  title="Reputation"
+                  title={t('leetcode.reputation')}
                   value={profile.reputation || 0}
                   prefix={<TrophyOutlined />}
                 />
               </Col>
               <Col span={12}>
                 <Statistic
-                  title="Ranking"
+                  title={t('leetcode.ranking')}
                   value={profile.ranking || 'N/A'}
                   prefix={<StarOutlined />}
                 />
               </Col>
               <Col span={12}>
                 <Statistic
-                  title="Star Rating"
+                  title={t('leetcode.starRating')}
                   value={profile.star_rating || 0}
                   prefix={<StarOutlined />}
                 />
@@ -167,7 +167,7 @@ const LeetCodeProfile = () => {
 
         {/* Professional Information */}
         <Col xs={24} md={12}>
-          <Card size="small" title="Professional Information">
+          <Card size="small" title={t('leetcode.professionalInformation')}>
             {profile.company && (
               <div style={{ marginBottom: 8 }}>
                 <CompanyOutlined style={{ marginRight: 8 }} />
@@ -191,7 +191,7 @@ const LeetCodeProfile = () => {
 
         {/* Skill Tags */}
         <Col xs={24} md={12}>
-          <Card size="small" title="Skill Tags">
+          <Card size="small" title={t('leetcode.skillTags')}>
             {profile.skill_tags && profile.skill_tags.length > 0 ? (
               <div>
                 {profile.skill_tags.map((tag, index) => (
@@ -201,7 +201,7 @@ const LeetCodeProfile = () => {
                 ))}
               </div>
             ) : (
-              <Text type="secondary">No skill tags available</Text>
+              <Text type="secondary">{t('leetcode.noSkillTags')}</Text>
             )}
           </Card>
         </Col>
@@ -209,7 +209,7 @@ const LeetCodeProfile = () => {
         {/* Websites */}
         {profile.websites && profile.websites.length > 0 && (
           <Col xs={24}>
-            <Card size="small" title="Websites">
+            <Card size="small" title={t('leetcode.websites')}>
               <div>
                 {profile.websites.map((website, index) => (
                   <div key={index} style={{ marginBottom: 4 }}>

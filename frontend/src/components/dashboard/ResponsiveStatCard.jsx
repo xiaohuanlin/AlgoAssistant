@@ -93,7 +93,7 @@ const ResponsiveStatCard = ({
   return (
     <Card
       className={`responsive-stat-card ${isMobile ? 'mobile' : 'desktop'} ${className}`}
-      bodyStyle={getCardBodyStyle()}
+      styles={{ body: getCardBodyStyle() }}
       loading={loading}
       bordered={false}
     >

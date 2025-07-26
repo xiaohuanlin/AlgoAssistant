@@ -58,7 +58,7 @@ const GitSyncManager = () => {
   const handleSaveConfig = async (values) => {
     try {
       await gitSyncService.updateGitConfig(values);
-      message.success('Git configuration saved successfully');
+      message.success(t('git.configSaveSuccess') || 'Git configuration saved successfully');
       setConfigModalVisible(false);
       form.resetFields();
       checkConfiguration();

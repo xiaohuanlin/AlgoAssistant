@@ -15,8 +15,8 @@ from app.schemas.review import (
     ReviewOut,
     ReviewUpdate,
 )
-from app.services.review_service import ReviewService
 from app.services.record_service import RecordService
+from app.services.review_service import ReviewService
 
 router = APIRouter(prefix="/api/review", tags=["review"])
 
@@ -157,6 +157,17 @@ async def batch_delete_reviews(
     return {"deleted": count}
 
 
+@router.post("/delete-all")
+async def delete_all_reviews(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Delete all review plans for the current user."""
+    service = ReviewService(db)
+    count = service.delete_all_reviews(user_id=current_user.id)
+    return {"deleted": count}
+
+
 @router.post("/batch-mark-reviewed")
 async def batch_mark_as_reviewed(
     ids: list[int] = Body(..., embed=True),
@@ -191,10 +202,15 @@ async def get_review_detail(
     if not review or review.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Review not found")
     record_service = RecordService(db)
-    records = db.query(models.Record).filter(
-        models.Record.user_id == current_user.id,
-        models.Record.problem_id == review.problem_id
-    ).order_by(models.Record.submit_time.desc()).all()
+    records = (
+        db.query(models.Record)
+        .filter(
+            models.Record.user_id == current_user.id,
+            models.Record.problem_id == review.problem_id,
+        )
+        .order_by(models.Record.submit_time.desc())
+        .all()
+    )
     submissions = [record_service.to_record_list_out(r) for r in records]
     review_out = ReviewOut.from_orm(review)
     review_out.submissions = submissions

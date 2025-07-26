@@ -57,7 +57,7 @@ const ReviewDetail = () => {
       const detail = await reviewService.getReviewById(id);
       setReview(detail);
     } catch (error) {
-      message.error('Failed to load review detail');
+      message.error(t('review.loadError') || 'Failed to load review detail');
     } finally {
       setLoading(false);
     }
@@ -71,7 +71,7 @@ const ReviewDetail = () => {
     return <Spin spinning={true} style={{ width: '100%', marginTop: 100 }} />;
   }
   if (!review) {
-    return <Card style={{ margin: 32 }}><Text type="danger">Failed to load review detail</Text></Card>;
+    return <Card style={{ margin: 32 }}><Text type="danger">{t('review.loadError') || 'Failed to load review detail'}</Text></Card>;
   }
 
   const submissionColumns = [
@@ -185,7 +185,7 @@ const ReviewDetail = () => {
           </Card>
         </Col>
       </Row>
-      <Card title={t('review.relatedRecords') || '相关提交记录'} style={{ marginTop: 32 }}>
+      <Card title={t('review.relatedRecords') || 'Related Submission Records'} style={{ marginTop: 32 }}>
         <Table
           dataSource={review.submissions || []}
           columns={submissionColumns}

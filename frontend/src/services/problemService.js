@@ -98,6 +98,34 @@ class ProblemService {
       throw new Error(handleApiError(error));
     }
   }
+
+  /**
+   * Get problem statistics for current user
+   * @param {number} problemId
+   * @returns {Promise<Object>} Problem statistics
+   */
+  async getProblemStats(problemId) {
+    try {
+      const response = await api.get(`/api/problem/${problemId}/stats`);
+      return handleApiSuccess(response);
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
+
+  /**
+   * Get problem-specific statistics for current user
+   * @param {number} problemId
+   * @returns {Promise<Object>} Problem statistics
+   */
+  async getProblemStatistics(problemId) {
+    try {
+      const response = await api.get(`/api/problem/${problemId}/statistics`);
+      return handleApiSuccess(response);
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
 }
 
 const problemService = new ProblemService();

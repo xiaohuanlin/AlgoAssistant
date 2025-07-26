@@ -38,7 +38,7 @@ const NotificationConfigModal = ({ visible, onCancel, onSuccess, initialValues }
       }, {});
       setLoading(true);
       await configService.updateConfigs({ notification_config: Object.keys(notification_config).length === 0 ? null : notification_config });
-      message.success(t('notificationConfig.saveSuccess') || '保存成功');
+      message.success(t('notificationConfig.saveSuccess') || 'Save successful');
       onSuccess && onSuccess(notification_config);
       onCancel();
     } catch (error) {
@@ -51,7 +51,7 @@ const NotificationConfigModal = ({ visible, onCancel, onSuccess, initialValues }
 
   return (
     <Modal
-      title={t('notificationConfig.title') || '通知设置'}
+      title={t('notificationConfig.title') || 'Notification Settings'}
       open={visible}
       onCancel={onCancel}
       width={700}
@@ -133,4 +133,4 @@ const NotificationConfigModal = ({ visible, onCancel, onSuccess, initialValues }
   );
 };
 
-export default NotificationConfigModal; 
+export default NotificationConfigModal;

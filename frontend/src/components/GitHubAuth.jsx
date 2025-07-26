@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Alert, Tag, Typography, Input, Space, message } from 'antd';
 import { GithubOutlined, CheckCircleOutlined, DisconnectOutlined, ReloadOutlined, EditOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 
 const { Title, Text } = Typography;
 
 const GitHubAuth = () => {
+    const { t } = useTranslation();
     const [status, setStatus] = useState(null);
     const [loading, setLoading] = useState(true);
     const [connecting, setConnecting] = useState(false);
@@ -60,7 +62,7 @@ const GitHubAuth = () => {
         } catch (error) {
             console.error('Error starting GitHub auth:', error);
             setConnecting(false);
-            message.error('GitHub连接失败');
+            message.error(t('git.connectionFailed') || 'GitHub connection failed');
         }
     };
 
@@ -71,11 +73,11 @@ const GitHubAuth = () => {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
             });
-            message.success('GitHub已断开连接');
+            message.success(t('git.disconnectSuccess') || 'GitHub disconnected successfully');
             checkGitHubStatus();
         } catch (error) {
             console.error('Error disconnecting GitHub:', error);
-            message.error('断开连接失败');
+            message.error(t('git.disconnectError') || 'Failed to disconnect');
         }
     };
 
@@ -90,11 +92,11 @@ const GitHubAuth = () => {
                 }
             );
             setShowRepoInput(false);
-            message.success('仓库设置已更新');
+            message.success(t('git.repoUpdateSuccess') || 'Repository settings updated');
             checkGitHubStatus();
         } catch (error) {
             console.error('Error updating repo:', error);
-            message.error('更新仓库设置失败');
+            message.error(t('git.repoUpdateError') || 'Failed to update repository settings');
         }
     };
 
@@ -102,7 +104,7 @@ const GitHubAuth = () => {
         return (
             <Card>
                 <div style={{ textAlign: 'center', padding: '20px' }}>
-                    <div>加载中...</div>
+                    <div>{t('common.loading') || 'Loading...'}</div>
                 </div>
             </Card>
         );
@@ -113,17 +115,17 @@ const GitHubAuth = () => {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                     <GithubOutlined style={{ fontSize: '20px', marginRight: '8px', color: '#1890ff' }} />
-                    <Title level={4} style={{ margin: 0 }}>GitHub 集成</Title>
+                    <Title level={4} style={{ margin: 0 }}>{t('git.integration') || 'GitHub Integration'}</Title>
                 </div>
                 <Tag color={status?.connected ? 'success' : 'default'}>
-                    {status?.connected ? '已连接' : '未连接'}
+                    {status?.connected ? t('git.connected') || 'Connected' : t('git.notConnected') || 'Not Connected'}
                 </Tag>
             </div>
 
             {status?.connected ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <Alert
-                        message="GitHub 已成功连接"
+                        message={t('git.connectionSuccess') || 'GitHub connected successfully'}
                         type="success"
                         showIcon
                         icon={<CheckCircleOutlined />}
@@ -131,12 +133,12 @@ const GitHubAuth = () => {
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                         <div style={{ backgroundColor: '#f5f5f5', padding: '16px', borderRadius: '6px' }}>
-                            <Text strong>GitHub 用户名</Text>
+                            <Text strong>{t('git.username') || 'GitHub Username'}</Text>
                             <div style={{ fontFamily: 'monospace', marginTop: '4px' }}>{status.username}</div>
                         </div>
 
                         <div style={{ backgroundColor: '#f5f5f5', padding: '16px', borderRadius: '6px' }}>
-                            <Text strong>代码仓库</Text>
+                            <Text strong>{t('git.repository') || 'Repository'}</Text>
                             {showRepoInput ? (
                                 <div style={{ marginTop: '8px' }}>
                                     <Input
@@ -147,10 +149,10 @@ const GitHubAuth = () => {
                                     />
                                     <Space>
                                         <Button size="small" type="primary" onClick={updateRepo}>
-                                            保存
+                                            {t('common.save') || 'Save'}
                                         </Button>
                                         <Button size="small" onClick={() => setShowRepoInput(false)}>
-                                            取消
+                                            {t('common.cancel') || 'Cancel'}
                                         </Button>
                                     </Space>
                                 </div>
@@ -166,7 +168,7 @@ const GitHubAuth = () => {
                                             setShowRepoInput(true);
                                         }}
                                     >
-                                        编辑
+                                        {t('common.edit') || 'Edit'}
                                     </Button>
                                 </div>
                             )}
@@ -179,21 +181,21 @@ const GitHubAuth = () => {
                             icon={<DisconnectOutlined />}
                             onClick={disconnectGitHub}
                         >
-                            断开连接
+                            {t('git.disconnect') || 'Disconnect'}
                         </Button>
                         <Button
                             icon={<ReloadOutlined />}
                             onClick={checkGitHubStatus}
                         >
-                            刷新状态
+                            {t('git.refreshStatus') || 'Refresh Status'}
                         </Button>
                     </Space>
                 </div>
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <Alert
-                        message="未连接"
-                        description="您尚未连接GitHub账户。连接后可以自动同步代码到GitHub仓库。"
+                        message={t('git.notConnected') || 'Not Connected'}
+                        description={t('git.notConnectedDesc') || 'You have not connected your GitHub account yet. After connecting, you can automatically sync code to GitHub repository.'}
                         type="info"
                         showIcon
                     />
@@ -205,7 +207,7 @@ const GitHubAuth = () => {
                         onClick={connectGitHub}
                         style={{ width: 'fit-content' }}
                     >
-                        {connecting ? '连接中...' : '连接GitHub'}
+                        {connecting ? t('git.connecting') || 'Connecting...' : t('git.connectGitHub') || 'Connect GitHub'}
                     </Button>
                 </div>
             )}

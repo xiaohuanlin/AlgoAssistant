@@ -95,23 +95,23 @@
   min-height: calc(100vh - 112px);
 }
 
-/* 响应式设计 */
+/* Responsive design */
 @media (max-width: 768px) {
   .app-header {
     padding: 0 16px;
   }
-  
+
   .app-content {
     margin: 16px;
     padding: 16px;
   }
-  
+
   .welcome-text {
     display: none;
   }
 }
 
-/* 菜单项样式优化 */
+/* Menu item style optimization */
 .ant-menu-item {
   margin: 4px 8px !important;
   border-radius: 6px !important;
@@ -125,7 +125,7 @@
   background-color: #1890ff !important;
 }
 
-/* 下拉菜单样式 */
+/* Dropdown menu styles */
 .ant-dropdown-menu {
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -139,4 +139,4 @@
 
 .ant-dropdown-menu-item:hover {
   background-color: #f5f5f5;
-} 
+}

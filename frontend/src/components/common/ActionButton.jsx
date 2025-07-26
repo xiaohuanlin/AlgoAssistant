@@ -98,8 +98,15 @@ const ActionButton = ({
       disabled={disabled}
       loading={loading}
       danger={config.danger}
-      className={className}
-      style={style}
+      className={`action-button ${className || ''}`}
+      style={{
+        minWidth: size === 'small' ? '60px' : size === 'large' ? '80px' : '70px',
+        height: size === 'small' ? '28px' : size === 'large' ? '40px' : '32px',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        ...style
+      }}
       {...props}
     >
       {children || config.text}

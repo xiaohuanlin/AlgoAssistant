@@ -190,21 +190,21 @@ class RecordsService {
   }
 
   /**
-   * Get execution status text
+   * Get execution status text key for i18n
    * @param {string} status - Execution status
-   * @returns {string} Status text
+   * @returns {string} Status translation key
    */
-  getExecutionStatusText(status) {
-    const statusMap = {
-      'Accepted': '通过',
-      'Wrong Answer': '答案错误',
-      'Time Limit Exceeded': '超时',
-      'Memory Limit Exceeded': '内存超限',
-      'Runtime Error': '运行时错误',
-      'Compilation Error': '编译错误',
-      'Presentation Error': '格式错误',
+  getExecutionStatusTextKey(status) {
+    const statusKeyMap = {
+      'Accepted': 'records.statusAccepted',
+      'Wrong Answer': 'records.statusWrongAnswer',
+      'Time Limit Exceeded': 'records.statusTimeLimitExceeded',
+      'Memory Limit Exceeded': 'records.statusMemoryLimitExceeded',
+      'Runtime Error': 'records.statusRuntimeError',
+      'Compilation Error': 'records.statusCompileError',
+      'Presentation Error': 'records.statusPresentationError',
     };
-    return statusMap[status] || status;
+    return statusKeyMap[status] || status;
   }
 
   /**

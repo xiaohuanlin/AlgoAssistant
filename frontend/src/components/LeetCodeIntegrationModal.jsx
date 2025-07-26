@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input, Button, message, Steps } from 'antd';
-import { SaveOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { Form, Input, message } from 'antd';
+import { CodeOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import leetcodeService from '../services/leetcodeService';
+import ConfigModal from './common/ConfigModal';
 
 const LeetCodeIntegrationModal = ({ visible, onCancel, onSuccess, initialValues }) => {
   const { t } = useTranslation();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
-  const [currentStep] = useState(0);
 
   useEffect(() => {
     if (visible) {
@@ -21,10 +21,9 @@ const LeetCodeIntegrationModal = ({ visible, onCancel, onSuccess, initialValues 
     }
   }, [visible, initialValues, form]);
 
-  const handleSubmit = async (values) => {
+  const handleSave = async (values) => {
     setLoading(true);
     try {
-      // Convert data structure to match backend expected format
       const configData = {
         session_cookie: values.sessionCookie,
         username: values.username || ''
@@ -35,107 +34,78 @@ const LeetCodeIntegrationModal = ({ visible, onCancel, onSuccess, initialValues 
       onCancel();
     } catch (error) {
       message.error(t('leetcode.configError') + ': ' + error.message);
+      throw error;
     } finally {
       setLoading(false);
     }
   };
 
-  const testConnection = async () => {
-    const values = form.getFieldsValue();
-    if (!values.sessionCookie) {
-      message.warning(t('leetcode.configRequired'));
-      return;
-    }
-
-    setTesting(true);
+  const handleTestConnection = async () => {
     try {
+      const values = await form.validateFields();
+      if (!values.sessionCookie) {
+        message.warning(t('leetcode.configRequired'));
+        return { success: false };
+      }
+
       const response = await leetcodeService.testLeetCodeConnection();
       if (response.status === 'success') {
         message.success(t('leetcode.connectionSuccess'));
+        return { success: true };
       } else {
         message.error(t('leetcode.connectionFailed') + ': ' + response.message);
+        return { success: false };
       }
     } catch (error) {
+      if (error.errorFields) {
+        message.warning(t('leetcode.configRequired'));
+        return { success: false };
+      }
       message.error(t('leetcode.connectionError') + ': ' + error.message);
-    } finally {
-      setTesting(false);
+      throw error;
     }
   };
 
-  const steps = [
+  const helpSections = [
     {
-      title: t('leetcode.configTitle'),
-      content: (
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-        >
-          <Form.Item
-            name="sessionCookie"
-            label={t('leetcode.sessionCookie')}
-            rules={[{ required: true, message: t('leetcode.sessionCookieRequired') }]}
-            extra={
-              <div>
-                <div style={{ marginTop: '8px' }}>
-                  <strong>{t('leetcode.howToGetSessionCookie')}</strong>
-                  <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                    <div>1. {t('leetcode.sessionCookieStep1')}</div>
-                    <div>2. {t('leetcode.sessionCookieStep2')}</div>
-                    <div>3. {t('leetcode.sessionCookieStep3')}</div>
-                    <div>4. {t('leetcode.sessionCookieStep4')}</div>
-                    <div>5. {t('leetcode.sessionCookieStep5')}</div>
-                  </div>
-                </div>
-              </div>
-            }
-          >
-            <Input.Password
-              placeholder="LEETCODE_SESSION cookie value"
-              size="large"
-            />
-          </Form.Item>
-
-
-        </Form>
-      )
+      title: t('leetcode.howToGetSessionCookie'),
+      steps: [
+        t('leetcode.sessionCookieStep1'),
+        t('leetcode.sessionCookieStep2'),
+        t('leetcode.sessionCookieStep3'),
+        t('leetcode.sessionCookieStep4'),
+        t('leetcode.sessionCookieStep5'),
+      ]
     }
   ];
 
   return (
-    <Modal
-      title={t('leetcode.configTitle')}
-      open={visible}
+    <ConfigModal
+      visible={visible}
       onCancel={onCancel}
-      footer={[
-        <div key="footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Button
-            icon={<CheckCircleOutlined />}
-            loading={testing}
-            onClick={testConnection}
-          >
-            {t('leetcode.testConnection')}
-          </Button>
-          <div>
-            <Button onClick={onCancel} style={{ marginRight: '8px' }}>
-              {t('common.cancel')}
-            </Button>
-            <Button
-              type="primary"
-              loading={loading}
-              icon={<SaveOutlined />}
-              onClick={() => form.submit()}
-            >
-              {t('leetcode.saveConfig')}
-            </Button>
-          </div>
-        </div>
-      ]}
+      title={t('leetcode.title')}
+      icon={<CodeOutlined />}
+      description={t('leetcode.description')}
       width={700}
+      onSave={handleSave}
+      onTest={handleTestConnection}
+      loading={loading}
+      testLoading={testing}
+      form={form}
+      helpSections={helpSections}
+      okText={t('leetcode.saveConfig')}
     >
-      <Steps current={currentStep} items={steps} style={{ marginBottom: '24px' }} />
-      {steps[currentStep].content}
-    </Modal>
+      <Form.Item
+        name="sessionCookie"
+        label={t('leetcode.sessionCookie')}
+        rules={[{ required: true, message: t('leetcode.sessionCookieRequired') }]}
+      >
+        <Input.Password
+          placeholder={t('leetcode.sessionCookiePlaceholder')}
+          size="large"
+        />
+      </Form.Item>
+    </ConfigModal>
   );
 };
 

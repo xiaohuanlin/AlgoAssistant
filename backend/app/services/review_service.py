@@ -220,6 +220,14 @@ class ReviewService:
         self.db.commit()
         return count
 
+    def delete_all_reviews(self, user_id: int) -> int:
+        """Delete all review plans for a user."""
+        query = self.db.query(models.Review).filter(models.Review.user_id == user_id)
+        count = query.count()
+        query.delete(synchronize_session=False)
+        self.db.commit()
+        return count
+
     def batch_mark_as_reviewed(self, user_id: int, ids: list[int]) -> int:
         reviews = (
             self.db.query(models.Review)

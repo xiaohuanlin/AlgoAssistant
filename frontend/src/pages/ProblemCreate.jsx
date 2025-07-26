@@ -54,8 +54,8 @@ const ProblemCreate = () => {
           rules={[{ required: true }]}
         >
           <Select onChange={handleSourceChange}>
-            <Option value="custom">Custom</Option>
-            <Option value="leetcode">LeetCode</Option>
+            <Option value="custom">{t('problem.sourceCustom')}</Option>
+            <Option value="leetcode">{t('problem.sourceLeetcode')}</Option>
           </Select>
         </Form.Item>
         {source === 'leetcode' && !hasLeetCodeConfig && (
@@ -79,9 +79,9 @@ const ProblemCreate = () => {
             </Form.Item>
             <Form.Item name="difficulty" label={t('problem.difficulty')}>
               <Select allowClear>
-                <Option value="Easy">Easy</Option>
-                <Option value="Medium">Medium</Option>
-                <Option value="Hard">Hard</Option>
+                <Option value="Easy">{t('problem.difficultyEasy')}</Option>
+                <Option value="Medium">{t('problem.difficultyMedium')}</Option>
+                <Option value="Hard">{t('problem.difficultyHard')}</Option>
               </Select>
             </Form.Item>
             <Form.Item name="tags" label={t('problem.tags')}>

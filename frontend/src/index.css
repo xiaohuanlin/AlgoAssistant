@@ -16,7 +16,16 @@ code {
   box-sizing: border-box;
 }
 
-/* 滚动条样式 */
+/* Mobile table styles */
+.mobile-table .ant-table {
+  font-size: 13px;
+}
+
+.mobile-table .ant-table-tbody > tr > td {
+  padding: 8px 4px;
+}
+
+/* Scrollbar styles */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -36,7 +45,7 @@ code {
   background: #a8a8a8;
 }
 
-/* 全局链接样式 */
+/* Global link styles */
 a {
   color: #1890ff;
   text-decoration: none;
@@ -47,36 +56,36 @@ a:hover {
   text-decoration: underline;
 }
 
-/* 全局按钮样式 */
+/* Global button styles */
 .ant-btn {
   border-radius: 6px;
   font-weight: 500;
 }
 
-/* 全局卡片样式 */
+/* Global card styles */
 .ant-card {
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
-/* 全局输入框样式 */
+/* Global input styles */
 .ant-input,
 .ant-input-password {
   border-radius: 6px;
 }
 
-/* 全局表格样式 */
+/* Global table styles */
 .ant-table {
   border-radius: 8px;
 }
 
-/* 全局分页样式 */
+/* Global pagination styles */
 .ant-pagination {
   text-align: center;
   margin-top: 16px;
 }
 
-/* 响应式工具类 */
+/* Responsive utility classes */
 @media (max-width: 768px) {
   .hide-mobile {
     display: none !important;
@@ -87,4 +96,4 @@ a:hover {
   .hide-desktop {
     display: none !important;
   }
-} 
+}
