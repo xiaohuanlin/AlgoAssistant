@@ -9,8 +9,7 @@ import {
   UserOutlined,
   LogoutOutlined,
   SyncOutlined,
-  FileTextOutlined,
-  RobotOutlined
+  FileTextOutlined
 } from '@ant-design/icons';
 import authService from '../services/authService';
 import LanguageSwitcher from './LanguageSwitcher';

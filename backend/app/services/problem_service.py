@@ -281,3 +281,74 @@ class ProblemService:
             "solve_rate": solve_rate,
             "total_reviews": total_reviews,
         }
+
+    def get_problem_statistics(self, problem_id: int, user: models.User) -> dict:
+        """Get statistics for a specific problem and user"""
+        from app import models
+
+        # Check if problem exists
+        problem = (
+            self.db.query(models.Problem)
+            .filter(models.Problem.id == problem_id)
+            .first()
+        )
+        if not problem:
+            raise ValueError("Problem not found")
+
+        # Get all records for this problem by this user
+        records = (
+            self.db.query(models.Record)
+            .filter(
+                models.Record.problem_id == problem_id, models.Record.user_id == user.id
+            )
+            .all()
+        )
+
+        total_attempts = len(records)
+        successful_attempts = len(
+            [r for r in records if r.execution_result == "Accepted"]
+        )
+        success_rate = (
+            successful_attempts / total_attempts if total_attempts > 0 else 0.0
+        )
+
+        # Get best time and memory from successful attempts
+        successful_records = [r for r in records if r.execution_result == "Accepted"]
+        best_time = None
+        best_memory = None
+
+        if successful_records:
+            # Find best runtime (lowest)
+            runtimes = [r.runtime for r in successful_records if r.runtime]
+            if runtimes:
+                best_time = min(runtimes)
+
+            # Find best memory (lowest)
+            memories = [r.memory for r in successful_records if r.memory]
+            if memories:
+                best_memory = min(memories)
+
+        # Get total reviews for this problem by this user
+        total_reviews = (
+            self.db.query(models.Review)
+            .filter(
+                models.Review.problem_id == problem_id, models.Review.user_id == user.id
+            )
+            .count()
+        )
+
+        # Get last attempt date
+        last_attempt_date = None
+        if records:
+            last_record = max(records, key=lambda r: r.submit_time)
+            last_attempt_date = last_record.submit_time
+
+        return {
+            "total_attempts": total_attempts,
+            "successful_attempts": successful_attempts,
+            "success_rate": success_rate,
+            "best_time": best_time,
+            "best_memory": best_memory,
+            "total_reviews": total_reviews,
+            "last_attempt_date": last_attempt_date,
+        }

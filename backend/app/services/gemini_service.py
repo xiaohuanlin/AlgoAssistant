@@ -62,6 +62,7 @@ Provide a detailed analysis including:
 - time_complexity: Time complexity in Big-O notation, e.g., O(n log n)
 - space_complexity: Space complexity in Big-O notation
 - algorithm_type: Main algorithm category, e.g., DFS, DP
+- topic_tags: List of relevant algorithmic topic tags for this problem (e.g., Array, String, Dynamic Programming, Tree, Graph, etc.)
 - code_quality_score: Overall code quality rating (1-10), 10 is the best
 - style_score: Code readability and formatting rating (1-10), 10 is the best
 - correctness_confidence: Estimated correctness confidence (0.0 - 1.0), 1.0 is the best
@@ -78,6 +79,7 @@ Format the response as a structured JSON with these exact keys:
 - time_complexity: string
 - space_complexity: string
 - algorithm_type: string
+- topic_tags: list[string]
 - code_quality_score: int
 - style_score: int
 - correctness_confidence: float
@@ -146,3 +148,4 @@ Return only the JSON object, no additional text."""
         except Exception as e:
             logger.error(f"Gemini analysis failed: {e}")
             return False, {"error": str(e)}
+

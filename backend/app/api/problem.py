@@ -10,6 +10,7 @@ from app.schemas import (
     ProblemCreate,
     ProblemOut,
     ProblemSource,
+    ProblemStatisticsOut,
     ProblemUpdate,
 )
 from app.schemas.problem import ProblemListOut, ProblemOut, ProblemUserRecordsOut
@@ -83,6 +84,21 @@ def get_problem_user_records(
     records_out = [record_service.to_record_list_out(r) for r in problem.records]
     reviews_out = [ReviewOut.from_orm(r) for r in problem.reviews]
     return ProblemUserRecordsOut(records=records_out, reviews=reviews_out)
+
+
+@router.get("/{problem_id}/statistics", response_model=ProblemStatisticsOut)
+def get_problem_statistics(
+    problem_id: int,
+    db: Session = Depends(get_db),
+    current_user: UserOut = Depends(get_current_user),
+):
+    """Get statistics for a specific problem and current user"""
+    service = ProblemService(db)
+    try:
+        stats = service.get_problem_statistics(problem_id, current_user)
+        return ProblemStatisticsOut(**stats)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.put("/{problem_id}", response_model=ProblemOut)

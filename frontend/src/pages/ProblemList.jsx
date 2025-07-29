@@ -1,12 +1,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button, message, Tag, Space } from 'antd';
-import { BookOutlined, EyeOutlined, PlusOutlined } from '@ant-design/icons';
+import { message, Tag, Space, Row, Col } from 'antd';
+import { 
+  PlusOutlined, 
+  ProfileOutlined, 
+  BarChartOutlined,
+  EyeOutlined 
+} from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import problemService from '../services/problemService';
 import { useNavigate } from 'react-router-dom';
 import DataTable from '../components/common/DataTable';
 import ActionButton from '../components/common/ActionButton';
 import ProblemBankStatistics from '../components/problem/ProblemBankStatistics';
+import useTableFilters from '../hooks/useTableFilters';
+import {
+  GradientPageHeader,
+  ModernCard,
+  GRADIENT_THEMES
+} from '../components/ui/ModernDesignSystem';
 
 
 const ProblemList = () => {
@@ -15,19 +26,34 @@ const ProblemList = () => {
   const [loading, setLoading] = useState(false);
   const [problems, setProblems] = useState([]);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
-  const [onlySelf, setOnlySelf] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
-  const [filters, setFilters] = useState({});
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
-  const fetchProblems = useCallback(async () => {
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
+  // Use the new table filters hook
+  const {
+    filters,
+    clearAllFilters,
+    createAutoFilterHandler,
+    createFilterClearHandler
+  } = useTableFilters((apiFilters) => {
+    setPagination(prev => ({ ...prev, current: 1 }));
+    fetchProblems(apiFilters);
+  });
+
+  const fetchProblems = useCallback(async (filterParams = {}) => {
     setLoading(true);
     try {
       const params = {
         skip: (pagination.current - 1) * pagination.pageSize,
         limit: pagination.pageSize,
-        ...filters,
-        only_self: onlySelf,
-        title: searchValue || undefined,
+        ...filterParams,
       };
       const data = await problemService.getProblems(params);
       setProblems(data.items);
@@ -37,7 +63,7 @@ const ProblemList = () => {
     } finally {
       setLoading(false);
     }
-  }, [pagination.current, pagination.pageSize, filters, onlySelf, searchValue, t]);
+  }, [pagination.current, pagination.pageSize, t]);
 
   useEffect(() => {
     fetchProblems();
@@ -47,37 +73,15 @@ const ProblemList = () => {
     navigate(`/problem/${problem.id}`);
   };
 
-  const handleOnlySelfChange = (checked) => {
-    setOnlySelf(checked);
-    setPagination(prev => ({ ...prev, current: 1 }));
-  };
-
-  const handleTableChange = (newPagination) => {
-    setPagination(prev => ({
-      ...prev,
-      current: newPagination.current,
-      pageSize: newPagination.pageSize,
-    }));
-  };
-
-  const handleFilterChange = (key, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value,
-    }));
-    setPagination(prev => ({ ...prev, current: 1 }));
-  };
-
-  const clearFilters = () => {
-    setFilters({});
-    setSearchValue('');
-    setOnlySelf(false);
-    setPagination(prev => ({ ...prev, current: 1 }));
-  };
-
   const handleRefresh = () => {
-    // Only refresh data, keep all filters
-    fetchProblems();
+    // Refresh data with current filters
+    const currentApiFilters = {};
+    Object.keys(filters).forEach(key => {
+      if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+        currentApiFilters[key] = filters[key];
+      }
+    });
+    fetchProblems(currentApiFilters);
   };
 
   const difficultyColor = {
@@ -138,12 +142,13 @@ const ProblemList = () => {
 
   const dataTableFilters = [
     {
-      key: 'search',
+      key: 'title',
       label: t('problem.searchPlaceholder'),
       type: 'input',
       placeholder: t('problem.searchPlaceholder'),
-      value: searchValue,
-      onChange: setSearchValue,
+      value: filters.title,
+      onChange: createAutoFilterHandler('title', 500),
+      onClear: createFilterClearHandler('title')
     },
     {
       key: 'source',
@@ -151,7 +156,8 @@ const ProblemList = () => {
       type: 'select',
       placeholder: t('problem.sourcePlaceholder'),
       value: filters.source,
-      onChange: (value) => handleFilterChange('source', value),
+      onChange: createAutoFilterHandler('source'),
+      onClear: createFilterClearHandler('source'),
       options: [
         { label: 'LeetCode', value: 'leetcode' },
         { label: 'Custom', value: 'custom' },
@@ -163,7 +169,8 @@ const ProblemList = () => {
       type: 'select',
       placeholder: t('problem.difficultyPlaceholder'),
       value: filters.difficulty,
-      onChange: (value) => handleFilterChange('difficulty', value),
+      onChange: createAutoFilterHandler('difficulty'),
+      onClear: createFilterClearHandler('difficulty'),
       options: [
         { label: 'Easy', value: 'Easy' },
         { label: 'Medium', value: 'Medium' },
@@ -171,15 +178,16 @@ const ProblemList = () => {
       ],
     },
     {
-      key: 'onlySelf',
+      key: 'only_self',
       label: t('problem.viewMode'),
       type: 'select',
       placeholder: t('problem.viewModePlaceholder'),
-      value: onlySelf ? 'self' : 'all',
-      onChange: (value) => handleOnlySelfChange(value === 'self'),
+      value: filters.only_self,
+      onChange: createAutoFilterHandler('only_self'),
+      onClear: createFilterClearHandler('only_self'),
       options: [
-        { label: t('problem.allUsers'), value: 'all' },
-        { label: t('problem.onlySelf'), value: 'self' },
+        { label: t('problem.allUsers'), value: false },
+        { label: t('problem.onlySelf'), value: true },
       ],
     },
   ];
@@ -194,30 +202,65 @@ const ProblemList = () => {
   ];
 
   return (
-    <div>
-      {/* Statistics Section */}
-      <ProblemBankStatistics />
-
-      <DataTable
-        title={t('problem.listTitle')}
-        subtitle={t('problem.subtitle')}
-        data={problems}
-        columns={columns}
-        loading={loading}
-        pagination={{
-          current: pagination.current,
-          pageSize: pagination.pageSize,
-          total: pagination.total,
-          onChange: (current, pageSize) => {
-            setPagination(prev => ({ ...prev, current, pageSize }));
-          },
-        }}
-        filters={dataTableFilters}
-        actions={headerActions}
-        onRefresh={handleRefresh}
-        onFilterChange={clearFilters}
-        showFilterButtons={false}
+    <div style={{
+      maxWidth: 1200,
+      margin: '0 auto',
+      padding: isMobile ? '16px' : '24px'
+    }}>
+      {/* Modern Page Header */}
+      <GradientPageHeader
+        icon={<ProfileOutlined style={{
+          fontSize: isMobile ? '24px' : '36px',
+          color: 'white'
+        }} />}
+        title={t('problem.listTitle', 'Problem Bank')}
+        subtitle={(
+          <>
+            <BarChartOutlined style={{ fontSize: isMobile ? '16px' : '20px' }} />
+            {t('problem.subtitle', 'Manage your coding problems')}
+          </>
+        )}
+        isMobile={isMobile}
+        gradient={GRADIENT_THEMES.primary}
       />
+
+      {/* Statistics Section */}
+      <ModernCard
+        title={t('problem.statistics', 'Statistics')}
+        icon={<BarChartOutlined />}
+        iconGradient={GRADIENT_THEMES.success}
+        isMobile={isMobile}
+        style={{ marginBottom: isMobile ? 16 : 24 }}
+      >
+        <ProblemBankStatistics />
+      </ModernCard>
+
+      {/* Problems List */}
+      <ModernCard
+        title={t('problem.listTitle', 'Problem List')}
+        icon={<ProfileOutlined />}
+        iconGradient={GRADIENT_THEMES.info}
+        isMobile={isMobile}
+      >
+        <DataTable
+          data={problems}
+          columns={columns}
+          loading={loading}
+          pagination={{
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: pagination.total,
+            onChange: (current, pageSize) => {
+              setPagination(prev => ({ ...prev, current, pageSize }));
+            },
+          }}
+          filters={dataTableFilters}
+          actions={headerActions}
+          onRefresh={handleRefresh}
+          onClearFilters={clearAllFilters}
+          showFilterButtons={false}
+        />
+      </ModernCard>
     </div>
   );
 };

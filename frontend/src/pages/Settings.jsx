@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Typography, Tabs } from 'antd';
+import { Row, Col, Typography, Tabs, Tag, Button } from 'antd';
 import {
   SettingOutlined,
   UserOutlined,
@@ -7,12 +7,18 @@ import {
   RobotOutlined,
   BellOutlined,
   CodeOutlined,
-  GithubOutlined
+  GithubOutlined,
+  BarChartOutlined
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 
 import { ConfigCard } from '../components/common';
 import LeetCodeIntegrationModal from '../components/LeetCodeIntegrationModal';
+import {
+  GradientPageHeader,
+  ModernCard,
+  GRADIENT_THEMES
+} from '../components/ui/ModernDesignSystem';
 import GitHubIntegrationModal from '../components/GitHubIntegrationModal';
 import NotionIntegrationModal from '../components/NotionIntegrationModal';
 import configService from '../services/configService';
@@ -29,6 +35,15 @@ const { Title, Text } = Typography;
 const Settings = () => {
     const { t } = useTranslation();
     const { refreshConfigs } = useConfig();
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth <= 768);
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
     const [gitConfig, setGitConfig] = useState(null);
     const [leetcodeConfig, setLeetCodeConfig] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -42,7 +57,6 @@ const Settings = () => {
     const [notificationModalVisible, setNotificationModalVisible] = useState(false);
     const [accountModalVisible, setAccountModalVisible] = useState(false);
     const [passwordModalVisible, setPasswordModalVisible] = useState(false);
-    const [allConfigs, setAllConfigs] = useState({});
 
     useEffect(() => {
         if (authService.isAuthenticated()) {
@@ -55,7 +69,6 @@ const Settings = () => {
         try {
             // Load all configs in one request
             const allConfigs = await configService.getAllConfigs();
-            setAllConfigs(allConfigs);
 
             // Set GitHub config
             if (allConfigs.github_config) {
@@ -150,58 +163,131 @@ const Settings = () => {
     };
 
 
+    const getConfigStatus = (isConfigured) => ({
+        color: isConfigured ? 'success' : 'warning',
+        text: isConfigured ? t('common.configured', 'Configured') : t('common.notConfigured', 'Not Configured')
+    });
+
     const items = [
         {
             key: 'integrations',
-            label: t('settings.integrations'),
+            label: t('settings.integrations', 'Integrations'),
             children: (
                 <Row gutter={[16, 16]}>
                     {/* LeetCode Integration */}
                     <Col xs={24} lg={12}>
-                        <ConfigCard
-                            title={t('settings.leetcodeIntegration')}
-                            icon={<CodeOutlined style={{ fontSize: '18px', color: '#1890ff' }} />}
-                            description={t('settings.leetcodeDescription')}
-                            status={leetcodeConfig?.sessionCookie ? 'configured' : 'not_configured'}
-                            onConfigure={() => setLeetCodeModalVisible(true)}
-                            loading={loading}
-                        />
+                        <ModernCard
+                            title={t('settings.leetcodeIntegration', 'LeetCode Integration')}
+                            icon={<CodeOutlined />}
+                            iconGradient={GRADIENT_THEMES.info}
+                            isMobile={isMobile}
+                            extra={
+                                <Button
+                                    type={leetcodeConfig?.sessionCookie ? 'default' : 'primary'}
+                                    size="small"
+                                    onClick={() => setLeetCodeModalVisible(true)}
+                                    loading={loading}
+                                >
+                                    {leetcodeConfig?.sessionCookie ? t('common.update', 'Update') : t('common.configure', 'Configure')}
+                                </Button>
+                            }
+                        >
+                            <div style={{ marginBottom: 16 }}>
+                                <div style={{ marginBottom: 8, color: '#666' }}>
+                                    {t('settings.leetcodeDescription', 'Connect your LeetCode account to sync submissions')}
+                                </div>
+                                <Tag color={getConfigStatus(leetcodeConfig?.sessionCookie).color}>
+                                    {getConfigStatus(leetcodeConfig?.sessionCookie).text}
+                                </Tag>
+                            </div>
+                        </ModernCard>
                     </Col>
 
                     {/* GitHub Integration */}
                     <Col xs={24} lg={12}>
-                        <ConfigCard
-                            title={t('git.configTitle')}
-                            icon={<GithubOutlined style={{ fontSize: '18px', color: '#1890ff' }} />}
-                            description={t('settings.githubDescription')}
-                            status={gitConfig ? 'configured' : 'not_configured'}
-                            onConfigure={() => setGithubModalVisible(true)}
-                            loading={loading}
-                        />
+                        <ModernCard
+                            title={t('git.configTitle', 'GitHub Integration')}
+                            icon={<GithubOutlined />}
+                            iconGradient={GRADIENT_THEMES.slate}
+                            isMobile={isMobile}
+                            extra={
+                                <Button
+                                    type={gitConfig ? 'default' : 'primary'}
+                                    size="small"
+                                    onClick={() => setGithubModalVisible(true)}
+                                    loading={loading}
+                                >
+                                    {gitConfig ? t('common.update', 'Update') : t('common.configure', 'Configure')}
+                                </Button>
+                            }
+                        >
+                            <div style={{ marginBottom: 16 }}>
+                                <div style={{ marginBottom: 8, color: '#666' }}>
+                                    {t('settings.githubDescription', 'Connect your GitHub account to sync code')}
+                                </div>
+                                <Tag color={getConfigStatus(gitConfig).color}>
+                                    {getConfigStatus(gitConfig).text}
+                                </Tag>
+                            </div>
+                        </ModernCard>
                     </Col>
 
                     {/* Notion Integration */}
                     <Col xs={24} lg={12}>
-                        <ConfigCard
-                            title={t('settings.notionIntegration')}
-                            icon={<BookOutlined style={{ fontSize: '18px', color: '#1890ff' }} />}
-                            description={t('settings.notionDescription')}
-                            status={notionConfig?.token ? 'configured' : 'not_configured'}
-                            onConfigure={() => setNotionModalVisible(true)}
-                            loading={loading}
-                        />
+                        <ModernCard
+                            title={t('settings.notionIntegration', 'Notion Integration')}
+                            icon={<BookOutlined />}
+                            iconGradient={GRADIENT_THEMES.warning}
+                            isMobile={isMobile}
+                            extra={
+                                <Button
+                                    type={notionConfig?.token ? 'default' : 'primary'}
+                                    size="small"
+                                    onClick={() => setNotionModalVisible(true)}
+                                    loading={loading}
+                                >
+                                    {notionConfig?.token ? t('common.update', 'Update') : t('common.configure', 'Configure')}
+                                </Button>
+                            }
+                        >
+                            <div style={{ marginBottom: 16 }}>
+                                <div style={{ marginBottom: 8, color: '#666' }}>
+                                    {t('settings.notionDescription', 'Connect your Notion workspace to sync notes')}
+                                </div>
+                                <Tag color={getConfigStatus(notionConfig?.token).color}>
+                                    {getConfigStatus(notionConfig?.token).text}
+                                </Tag>
+                            </div>
+                        </ModernCard>
                     </Col>
 
                     {/* Gemini Integration */}
                     <Col xs={24} lg={12}>
-                        <ConfigCard
-                            title={t('gemini.title')}
-                            icon={<RobotOutlined style={{ fontSize: '18px', color: '#1890ff' }} />}
-                            description={t('gemini.subtitle')}
-                            status={geminiConfig?.api_key ? 'configured' : 'not_configured'}
-                            onConfigure={() => setGeminiModalVisible(true)}
-                            loading={loading}
-                        />
+                        <ModernCard
+                            title={t('gemini.title', 'Gemini AI Integration')}
+                            icon={<RobotOutlined />}
+                            iconGradient={GRADIENT_THEMES.success}
+                            isMobile={isMobile}
+                            extra={
+                                <Button
+                                    type={geminiConfig?.api_key ? 'default' : 'primary'}
+                                    size="small"
+                                    onClick={() => setGeminiModalVisible(true)}
+                                    loading={loading}
+                                >
+                                    {geminiConfig?.api_key ? t('common.update', 'Update') : t('common.configure', 'Configure')}
+                                </Button>
+                            }
+                        >
+                            <div style={{ marginBottom: 16 }}>
+                                <div style={{ marginBottom: 8, color: '#666' }}>
+                                    {t('gemini.subtitle', 'Connect Gemini AI for intelligent code analysis')}
+                                </div>
+                                <Tag color={getConfigStatus(geminiConfig?.api_key).color}>
+                                    {getConfigStatus(geminiConfig?.api_key).text}
+                                </Tag>
+                            </div>
+                        </ModernCard>
                         <GeminiIntegrationModal
                             visible={geminiModalVisible}
                             onCancel={() => setGeminiModalVisible(false)}
@@ -209,16 +295,34 @@ const Settings = () => {
                             initialValues={geminiConfig}
                         />
                     </Col>
+
                     {/* Notification Config Integration */}
                     <Col xs={24} lg={12}>
-                        <ConfigCard
-                            title={t('settings.notificationSettings') || 'Notification Settings'}
-                            icon={<BellOutlined style={{ fontSize: '18px', color: '#1890ff' }} />}
-                            description={t('settings.notificationDescription') || 'Configure email, push, SMS and other notification methods'}
-                            status={notificationConfig?.notification_config?.email?.enabled || notificationConfig?.notification_config?.push?.enabled || notificationConfig?.notification_config?.sms?.enabled ? 'configured' : 'not_configured'}
-                            onConfigure={() => setNotificationModalVisible(true)}
-                            loading={loading}
-                        />
+                        <ModernCard
+                            title={t('settings.notificationSettings', 'Notification Settings')}
+                            icon={<BellOutlined />}
+                            iconGradient={GRADIENT_THEMES.cyan}
+                            isMobile={isMobile}
+                            extra={
+                                <Button
+                                    type={notificationConfig?.notification_config ? 'default' : 'primary'}
+                                    size="small"
+                                    onClick={() => setNotificationModalVisible(true)}
+                                    loading={loading}
+                                >
+                                    {notificationConfig?.notification_config ? t('common.update', 'Update') : t('common.configure', 'Configure')}
+                                </Button>
+                            }
+                        >
+                            <div style={{ marginBottom: 16 }}>
+                                <div style={{ marginBottom: 8, color: '#666' }}>
+                                    {t('settings.notificationDescription', 'Configure email, push, SMS and other notification methods')}
+                                </div>
+                                <Tag color={getConfigStatus(notificationConfig?.notification_config?.email?.enabled || notificationConfig?.notification_config?.push?.enabled || notificationConfig?.notification_config?.sms?.enabled).color}>
+                                    {getConfigStatus(notificationConfig?.notification_config?.email?.enabled || notificationConfig?.notification_config?.push?.enabled || notificationConfig?.notification_config?.sms?.enabled).text}
+                                </Tag>
+                            </div>
+                        </ModernCard>
                         <NotificationConfigModal
                             visible={notificationModalVisible}
                             onCancel={() => setNotificationModalVisible(false)}
@@ -231,50 +335,102 @@ const Settings = () => {
         },
         {
             key: 'account',
-            label: t('settings.accountSettings'),
+            label: t('settings.accountSettings', 'Account Settings'),
             children: (
                 <Row gutter={[16, 16]}>
                     {/* 基本信息管理 */}
                     <Col xs={24} lg={12}>
-                        <ConfigCard
-                            title={t('accountSettings.basicInfo') || 'Basic Information'}
-                            icon={<UserOutlined style={{ fontSize: '18px', color: '#1890ff' }} />}
-                            description={t('accountSettings.basicInfoDesc') || 'Manage your username, email, nickname and avatar'}
-                            status="configured"
-                            onConfigure={() => setAccountModalVisible(true)}
-                            loading={loading}
-                        />
+                        <ModernCard
+                            title={t('accountSettings.basicInfo', 'Basic Information')}
+                            icon={<UserOutlined />}
+                            iconGradient={GRADIENT_THEMES.primary}
+                            isMobile={isMobile}
+                            extra={
+                                <Button
+                                    type="default"
+                                    size="small"
+                                    onClick={() => setAccountModalVisible(true)}
+                                    loading={loading}
+                                >
+                                    {t('common.manage', 'Manage')}
+                                </Button>
+                            }
+                        >
+                            <div style={{ marginBottom: 16 }}>
+                                <div style={{ marginBottom: 8, color: '#666' }}>
+                                    {t('accountSettings.basicInfoDesc', 'Manage your username, email, nickname and avatar')}
+                                </div>
+                                <Tag color="success">
+                                    {t('common.configured', 'Configured')}
+                                </Tag>
+                            </div>
+                        </ModernCard>
                     </Col>
 
                     {/* 密码管理 */}
                     <Col xs={24} lg={12}>
-                        <ConfigCard
-                            title={t('accountSettings.security') || 'Security Settings'}
-                            icon={<SettingOutlined style={{ fontSize: '18px', color: '#1890ff' }} />}
-                            description={t('accountSettings.securityDesc') || 'Change password and manage account security'}
-                            status="configured"
-                            onConfigure={() => setPasswordModalVisible(true)}
-                            loading={loading}
-                        />
+                        <ModernCard
+                            title={t('accountSettings.security', 'Security Settings')}
+                            icon={<SettingOutlined />}
+                            iconGradient={GRADIENT_THEMES.danger}
+                            isMobile={isMobile}
+                            extra={
+                                <Button
+                                    type="default"
+                                    size="small"
+                                    onClick={() => setPasswordModalVisible(true)}
+                                    loading={loading}
+                                >
+                                    {t('common.manage', 'Manage')}
+                                </Button>
+                            }
+                        >
+                            <div style={{ marginBottom: 16 }}>
+                                <div style={{ marginBottom: 8, color: '#666' }}>
+                                    {t('accountSettings.securityDesc', 'Change password and manage account security')}
+                                </div>
+                                <Tag color="success">
+                                    {t('common.configured', 'Configured')}
+                                </Tag>
+                            </div>
+                        </ModernCard>
                     </Col>
-
                 </Row>
             )
         }
     ];
 
     return (
-        <div style={{ padding: '16px' }}>
-            <div style={{ marginBottom: '16px' }}>
-                <Title level={3} style={{ margin: 0 }}>
-                    <SettingOutlined /> {t('settings.title')}
-                </Title>
-                <Text type="secondary" style={{ fontSize: '14px' }}>
-                    {t('settings.description')}
-                </Text>
-            </div>
+        <div style={{
+            maxWidth: 1200,
+            margin: '0 auto',
+            padding: isMobile ? '16px' : '24px'
+        }}>
+            {/* Modern Page Header */}
+            <GradientPageHeader
+                icon={<SettingOutlined style={{
+                    fontSize: isMobile ? '24px' : '36px',
+                    color: 'white'
+                }} />}
+                title={t('settings.title', 'Settings')}
+                subtitle={(
+                    <>
+                        <BarChartOutlined style={{ fontSize: isMobile ? '16px' : '20px' }} />
+                        {t('settings.description', 'Configure your integrations and preferences')}
+                    </>
+                )}
+                isMobile={isMobile}
+                gradient={GRADIENT_THEMES.purple}
+            />
 
-            <Tabs items={items} />
+            <ModernCard
+                title={t('settings.configurationTabs', 'Configuration')}
+                icon={<SettingOutlined />}
+                iconGradient={GRADIENT_THEMES.slate}
+                isMobile={isMobile}
+            >
+                <Tabs items={items} />
+            </ModernCard>
 
             {/* LeetCode Integration Modal */}
             <LeetCodeIntegrationModal

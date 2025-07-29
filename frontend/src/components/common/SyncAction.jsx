@@ -5,7 +5,6 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined,
   LoadingOutlined,
-  ReloadOutlined,
   PauseCircleOutlined
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';

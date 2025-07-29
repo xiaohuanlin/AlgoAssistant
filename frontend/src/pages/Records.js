@@ -1,63 +1,45 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Card,
   Button,
   message,
   Tag,
   Typography,
-  Space,
   Row,
   Col,
-  Statistic,
   Tooltip,
-  Tabs,
-  Alert,
   Form,
-  Input,
-  DatePicker,
+  Space,
 } from 'antd';
 import {
   BookOutlined,
-  EyeOutlined,
   CheckCircleOutlined,
-  CloseCircleOutlined,
   SyncOutlined,
-  PlusOutlined
+  PlusOutlined,
+  EyeOutlined,
+  HistoryOutlined,
+  BarChartOutlined
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 
 import recordsService from '../services/recordsService';
-import { DataTable, StatusIndicator, SyncAction } from '../components/common';
+import { DataTable, StatusIndicator } from '../components/common';
 import ResponsiveStatCard from '../components/dashboard/ResponsiveStatCard';
+import {
+  GradientPageHeader,
+  ModernCard,
+  GRADIENT_THEMES
+} from '../components/ui/ModernDesignSystem';
 import GitSyncAction from '../components/GitSyncAction';
 import GeminiSyncAction from '../components/GeminiSyncAction';
 import NotionSyncAction from '../components/NotionSyncAction';
 import { useConfig } from '../contexts/ConfigContext';
+import useTableFilters from '../hooks/useTableFilters';
 
-const { RangePicker } = DatePicker;
-const { Title, Text, Link } = Typography;
+const { Text, Link } = Typography;
 
 // Common status mapping functions
-const getStatusColor = (executionResult) => {
-  switch (executionResult.toLowerCase()) {
-    case 'accepted':
-      return 'success';
-    case 'wrong answer':
-      return 'error';
-    case 'time limit exceeded':
-      return 'warning';
-    case 'memory limit exceeded':
-      return 'warning';
-    case 'runtime error':
-      return 'error';
-    case 'compile error':
-      return 'error';
-    default:
-      return 'default';
-  }
-};
 
 const getLanguageColor = (language) => {
   const colors = {
@@ -73,42 +55,48 @@ const getLanguageColor = (language) => {
   return colors[language?.toLowerCase()] || 'default';
 };
 
-const getSyncStatusConfig = (status, t) => {
-  const configs = {
-    'pending': { color: 'default', text: t('records.statusPending') },
-    'syncing': { color: 'processing', text: t('records.statusSyncing') },
-    'completed': { color: 'success', text: t('records.statusCompleted') },
-    'failed': { color: 'error', text: t('records.statusFailed') },
-    'paused': { color: 'warning', text: t('records.statusPaused') }
-  };
-  return configs[status] || { color: 'default', text: status };
-};
 
 const Records = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [filterForm] = Form.useForm();
+  Form.useForm();
 
   // State management
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({});
   const [selectedRecords, setSelectedRecords] = useState([]);
-  const [filters, setFilters] = useState({});
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
     total: 0
   });
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Use the new table filters hook
+  const {
+    filters,
+    handleFilter,
+    clearAllFilters,
+    createAutoFilterHandler,
+    createFilterClearHandler
+  } = useTableFilters((apiFilters) => {
+    setPagination(prev => ({ ...prev, current: 1 }));
+    loadRecords(apiFilters);
+  });
 
   // Config context
   const {
-    hasGitConfig,
-    hasGeminiConfig,
-    hasNotionConfig,
-    gitConfig,
     geminiConfig,
-    notionConfig
+    hasNotionConfig
   } = useConfig();
 
   // Load data
@@ -116,9 +104,24 @@ const Records = () => {
     setLoading(true);
     try {
       const queryFilters = { ...filters, ...newFilters };
+      // Filter out empty values to avoid sending empty strings to backend
+      const cleanFilters = {};
+      Object.keys(queryFilters).forEach(key => {
+        const value = queryFilters[key];
+        if (value !== undefined && value !== null && value !== '') {
+          if (key === 'dateRange' && Array.isArray(value) && value.length === 2) {
+            // Convert dateRange to start_time and end_time for API
+            cleanFilters.start_time = value[0].startOf('day').toISOString();
+            cleanFilters.end_time = value[1].endOf('day').toISOString();
+          } else {
+            cleanFilters[key] = value;
+          }
+        }
+      });
+
       const [recordsData, statsData] = await Promise.all([
         recordsService.getRecords({
-          ...queryFilters,
+          ...cleanFilters,
           limit: pagination.pageSize,
           offset: (pagination.current - 1) * pagination.pageSize
         }),
@@ -129,7 +132,8 @@ const Records = () => {
       setStats(statsData);
       setPagination(prev => ({
         ...prev,
-        total: recordsData.total || recordsData.length
+        total: recordsData.total || recordsData.length,
+        current: recordsData.page || prev.current
       }));
     } catch (error) {
       message.error(t('records.loadError'));
@@ -148,27 +152,7 @@ const Records = () => {
     navigate(`/records/${record.id}`);
   };
 
-  const handleOJSync = async (record) => {
-    message.info(t('records.ojSyncNotImplemented'));
-  };
 
-
-  const handleFilter = (values) => {
-    const newFilters = {};
-    Object.keys(values).forEach(key => {
-      if (values[key] !== undefined && values[key] !== null && values[key] !== '') {
-        if (key === 'dateRange' && values[key]?.length === 2) {
-          newFilters.start_time = values[key][0].format('YYYY-MM-DD');
-          newFilters.end_time = values[key][1].format('YYYY-MM-DD');
-        } else {
-          newFilters[key] = values[key];
-        }
-      }
-    });
-    setFilters(newFilters);
-    setPagination(prev => ({ ...prev, current: 1 }));
-    loadRecords(newFilters);
-  };
 
   const handleSelectionChange = (selectedRowKeys) => {
     setSelectedRecords(selectedRowKeys);
@@ -181,10 +165,10 @@ const Records = () => {
   // Table columns configuration
   const columns = [
     {
-      title: t('records.problemNumber'),
+      title: t('records.problemNumber', 'Problem #'),
       dataIndex: 'problem_number',
       key: 'problem_number',
-      width: 80,
+      width: isMobile ? 60 : 80,
       render: (problemNumber, record) => problemNumber ? (
         <Button
           type="link"
@@ -196,18 +180,33 @@ const Records = () => {
       ) : <Text type="secondary">-</Text>
     },
     {
-      title: t('records.problem'),
+      title: t('records.problem', 'Problem'),
       key: 'problem_title',
-      width: 300,
+      width: isMobile ? 200 : 300,
+      ellipsis: true,
       render: (_, record) => (
-        <Tooltip title={t('records.openInLeetCode')}>
+        <Tooltip title={record.problem_title || `#${record.id}`}>
           <Link
             href={record.submission_url || '#'}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: '#1890ff' }}
+            style={{ 
+              color: '#1890ff',
+              display: 'block',
+              whiteSpace: 'nowrap'
+            }}
           >
-            <Text strong style={{ fontSize: '14px' }}>
+            <Text 
+              strong 
+              style={{ 
+                fontSize: '14px',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                maxWidth: isMobile ? '180px' : '280px',
+                display: 'inline-block'
+              }}
+            >
               {record.problem_title || `#${record.id}`}
             </Text>
           </Link>
@@ -215,10 +214,10 @@ const Records = () => {
       )
     },
     {
-      title: t('records.status'),
+      title: t('records.status', 'Status'),
       dataIndex: 'execution_result',
       key: 'execution_result',
-      width: 120,
+      width: isMobile ? 100 : 120,
       render: (executionResult) => (
         <StatusIndicator
           status={executionResult}
@@ -228,10 +227,10 @@ const Records = () => {
       )
     },
     {
-      title: t('records.language'),
+      title: t('records.language', 'Language'),
       dataIndex: 'language',
       key: 'language',
-      width: 100,
+      width: isMobile ? 80 : 100,
       render: (language) => (
         <Tag color={getLanguageColor(language)}>
           {language}
@@ -239,21 +238,25 @@ const Records = () => {
       )
     },
     {
-      title: t('records.ojType'),
+      title: t('records.ojType', 'OJ Type'),
       dataIndex: 'oj_type',
       key: 'oj_type',
-      width: 80,
-      render: (ojType) => (
-        <Tag color="blue">
-          {ojType}
-        </Tag>
-      )
+      width: isMobile ? 70 : 80,
+      render: (ojType) => {
+        const displayName = ojType === 'leetcode' ? 'LeetCode' :
+                           ojType === 'other' ? t('common.other', 'Other') : ojType;
+        return (
+          <Tag color="blue">
+            {displayName}
+          </Tag>
+        );
+      }
     },
     {
-      title: t('records.githubSyncStatus'),
+      title: t('records.githubSyncStatus', 'GitHub Sync'),
       dataIndex: 'github_sync_status',
       key: 'github_sync_status',
-      width: 120,
+      width: isMobile ? 100 : 120,
       render: (status) => (
         <StatusIndicator
           status={status}
@@ -263,10 +266,10 @@ const Records = () => {
       )
     },
     {
-      title: t('records.aiAnalysisStatus'),
+      title: t('records.aiAnalysisStatus', 'AI Analysis'),
       dataIndex: 'ai_sync_status',
       key: 'ai_sync_status',
-      width: 120,
+      width: isMobile ? 100 : 120,
       render: (status) => (
         <StatusIndicator
           status={status}
@@ -276,18 +279,21 @@ const Records = () => {
       )
     },
     {
-      title: t('records.submitTime'),
+      title: t('records.submitTime', 'Submit Time'),
       dataIndex: 'submit_time',
       key: 'submit_time',
-      width: 150,
+      width: isMobile ? 120 : 150,
       render: (submitTime) => (
-        <Text style={{ fontSize: '12px' }}>
-          {submitTime ? dayjs(submitTime).format('YYYY-MM-DD HH:mm') : '-'}
+        <Text style={{ 
+          fontSize: '12px',
+          whiteSpace: 'nowrap'
+        }}>
+          {submitTime ? dayjs(submitTime).format(isMobile ? 'MM-DD HH:mm' : 'YYYY-MM-DD HH:mm') : '-'}
         </Text>
       )
     },
     {
-      title: t('records.actions'),
+      title: t('records.actions', 'Actions'),
       key: 'actions',
       width: 200,
       fixed: 'right',
@@ -295,14 +301,14 @@ const Records = () => {
         const actionEnabled = isSyncActionEnabled(record);
         return (
           <Space>
-            <Tooltip title={actionEnabled ? t('records.view') : t('records.pleaseSyncOJFirst')}>
+            <Tooltip title={actionEnabled ? t('records.view', 'View') : t('records.pleaseSyncOJFirst', 'Please sync OJ first')}>
               <Button
                 icon={<EyeOutlined />}
                 size="small"
                 onClick={() => handleViewRecord(record)}
                 disabled={!actionEnabled}
               >
-                {t('records.view')}
+                {t('records.view', 'View')}
               </Button>
             </Tooltip>
             <GitSyncAction
@@ -331,54 +337,84 @@ const Records = () => {
   const filterConfig = [
     {
       key: 'problem_title',
-      label: t('records.problem'),
+      label: t('records.problem', 'Problem'),
       type: 'input',
-      placeholder: t('records.searchByTitle'),
+      placeholder: t('records.searchByTitle', 'Search by title'),
       value: filters.problem_title,
-      onChange: (value) => setFilters(prev => ({ ...prev, problem_title: value }))
+      onChange: createAutoFilterHandler('problem_title', 500),
+      onClear: createFilterClearHandler('problem_title')
     },
     {
-      key: 'execution_result',
-      label: t('records.status'),
+      key: 'problem_id',
+      label: t('records.problemId', 'Problem ID'),
+      type: 'input',
+      placeholder: t('records.searchByProblemId', 'Search by problem ID'),
+      value: filters.problem_id,
+      onChange: createAutoFilterHandler('problem_id', 500),
+      onClear: createFilterClearHandler('problem_id')
+    },
+    {
+      key: 'status',
+      label: t('records.status', 'Status'),
       type: 'select',
-      placeholder: t('records.selectStatus'),
-      value: filters.execution_result,
-      onChange: (value) => setFilters(prev => ({ ...prev, execution_result: value })),
+      placeholder: t('records.selectStatus', 'Select status'),
+      value: filters.status,
+      onChange: createAutoFilterHandler('status'),
+      onClear: createFilterClearHandler('status'),
       options: [
-        { label: 'Accepted', value: 'Accepted' },
-        { label: 'Wrong Answer', value: 'Wrong Answer' },
-        { label: 'Time Limit Exceeded', value: 'Time Limit Exceeded' },
-        { label: 'Runtime Error', value: 'Runtime Error' },
-        { label: 'Compile Error', value: 'Compile Error' }
+        { label: t('records.statusAccepted', 'Accepted'), value: 'Accepted' },
+        { label: t('records.statusWrongAnswer', 'Wrong Answer'), value: 'Wrong Answer' },
+        { label: t('records.statusTimeLimitExceeded', 'Time Limit Exceeded'), value: 'Time Limit Exceeded' },
+        { label: t('records.statusRuntimeError', 'Runtime Error'), value: 'Runtime Error' },
+        { label: t('records.statusCompileError', 'Compile Error'), value: 'Compile Error' }
+      ]
+    },
+    {
+      key: 'oj_type',
+      label: t('records.ojType', 'OJ Type'),
+      type: 'select',
+      placeholder: t('records.selectOjType', 'Select OJ type'),
+      value: filters.oj_type,
+      onChange: createAutoFilterHandler('oj_type'),
+      onClear: createFilterClearHandler('oj_type'),
+      options: [
+        { label: 'LeetCode', value: 'leetcode' },
+        { label: t('common.other', 'Other'), value: 'other' }
       ]
     },
     {
       key: 'language',
-      label: t('records.language'),
+      label: t('records.language', 'Language'),
       type: 'select',
-      placeholder: t('records.selectLanguage'),
+      placeholder: t('records.selectLanguage', 'Select language'),
       value: filters.language,
-      onChange: (value) => setFilters(prev => ({ ...prev, language: value })),
+      onChange: createAutoFilterHandler('language'),
+      onClear: createFilterClearHandler('language'),
       options: [
         { label: 'Python', value: 'python' },
+        { label: 'Python3', value: 'python3' },
         { label: 'Java', value: 'java' },
         { label: 'C++', value: 'cpp' },
-        { label: 'JavaScript', value: 'javascript' }
+        { label: 'JavaScript', value: 'javascript' },
+        { label: 'TypeScript', value: 'typescript' },
+        { label: 'Go', value: 'go' },
+        { label: 'Rust', value: 'rust' }
       ]
     },
     {
       key: 'dateRange',
-      label: t('records.submitTime'),
+      label: t('records.submitTime', 'Submit Time'),
       type: 'dateRange',
       value: filters.dateRange,
-      onChange: (value) => setFilters(prev => ({ ...prev, dateRange: value }))
+      onChange: createAutoFilterHandler('dateRange'),
+      onClear: createFilterClearHandler('dateRange')
     }
   ];
 
   // Actions configuration
   const actions = [
     {
-      text: t('records.createRecord'),
+      text: t('common.create', 'Create'),
       type: 'primary',
       icon: <PlusOutlined />,
       onClick: () => navigate('/records/create')
@@ -386,68 +422,117 @@ const Records = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
-      {/* Statistics Cards */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={24} sm={12} md={6}>
-          <ResponsiveStatCard
-            title={t('records.totalSubmissions')}
-            value={stats.total_submissions || 0}
-            prefix={<BookOutlined />}
-            color="#1890ff"
-            loading={loading}
-          />
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <ResponsiveStatCard
-            title={t('records.solvedProblems')}
-            value={stats.accepted_submissions || 0}
-            prefix={<CheckCircleOutlined />}
-            color="#52c41a"
-            loading={loading}
-          />
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <ResponsiveStatCard
-            title={t('records.successRate')}
-            value={stats.success_rate || 0}
-            suffix="%"
-            prefix={<SyncOutlined />}
-            color={stats.success_rate >= 70 ? "#52c41a" : stats.success_rate >= 40 ? "#faad14" : "#f5222d"}
-            loading={loading}
-          />
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <ResponsiveStatCard
-            title={t('records.uniqueProblems')}
-            value={stats.unique_problems || 0}
-            prefix={<EyeOutlined />}
-            color="#fa8c16"
-            loading={loading}
-          />
-        </Col>
-      </Row>
-
-      {/* Main Data Table */}
-      <DataTable
-        title={t('records.title')}
-        subtitle={t('records.recordList')}
-        data={records}
-        columns={columns}
-        loading={loading}
-        pagination={{
-          ...pagination,
-          onChange: (page, pageSize) => {
-            setPagination(prev => ({ ...prev, current: page, pageSize }));
-          }
-        }}
-        filters={filterConfig}
-        selectedRowKeys={selectedRecords}
-        onSelectionChange={handleSelectionChange}
-        onRefresh={() => loadRecords()}
-        onFilterChange={handleFilter}
-        actions={actions}
+    <div style={{
+      maxWidth: 1200,
+      margin: '0 auto',
+      padding: isMobile ? '16px' : '24px'
+    }}>
+      {/* Modern Page Header */}
+      <GradientPageHeader
+        icon={<HistoryOutlined style={{
+          fontSize: isMobile ? '24px' : '36px',
+          color: 'white'
+        }} />}
+        title={t('records.title', 'Records')}
+        subtitle={(
+          <>
+            <BarChartOutlined style={{ fontSize: isMobile ? '16px' : '20px' }} />
+            {t('records.manageSubmissionRecords', 'Manage your submission records')}
+          </>
+        )}
+        isMobile={isMobile}
+        gradient={GRADIENT_THEMES.success}
       />
+
+      {/* Statistics Section */}
+      <ModernCard
+        title={t('common.statistics', 'Statistics')}
+        icon={<BarChartOutlined />}
+        iconGradient={GRADIENT_THEMES.info}
+        isMobile={isMobile}
+        style={{ marginBottom: isMobile ? 16 : 24 }}
+      >
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12} md={6}>
+            <ResponsiveStatCard
+              title={t('records.totalSubmissions', 'Total Submissions')}
+              value={stats.total || 0}
+              prefix={<BookOutlined />}
+              color="#1890ff"
+              loading={loading}
+            />
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <ResponsiveStatCard
+              title={t('records.solvedProblems', 'Solved Problems')}
+              value={stats.solved || 0}
+              prefix={<CheckCircleOutlined />}
+              color="#52c41a"
+              loading={loading}
+            />
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <ResponsiveStatCard
+              title={t('records.successRate', 'Success Rate')}
+              value={stats.successRate || 0}
+              suffix="%"
+              prefix={<SyncOutlined />}
+              color={stats.successRate >= 70 ? "#52c41a" : stats.successRate >= 40 ? "#faad14" : "#f5222d"}
+              loading={loading}
+            />
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <ResponsiveStatCard
+              title={t('records.uniqueProblems', 'Unique Problems')}
+              value={stats.unique_problems || 0}
+              prefix={<EyeOutlined />}
+              color="#fa8c16"
+              loading={loading}
+            />
+          </Col>
+        </Row>
+      </ModernCard>
+
+      {/* Records List */}
+      <ModernCard
+        title={t('records.recordList', 'Record List')}
+        icon={<HistoryOutlined />}
+        iconGradient={GRADIENT_THEMES.primary}
+        isMobile={isMobile}
+      >
+        <DataTable
+          data={records}
+          columns={columns}
+          loading={loading}
+          pagination={{
+            ...pagination,
+            onChange: (page, pageSize) => {
+              setPagination(prev => ({ ...prev, current: page, pageSize }));
+            }
+          }}
+          filters={filterConfig}
+          selectedRowKeys={selectedRecords}
+          onSelectionChange={handleSelectionChange}
+          onRefresh={() => loadRecords()}
+          onFilterChange={() => {
+            const currentValues = {};
+            filterConfig.forEach(filter => {
+              if (filter.value !== undefined && filter.value !== null && filter.value !== '') {
+                // Special handling for dateRange which is an array
+                if (filter.key === 'dateRange' && Array.isArray(filter.value) && filter.value.length === 2) {
+                  currentValues[filter.key] = filter.value;
+                } else if (filter.key !== 'dateRange') {
+                  currentValues[filter.key] = filter.value;
+                }
+              }
+            });
+            handleFilter(currentValues);
+          }}
+          onClearFilters={clearAllFilters}
+          actions={actions}
+          showFilterButtons={false}
+        />
+      </ModernCard>
     </div>
   );
 };

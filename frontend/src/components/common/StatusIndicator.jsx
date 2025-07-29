@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tag, Tooltip } from 'antd';
+import { Tag } from 'antd';
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 
 const StatusIndicator = ({
   status,
-  type = 'sync', // sync, execution, review, task
+  type = 'sync', // sync, execution, review, task, notification
   showIcon = true,
   showText = true,
   size = 'default',
@@ -28,7 +28,7 @@ const StatusIndicator = ({
       pending: {
         color: 'default',
         icon: <ClockCircleOutlined />,
-        text: t('records.statusPending')
+        text: type === 'notification' ? t('review.status.pending') : t('records.statusPending')
       },
       syncing: {
         color: 'processing',
@@ -43,7 +43,7 @@ const StatusIndicator = ({
       failed: {
         color: 'error',
         icon: <CloseCircleOutlined />,
-        text: t('records.statusFailed')
+        text: type === 'notification' ? t('review.status.failed') : t('records.statusFailed')
       },
       paused: {
         color: 'warning',
@@ -86,6 +86,11 @@ const StatusIndicator = ({
         color: 'error',
         icon: <CloseCircleOutlined />,
         text: t('records.statusCompileError')
+      },
+      'other': {
+        color: 'default',
+        icon: <QuestionCircleOutlined />,
+        text: t('common.other')
       },
 
       // Review statuses

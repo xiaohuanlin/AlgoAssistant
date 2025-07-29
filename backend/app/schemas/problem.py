@@ -76,3 +76,15 @@ class ProblemBankStatsOut(BaseModel):
     total_attempts: int = Field(..., description="Total attempts by user")
     solve_rate: float = Field(..., description="User's solve rate (0.0 to 1.0)")
     total_reviews: int = Field(..., description="Total reviews by user")
+
+
+class ProblemStatisticsOut(BaseModel):
+    total_attempts: int = Field(..., description="Total attempts for this problem")
+    successful_attempts: int = Field(..., description="Number of successful attempts")
+    success_rate: float = Field(..., description="Success rate (0.0 to 1.0)")
+    best_time: Optional[str] = Field(None, description="Best runtime")
+    best_memory: Optional[str] = Field(None, description="Best memory usage")
+    total_reviews: int = Field(..., description="Total reviews for this problem")
+    last_attempt_date: Optional[datetime] = Field(
+        None, description="Date of last attempt"
+    )

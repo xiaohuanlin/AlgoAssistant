@@ -1,23 +1,18 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  Card,
   Button,
   message,
   Tag,
   Space,
   Row,
   Col,
-  Statistic,
   Tooltip,
   Modal,
   Form,
   Select,
   Alert,
   Progress,
-  Badge,
   Popconfirm,
-  Input,
-  DatePicker,
 } from 'antd';
 import {
   CheckCircleOutlined,
@@ -25,25 +20,40 @@ import {
   SyncOutlined,
   PlusOutlined,
   DeleteOutlined,
-  ReloadOutlined,
   PauseCircleOutlined,
   PlayCircleOutlined,
+  CloudSyncOutlined,
+  BarChartOutlined
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { DataTable, StatusIndicator } from '../components/common';
 import ResponsiveStatCard from '../components/dashboard/ResponsiveStatCard';
+import {
+  GradientPageHeader,
+  ModernCard,
+  GRADIENT_THEMES
+} from '../components/ui/ModernDesignSystem';
 
 import syncTaskService from '../services/syncTaskService';
 import recordsService from '../services/recordsService';
 import leetcodeService from '../services/leetcodeService';
 import { useConfig } from '../contexts/ConfigContext';
+import useTableFilters from '../hooks/useTableFilters';
 
-const { RangePicker } = DatePicker;
 const { Option } = Select;
 
 const SyncTasks = () => {
   const { t } = useTranslation();
   const { hasLeetCodeConfig, hasGitConfig, hasGeminiConfig } = useConfig();
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // State management
   const [tasks, setTasks] = useState([]);
@@ -53,39 +63,77 @@ const SyncTasks = () => {
   const [unsyncedRecords, setUnsyncedRecords] = useState([]);
   const [recordsLoading, setRecordsLoading] = useState(false);
   const [selectedTaskType, setSelectedTaskType] = useState(null);
-  const [filters, setFilters] = useState({});
   const [leetcodeProfile, setLeetCodeProfile] = useState(null);
   const [leetcodeProfileLoading, setLeetCodeProfileLoading] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [batchLoading, setBatchLoading] = useState(false);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
   const [form] = Form.useForm();
+  const isInitialLoad = useRef(true);
 
-  const loadData = useCallback(async (newFilters = {}) => {
+  // Use the new table filters hook
+  const {
+    filters,
+    clearAllFilters,
+    createAutoFilterHandler
+  } = useTableFilters((apiFilters) => {
+    setPagination(prev => ({ ...prev, current: 1 }));
+    loadTasks(apiFilters); // Always fetch stats when filters change
+  });
+
+
+  const loadTasks = useCallback(async (apiFilters = {}) => {
     setLoading(true);
     try {
-      const queryFilters = { ...filters, ...newFilters };
-      const [tasksData, statsData] = await Promise.all([
+      // Process filters to ensure proper data types
+      const processedFilters = {};
+      Object.keys(apiFilters).forEach(key => {
+        const value = apiFilters[key];
+        if (value !== undefined && value !== null && (value !== '' || typeof value === 'boolean')) {
+          if (key === 'id' && value !== '') {
+            // Convert id to integer for API compatibility
+            const parsedId = parseInt(value, 10);
+            if (!isNaN(parsedId)) {
+              processedFilters[key] = parsedId;
+            }
+          } else {
+            processedFilters[key] = value;
+          }
+        }
+      });
+
+      const requests = [
         syncTaskService.getTasks({
-          ...queryFilters,
+          ...processedFilters,
           limit: pagination.pageSize,
           offset: (pagination.current - 1) * pagination.pageSize
         }),
-        syncTaskService.getTaskStats(),
-      ]);
+        syncTaskService.getTaskStats(processedFilters)
+      ];
+
+      const results = await Promise.all(requests);
+      const tasksData = results[0];
+      const statsData = results[1];
+
       setTasks(tasksData.items || tasksData);
-      setStats(statsData);
-      setPagination(prev => ({
-        ...prev,
-        total: tasksData.total || tasksData.length
+      setPagination(prev => ({ 
+        ...prev, 
+        total: tasksData.total || (tasksData.items ? tasksData.items.length : tasksData.length) 
       }));
+      setStats(statsData);
+      
+      // Clear selection when filters change
+      if (Object.keys(apiFilters).length > 0) {
+        setSelectedRowKeys([]);
+      }
     } catch (error) {
-      message.error(t('syncTasks.loadError'));
       console.error('Load sync tasks error:', error);
+      message.error(t('syncTasks.loadTasksFailed', 'Failed to load tasks') + ': ' + error.message);
     } finally {
       setLoading(false);
     }
-  }, [t, filters, pagination.current, pagination.pageSize]);
+  }, [pagination.current, pagination.pageSize, t]);
+
 
   const loadSelectableRecords = useCallback(async (type) => {
     setRecordsLoading(true);
@@ -105,18 +153,19 @@ const SyncTasks = () => {
       }
       setUnsyncedRecords(records);
     } catch (error) {
-      message.error(t('syncTasks.loadUnsyncedRecordsFailed') + ': ' + error.message);
+      message.error(t('syncTasks.loadUnsyncedRecordsFailed', 'Failed to load unsynced records') + ': ' + error.message);
     } finally {
       setRecordsLoading(false);
     }
   }, [t]);
 
+
   useEffect(() => {
-    loadData();
-    // Set up periodic refresh
-    const interval = setInterval(loadData, 10000); // Refresh every 10 seconds
-    return () => clearInterval(interval);
-  }, [loadData]);
+    if (isInitialLoad.current) {
+      isInitialLoad.current = false;
+      loadTasks({});
+    }
+  }, [loadTasks]);
 
   useEffect(() => {
     if (modalVisible) {
@@ -136,7 +185,7 @@ const SyncTasks = () => {
             setLeetCodeProfile(res);
           } catch (error) {
             console.error('Error loading LeetCode profile:', error);
-            message.error(t('leetcode.profileError'));
+            message.error(t('leetcode.profileError', 'Failed to load LeetCode profile'));
           } finally {
             setLeetCodeProfileLoading(false);
           }
@@ -152,7 +201,7 @@ const SyncTasks = () => {
     // Check configuration using ConfigContext
     if (value === 'leetcode_batch_sync' || value === 'leetcode_detail_sync') {
       if (!hasLeetCodeConfig()) {
-        message.warning(t('leetcode.configRequiredDesc'));
+        message.warning(t('leetcode.configRequiredDesc', 'LeetCode configuration is required'));
         setSelectedTaskType(null);
         form.setFieldsValue({ type: null });
         return;
@@ -161,7 +210,7 @@ const SyncTasks = () => {
 
     if (value === 'github_sync') {
       if (!hasGitConfig()) {
-        message.warning(t('git.configRequired'));
+        message.warning(t('git.configRequired', 'Git configuration is required'));
         setSelectedTaskType(null);
         form.setFieldsValue({ type: null });
         return;
@@ -170,7 +219,7 @@ const SyncTasks = () => {
 
     if (value === 'gemini_sync') {
       if (!hasGeminiConfig()) {
-        message.warning(t('syncTasks.geminiConfigRequiredDesc'));
+        message.warning(t('syncTasks.geminiConfigRequiredDesc', 'Gemini configuration is required'));
         setSelectedTaskType(null);
         form.setFieldsValue({ type: null });
         return;
@@ -193,44 +242,44 @@ const SyncTasks = () => {
       }
       if (values.type === 'leetcode_detail_sync') {
         if (!Array.isArray(values.record_ids) || values.record_ids.length === 0) {
-          message.warning(t('syncTasks.selectRecordsPlaceholder'));
+          message.warning(t('syncTasks.selectRecordsPlaceholder', 'Please select records to sync'));
           return;
         }
       }
       await syncTaskService.createTask(values);
-      message.success(t('syncTasks.taskCreated'));
+      message.success(t('syncTasks.taskCreated', 'Task created successfully'));
       setModalVisible(false);
       form.resetFields();
-      loadData();
+      loadTasks({}); // Refresh after creating task
     } catch (error) {
-      message.error(t('syncTasks.createTaskFailed') + ': ' + error.message);
+      message.error(t('syncTasks.createTaskFailed', 'Failed to create task') + ': ' + error.message);
     }
   };
 
   const handleDeleteTask = async (taskId) => {
     try {
       await syncTaskService.deleteTask(taskId);
-      message.success(t('syncTasks.taskDeleted'));
-      loadData();
+      message.success(t('syncTasks.taskDeleted', 'Task deleted successfully'));
+      loadTasks({}); // Refresh after deleting task
     } catch (error) {
-      message.error(t('syncTasks.deleteTaskFailed') + ': ' + error.message);
+      message.error(t('syncTasks.deleteTaskFailed', 'Failed to delete task') + ': ' + error.message);
     }
   };
 
   const handleBatchDelete = async () => {
     if (selectedRowKeys.length === 0) {
-      message.warning(t('syncTasks.selectTasksFirst'));
+      message.warning(t('syncTasks.selectTasksFirst', 'Please select tasks first'));
       return;
     }
 
     setBatchLoading(true);
     try {
       await Promise.all(selectedRowKeys.map(id => syncTaskService.deleteTask(id)));
-      message.success(t('syncTasks.batchDeleteSuccess'));
+      message.success(t('syncTasks.batchDeleteSuccess', 'Batch delete successful'));
       setSelectedRowKeys([]);
-      loadData();
+      loadTasks({}); // Refresh after batch delete
     } catch (error) {
-      message.error(t('syncTasks.batchDeleteError'));
+      message.error(t('syncTasks.batchDeleteError', 'Batch delete failed'));
     } finally {
       setBatchLoading(false);
     }
@@ -243,30 +292,30 @@ const SyncTasks = () => {
   const handleRetryTask = async (taskId) => {
     try {
       await syncTaskService.retryTask(taskId);
-      message.success(t('syncTasks.taskRetried'));
-      loadData();
+      message.success(t('syncTasks.taskRetried', 'Task retried successfully'));
+      loadTasks({}); // Refresh after retry
     } catch (error) {
-      message.error(t('syncTasks.retryTaskFailed') + ': ' + error.message);
+      message.error(t('syncTasks.retryTaskFailed', 'Failed to retry task') + ': ' + error.message);
     }
   };
 
   const handlePauseTask = async (taskId) => {
     try {
       await syncTaskService.pauseTask(taskId);
-      message.success(t('syncTasks.taskPaused'));
-      loadData();
+      message.success(t('syncTasks.taskPaused', 'Task paused successfully'));
+      loadTasks({}); // Refresh after pause
     } catch (error) {
-      message.error(t('syncTasks.pauseTaskFailed') + ': ' + error.message);
+      message.error(t('syncTasks.pauseTaskFailed', 'Failed to pause task') + ': ' + error.message);
     }
   };
 
   const handleResumeTask = async (taskId) => {
     try {
       await syncTaskService.resumeTask(taskId);
-      message.success(t('syncTasks.taskResumed'));
-      loadData();
+      message.success(t('syncTasks.taskResumed', 'Task resumed successfully'));
+      loadTasks({}); // Refresh after resume
     } catch (error) {
-      message.error(t('syncTasks.resumeTaskFailed') + ': ' + error.message);
+      message.error(t('syncTasks.resumeTaskFailed', 'Failed to resume task') + ': ' + error.message);
     }
   };
 
@@ -431,22 +480,6 @@ const SyncTasks = () => {
     },
   ];
 
-  const handleFilter = (values) => {
-    const newFilters = {};
-    Object.keys(values).forEach(key => {
-      if (values[key] !== undefined && values[key] !== null && values[key] !== '') {
-        if (key === 'created_at_range' && values[key]?.length === 2) {
-          newFilters.created_at_start = values[key][0].startOf('day').toISOString();
-          newFilters.created_at_end = values[key][1].endOf('day').toISOString();
-        } else {
-          newFilters[key] = values[key];
-        }
-      }
-    });
-    setFilters(newFilters);
-    setPagination(prev => ({ ...prev, current: 1 }));
-    loadData(newFilters);
-  };
 
   // Filter configuration
   const filterConfig = [
@@ -456,7 +489,7 @@ const SyncTasks = () => {
       type: 'input',
       placeholder: t('syncTasks.filter.idPlaceholder'),
       value: filters.id,
-      onChange: (value) => setFilters(prev => ({ ...prev, id: value }))
+      onChange: createAutoFilterHandler('id', 500)
     },
     {
       key: 'type',
@@ -464,7 +497,7 @@ const SyncTasks = () => {
       type: 'select',
       placeholder: t('syncTasks.filter.typePlaceholder'),
       value: filters.type,
-      onChange: (value) => setFilters(prev => ({ ...prev, type: value })),
+      onChange: createAutoFilterHandler('type'),
       options: [
         { label: t('syncTasks.taskTypes.github_sync'), value: 'github_sync' },
         { label: t('syncTasks.taskTypes.leetcode_batch_sync'), value: 'leetcode_batch_sync' },
@@ -480,7 +513,7 @@ const SyncTasks = () => {
       type: 'select',
       placeholder: t('syncTasks.filter.statusPlaceholder'),
       value: filters.status,
-      onChange: (value) => setFilters(prev => ({ ...prev, status: value })),
+      onChange: createAutoFilterHandler('status'),
       options: [
         { label: t('syncTasks.status.pending'), value: 'pending' },
         { label: t('syncTasks.status.running'), value: 'running' },
@@ -494,20 +527,20 @@ const SyncTasks = () => {
       label: t('syncTasks.filter.createdAt'),
       type: 'dateRange',
       value: filters.created_at_range,
-      onChange: (value) => setFilters(prev => ({ ...prev, created_at_range: value }))
+      onChange: createAutoFilterHandler('created_at_range')
     }
   ];
 
   // Actions configuration
   const actions = [
     {
-      text: t('syncTasks.createTask'),
+      text: t('syncTasks.createTask', 'Create Task'),
       type: 'primary',
       icon: <PlusOutlined />,
       onClick: () => setModalVisible(true)
     },
     {
-      text: `${t('syncTasks.batchDelete')} (${selectedRowKeys.length})`,
+      text: `${t('syncTasks.batchDelete', 'Batch Delete')} (${selectedRowKeys.length})`,
       icon: <DeleteOutlined />,
       onClick: handleBatchDelete,
       loading: batchLoading,
@@ -517,71 +550,110 @@ const SyncTasks = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
-      {/* Statistics Cards */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={24} sm={12} lg={6}>
-          <ResponsiveStatCard
-            title={t('syncTasks.stats.total')}
-            value={stats.total || 0}
-            prefix={<SyncOutlined />}
-            color="#1890ff"
-            loading={loading}
-          />
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <ResponsiveStatCard
-            title={t('syncTasks.stats.running')}
-            value={stats.running || 0}
-            prefix={<SyncOutlined spin />}
-            color="#faad14"
-            loading={loading}
-          />
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <ResponsiveStatCard
-            title={t('syncTasks.stats.completed')}
-            value={stats.completed || 0}
-            prefix={<CheckCircleOutlined />}
-            color="#52c41a"
-            loading={loading}
-          />
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <ResponsiveStatCard
-            title={t('syncTasks.stats.failed')}
-            value={stats.failed || 0}
-            prefix={<CloseCircleOutlined />}
-            color="#ff4d4f"
-            loading={loading}
-          />
-        </Col>
-      </Row>
-
-      {/* Main Data Table */}
-      <DataTable
-        title={t('syncTasks.title')}
-        subtitle={t('syncTasks.syncTasksList')}
-        data={tasks}
-        columns={columns}
-        loading={loading}
-        pagination={{
-          ...pagination,
-          onChange: (page, pageSize) => {
-            setPagination(prev => ({ ...prev, current: page, pageSize }));
-          }
-        }}
-        filters={filterConfig}
-        selectedRowKeys={selectedRowKeys}
-        onSelectionChange={handleSelectionChange}
-        onRefresh={() => loadData()}
-        onFilterChange={handleFilter}
-        actions={actions}
+    <div style={{
+      maxWidth: 1200,
+      margin: '0 auto',
+      padding: isMobile ? '16px' : '24px'
+    }}>
+      {/* Modern Page Header */}
+      <GradientPageHeader
+        icon={<CloudSyncOutlined style={{
+          fontSize: isMobile ? '24px' : '36px',
+          color: 'white'
+        }} />}
+        title={t('syncTasks.title', 'Sync Tasks')}
+        subtitle={(
+          <>
+            <BarChartOutlined style={{ fontSize: isMobile ? '16px' : '20px' }} />
+            {t('syncTasks.manageSyncTasks', 'Manage your synchronization tasks')}
+          </>
+        )}
+        isMobile={isMobile}
+        gradient={GRADIENT_THEMES.cyan}
       />
+
+      {/* Statistics Section */}
+      <ModernCard
+        title={t('common.statistics', 'Statistics')}
+        icon={<BarChartOutlined />}
+        iconGradient={GRADIENT_THEMES.purple}
+        isMobile={isMobile}
+        style={{ marginBottom: isMobile ? 16 : 24 }}
+      >
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12} lg={6}>
+            <ResponsiveStatCard
+              title={t('syncTasks.stats.total', 'Total Tasks')}
+              value={stats.total || 0}
+              prefix={<SyncOutlined />}
+              color="#1890ff"
+              loading={loading}
+            />
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <ResponsiveStatCard
+              title={t('syncTasks.stats.running', 'Running Tasks')}
+              value={stats.running || 0}
+              prefix={<SyncOutlined spin />}
+              color="#faad14"
+              loading={loading}
+            />
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <ResponsiveStatCard
+              title={t('syncTasks.stats.completed', 'Completed Tasks')}
+              value={stats.completed || 0}
+              prefix={<CheckCircleOutlined />}
+              color="#52c41a"
+              loading={loading}
+            />
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <ResponsiveStatCard
+              title={t('syncTasks.stats.failed', 'Failed Tasks')}
+              value={stats.failed || 0}
+              prefix={<CloseCircleOutlined />}
+              color="#ff4d4f"
+              loading={loading}
+            />
+          </Col>
+        </Row>
+      </ModernCard>
+
+      {/* Sync Tasks List */}
+      <ModernCard
+        title={t('syncTasks.syncTasksList', 'Sync Tasks List')}
+        icon={<CloudSyncOutlined />}
+        iconGradient={GRADIENT_THEMES.info}
+        isMobile={isMobile}
+      >
+        <DataTable
+          data={tasks}
+          columns={columns}
+          loading={loading}
+          pagination={{
+            ...pagination,
+            onChange: (page, pageSize) => {
+              setPagination(prev => ({ ...prev, current: page, pageSize }));
+              // Trigger data reload after pagination changes
+              setTimeout(() => {
+                loadTasks({});
+              }, 0);
+            }
+          }}
+          filters={filterConfig}
+          selectedRowKeys={selectedRowKeys}
+          onSelectionChange={handleSelectionChange}
+          onRefresh={() => loadTasks({})}
+          onClearFilters={clearAllFilters}
+          actions={actions}
+          showFilterButtons={false}
+        />
+      </ModernCard>
 
       {/* Create Task Modal */}
       <Modal
-        title={t('syncTasks.createSyncTask')}
+        title={t('syncTasks.createSyncTask', 'Create Sync Task')}
         open={modalVisible}
         onOk={form.submit}
         onCancel={() => {

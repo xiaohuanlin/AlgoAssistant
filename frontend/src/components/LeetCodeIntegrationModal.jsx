@@ -9,7 +9,7 @@ const LeetCodeIntegrationModal = ({ visible, onCancel, onSuccess, initialValues 
   const { t } = useTranslation();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [testing, setTesting] = useState(false);
+  const [testing] = useState(false);
 
   useEffect(() => {
     if (visible) {

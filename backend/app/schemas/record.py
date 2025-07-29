@@ -410,6 +410,22 @@ class SyncTaskOut(BaseModel):
         from_attributes = True
 
 
+class SyncTaskListOut(BaseModel):
+    """Response schema for sync task list with pagination."""
+    total: int
+    items: List[SyncTaskOut]
+
+
+class SyncTaskStatsOut(BaseModel):
+    """Response schema for sync task statistics."""
+    total: int = Field(..., description="Total number of sync tasks")
+    pending: int = Field(..., description="Number of pending tasks")
+    running: int = Field(..., description="Number of running tasks")
+    completed: int = Field(..., description="Number of completed tasks")
+    failed: int = Field(..., description="Number of failed tasks")
+    paused: int = Field(..., description="Number of paused tasks")
+
+
 class RecordStatsOut(BaseModel):
     """Response schema for user record statistics and analytics."""
 
@@ -449,6 +465,20 @@ class RecordDeleteResponse(BaseModel):
         max_length=200,
         description="Confirmation message indicating successful deletion of the record.",
     )
+
+
+class RecordListResponse(BaseModel):
+    """Response schema for paginated record list."""
+
+    items: List[RecordListOut] = Field(
+        ..., description="List of record items for the current page"
+    )
+    total: int = Field(
+        ..., ge=0, description="Total number of records matching the filter criteria"
+    )
+    page: int = Field(..., ge=1, description="Current page number (1-based)")
+    page_size: int = Field(..., ge=1, description="Number of items per page")
+    total_pages: int = Field(..., ge=0, description="Total number of pages available")
 
 
 class TagAssignRequest(BaseModel):

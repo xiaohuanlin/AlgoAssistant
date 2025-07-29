@@ -170,6 +170,9 @@ class GeminiAIAnalysisSchema(BaseModel):
     algorithm_type: str = Field(
         ..., description="Main algorithm category, e.g., DFS, DP"
     )
+    topic_tags: List[str] = Field(
+        ..., description="List of relevant algorithmic topic tags for this problem"
+    )
     code_quality_score: int = Field(
         ..., ge=1, le=10, description="Overall code quality rating"
     )

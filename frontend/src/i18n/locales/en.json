@@ -18,7 +18,8 @@
     "totalSubmissions": "Total Submissions",
     "totalToSync": "Total to Sync",
     "uniqueProblems": "Unique Problems",
-    "welcome": "Welcome to Algorithm Assistant"
+    "welcome": "Welcome to Algorithm Assistant",
+    "welcomeToDashboard": "Welcome to your algorithm learning dashboard"
   },
   "auth": {
     "alreadyHaveAccount": "Already have an account?",
@@ -104,6 +105,7 @@
     "settings": "Settings",
     "stop": "Stop",
     "submit": "Submit",
+    "statistics": "Statistics",
     "success": "Success",
     "testing": "Testing...",
     "unknown": "Unknown",
@@ -111,7 +113,10 @@
     "update": "Update",
     "updatedAt": "Updated At",
     "view": "View",
-    "yes": "Yes"
+    "manage": "Manage",
+    "yes": "Yes",
+    "other": "Other",
+    "custom": "Custom"
   },
   "dashboard": {
     "algorithms": "Algorithms",
@@ -163,7 +168,8 @@
     "totalSolved": "Total Solved",
     "twoPointers": "Two Pointers",
     "uniqueProblems": "Unique Problems",
-    "viewAll": "View All"
+    "viewAll": "View All",
+    "statistics": "Statistics"
   },
   "gemini": {
     "aiAnalysis": "AI Analysis",
@@ -489,6 +495,8 @@
     "titleSlug": "Title Slug",
     "titleSlugPlaceholder": "Enter title slug (optional)",
     "url": "URL",
+    "detail": "Problem Detail",
+    "basicInfo": "Basic Information",
     "statistics": "Statistics",
     "totalAttempts": "Total Attempts",
     "successRate": "Success Rate",
@@ -511,7 +519,8 @@
     "activeDays": "Active Days",
     "bankStatisticsLoadError": "Failed to load problem bank statistics",
     "viewMode": "View Mode",
-    "viewModePlaceholder": "Select view mode"
+    "viewModePlaceholder": "Select view mode",
+    "totalReviews": "Total Reviews"
   },
   "record": {
     "actions": "Actions",
@@ -523,6 +532,7 @@
   "records": {
     "accepted": "Accepted",
     "actions": "Actions",
+    "manageSubmissionRecords": "Manage your submission records",
     "addRecord": "Add Record",
     "aiAnalysis": "AI Analysis",
     "aiAnalysisStatus": "AI Analysis Status",
@@ -587,14 +597,17 @@
     "languages": "Languages",
     "loadError": "Failed to load records",
     "loadProblemsError": "Failed to load problems",
-    "problemSearchHint": "Search for problems by title or enter a problem ID directly",
     "problemSelectionHint": "Select from your problems or search by title",
     "problemSelectionPlaceholder": "Select a problem or search by title",
+    "problemSearchPlaceholder": "Search by problem title or enter problem ID",
+    "problemSearchHint": "You can search by problem title or enter a problem ID directly (e.g., \"1\", \"two sum\")",
     "noProblemsFound": "No problems found. Try searching or enter an ID.",
     "manualIdEntry": "You can also enter a problem ID directly",
     "noProblemsHint": "No problems found. You can search by title or enter a problem ID directly.",
     "medium": "Medium",
     "memory": "Memory",
+    "memoryUnit": "e.g., 50MB, 1GB",
+    "memoryPlaceholder": "e.g., 50MB",
     "memoryLimitExceeded": "Memory Limit Exceeded",
     "memoryPercentile": "Memory Percentile",
     "noRecords": "No records found",
@@ -627,11 +640,15 @@
     "recordsOnly": "Only With Submissions",
     "retry": "Retry",
     "runtime": "Runtime",
+    "runtimeUnit": "e.g., 100ms, 1s",
+    "runtimePlaceholder": "e.g., 100ms",
     "runtimeError": "Runtime Error",
     "runtimePercentile": "Runtime Percentile",
     "rust": "Rust",
     "saveError": "Failed to save record",
     "searchByTitle": "Search by Title",
+    "problemId": "Problem ID",
+    "searchByProblemId": "Search by Problem ID",
     "selectGeminiSyncStatus": "Select Gemini Sync Status",
     "selectGitSyncStatus": "Select Sync Status",
     "selectLanguage": "Select Language",
@@ -641,6 +658,7 @@
     "startDate": "Start Date",
     "startTime": "Start Time",
     "status": "Status",
+    "submitStatus": "Submit Status",
     "statusAccepted": "Accepted",
     "statusCompileError": "Compile Error",
     "statusCompleted": "Completed",
@@ -677,6 +695,7 @@
     "title": "Problem Records",
     "titleSlug": "Title Slug",
     "topicTags": "Topic Tags",
+    "topicTagsPlaceholder": "Select or add topic tags",
     "totalCorrect": "Total Correct",
     "totalProblems": "Total Submissions",
     "totalSubmissions": "Total Submissions",
@@ -696,11 +715,14 @@
     "viewRecord": "View Record",
     "viewRepo": "View Repository",
     "viewSubmission": "View Submission",
-    "wrongAnswer": "Wrong Answer"
+    "wrongAnswer": "Wrong Answer",
+    "noCodeAvailable": "No code available",
+    "noAIAnalysis": "No AI analysis available"
   },
   "review": {
     "actions": "Actions",
     "allReviews": "All Review Records",
+    "manageProblemReviews": "Manage your problem reviews",
     "batchDelete": "Batch Delete",
     "batchDeleteError": "Failed to batch delete reviews",
     "batchDeleteSuccess": "Reviews deleted successfully",
@@ -807,7 +829,8 @@
     "notificationDescription": "Configure email, push, SMS and other notification methods",
     "notificationSettings": "Notification Configuration",
     "subtitle": "System configuration and personalization settings",
-    "title": "Settings"
+    "title": "Settings",
+    "configurationTabs": "Configuration"
   },
   "accountSettings": {
     "title": "Account Settings",
@@ -873,6 +896,7 @@
     "createSyncTask": "Create Sync Task",
     "createTask": "Create Task",
     "createTaskFailed": "Failed to create task",
+    "manageSyncTasks": "Manage your synchronization tasks",
     "deleteTask": "Delete Task",
     "deleteTaskFailed": "Failed to delete task",
     "failed": "Failed",

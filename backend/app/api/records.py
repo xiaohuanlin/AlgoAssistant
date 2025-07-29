@@ -15,6 +15,7 @@ from app.schemas import (
     RecordDeleteResponse,
     RecordDetailOut,
     RecordListOut,
+    RecordListResponse,
     RecordManualCreate,
     RecordStatsOut,
     RecordUpdate,
@@ -54,7 +55,7 @@ def create_record(
     return service.to_record_detail_out(db_record)
 
 
-@router.get("/", response_model=List[RecordListOut])
+@router.get("/", response_model=RecordListResponse)
 def list_records(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
@@ -96,48 +97,71 @@ def list_records(
 ):
     """List problem records with filtering and pagination."""
     service = RecordService(db)
-    query = db.query(models.Record).filter(models.Record.user_id == current_user.id)
+    base_query = db.query(models.Record).filter(
+        models.Record.user_id == current_user.id
+    )
 
     # Tag filtering
     if tag:
-        query = query.join(models.Record.tags).filter(models.Tag.name == tag)
+        base_query = base_query.join(models.Record.tags).filter(models.Tag.name == tag)
     elif tags:
         tag_names = [t.strip() for t in tags.split(",") if t.strip()]
-        query = query.join(models.Record.tags).filter(models.Tag.name.in_(tag_names))
+        base_query = base_query.join(models.Record.tags).filter(
+            models.Tag.name.in_(tag_names)
+        )
 
     # Status filtering
     if github_sync_status:
-        query = query.filter(models.Record.github_sync_status.in_(github_sync_status))
+        base_query = base_query.filter(
+            models.Record.github_sync_status.in_(github_sync_status)
+        )
     if oj_sync_status:
-        query = query.filter(models.Record.oj_sync_status.in_(oj_sync_status))
+        base_query = base_query.filter(models.Record.oj_sync_status.in_(oj_sync_status))
     if ai_sync_status:
-        query = query.filter(models.Record.ai_sync_status.in_(ai_sync_status))
+        base_query = base_query.filter(models.Record.ai_sync_status.in_(ai_sync_status))
     if status:
-        query = query.filter(models.Record.execution_result.in_(status))
+        base_query = base_query.filter(models.Record.execution_result.in_(status))
     if oj_type:
-        query = query.filter(models.Record.oj_type == oj_type)
+        base_query = base_query.filter(models.Record.oj_type == oj_type)
     if language:
-        query = query.filter(models.Record.language == language)
+        base_query = base_query.filter(models.Record.language == language)
     if problem_title:
-        query = query.join(models.Problem).filter(
+        base_query = base_query.join(models.Problem).filter(
             models.Problem.title.ilike(f"%{problem_title}%")
         )
     if problem_id:
-        query = query.filter(models.Record.problem_id == problem_id)
+        base_query = base_query.filter(models.Record.problem_id == problem_id)
 
     # Time filtering
     if start_time:
         try:
-            start_dt = datetime.fromisoformat(start_time)
-            query = query.filter(models.Record.submit_time >= start_dt)
+            # Handle Z suffix for UTC timezone (fromisoformat doesn't support Z)
+            start_time_formatted = start_time.replace('Z', '+00:00')
+            start_dt = datetime.fromisoformat(start_time_formatted)
+            logger.info(f"Filtering with start_time: {start_time} -> {start_dt}")
+            base_query = base_query.filter(models.Record.submit_time >= start_dt)
         except ValueError:
             logger.warning(f"Invalid start_time format: {start_time}")
     if end_time:
         try:
-            end_dt = datetime.fromisoformat(end_time)
-            query = query.filter(models.Record.submit_time <= end_dt)
+            # Handle Z suffix for UTC timezone (fromisoformat doesn't support Z)
+            end_time_formatted = end_time.replace('Z', '+00:00')
+            end_dt = datetime.fromisoformat(end_time_formatted)
+            logger.info(f"Filtering with end_time: {end_time} -> {end_dt}")
+            base_query = base_query.filter(models.Record.submit_time <= end_dt)
         except ValueError:
             logger.warning(f"Invalid end_time format: {end_time}")
+
+    # Get total count before applying pagination
+    total_records = base_query.count()
+    
+    # Debug: log some submit_time values from database
+    if start_time or end_time:
+        sample_records = db.query(models.Record.submit_time).filter(
+            models.Record.user_id == current_user.id
+        ).limit(5).all()
+        logger.info(f"Sample submit_time values from DB: {[r.submit_time for r in sample_records]}")
+        logger.info(f"Total records matching time filter: {total_records}")
 
     # Sorting
     valid_sort_fields = [
@@ -152,15 +176,25 @@ def list_records(
 
     sort_column = getattr(models.Record, sort_by)
     if sort_order.lower() == "asc":
-        query = query.order_by(sort_column.asc().nullslast())
+        base_query = base_query.order_by(sort_column.asc().nullslast())
     else:
-        query = query.order_by(sort_column.desc().nullslast())
+        base_query = base_query.order_by(sort_column.desc().nullslast())
 
     # Pagination
-    query = query.offset(offset).limit(limit)
+    paginated_query = base_query.offset(offset).limit(limit)
+    records = paginated_query.all()
 
-    records = query.all()
-    return [service.to_record_list_out(r) for r in records]
+    # Calculate pagination info
+    page = (offset // limit) + 1
+    total_pages = (total_records + limit - 1) // limit
+
+    return RecordListResponse(
+        items=[service.to_record_list_out(r) for r in records],
+        total=total_records,
+        page=page,
+        page_size=limit,
+        total_pages=total_pages,
+    )
 
 
 @router.get("/stats", response_model=RecordStatsOut)

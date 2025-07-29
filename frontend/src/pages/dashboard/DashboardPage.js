@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Statistic, Typography, Space, Spin, Alert, Button } from 'antd';
+import { Row, Col, Card, Statistic, Typography, Spin, Alert, Button } from 'antd';
 import {
   CodeOutlined,
   CheckCircleOutlined,
@@ -9,11 +9,17 @@ import {
   ExclamationCircleOutlined,
   CheckCircleFilled,
   ClockCircleFilled,
-  ReloadOutlined
+  ReloadOutlined,
+  DashboardOutlined,
+  BarChartOutlined
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import axios from 'axios';
 import configService from '../../services/configService';
+import {
+  GradientPageHeader,
+  ModernCard,
+  GRADIENT_THEMES
+} from '../../components/ui/ModernDesignSystem';
 
 const { Title } = Typography;
 
@@ -21,6 +27,15 @@ const DashboardPage = () => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   const [hasLeetCodeConfig, setHasLeetCodeConfig] = useState(false);
   const [stats, setStats] = useState({
     totalProblems: 0,
@@ -102,121 +117,185 @@ const DashboardPage = () => {
   }
 
   return (
-    <div className="dashboard-page">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <Title level={2}>{t('app.dashboard')}</Title>
-        <Button
-          type="primary"
-          icon={<ReloadOutlined />}
-          onClick={fetchDashboardData}
-          loading={loading}
-        >
-          {t('common.refresh')}
-        </Button>
-      </div>
+    <div style={{
+      maxWidth: 1200,
+      margin: '0 auto',
+      padding: isMobile ? '16px' : '24px'
+    }}>
+      {/* Modern Page Header */}
+      <GradientPageHeader
+        icon={<DashboardOutlined style={{
+          fontSize: isMobile ? '24px' : '36px',
+          color: 'white'
+        }} />}
+        title={t('app.dashboard', 'Dashboard')}
+        subtitle={(
+          <>
+            <BarChartOutlined style={{ fontSize: isMobile ? '16px' : '20px' }} />
+            {t('app.welcomeToDashboard', 'Welcome to your coding dashboard')}
+          </>
+        )}
+        isMobile={isMobile}
+        gradient={GRADIENT_THEMES.primary}
+        actions={[
+          {
+            text: t('common.refresh', 'Refresh'),
+            type: 'primary',
+            icon: <ReloadOutlined />,
+            onClick: fetchDashboardData,
+            loading: loading
+          }
+        ]}
+      />
 
       {/* LeetCode Statistics - Only show if user has LeetCode config */}
       {hasLeetCodeConfig && (
-        <Row gutter={[24, 24]}>
+        <ModernCard
+          title={t('app.leetcodeStats', 'LeetCode Statistics')}
+          icon={<CodeOutlined />}
+          iconGradient={GRADIENT_THEMES.info}
+          isMobile={isMobile}
+          style={{ marginBottom: isMobile ? 16 : 24 }}
+        >
+          <Row gutter={[16, 16]}>
           <Col xs={24} sm={12} lg={6}>
-            <Card>
+            <Card hoverable style={{
+              background: 'linear-gradient(135deg, #e3f2fd, #bbdefb)',
+              border: 'none',
+              borderRadius: '12px'
+            }}>
               <Statistic
-                title={t('app.totalProblems')}
+                title={t('app.totalProblems', 'Total Problems')}
                 value={stats.totalProblems}
-                prefix={<CodeOutlined />}
-                valueStyle={{ color: '#1890ff' }}
+                prefix={<CodeOutlined style={{ color: '#1976d2' }} />}
+                valueStyle={{ color: '#1976d2', fontWeight: 'bold' }}
               />
             </Card>
           </Col>
 
           <Col xs={24} sm={12} lg={6}>
-            <Card>
+            <Card hoverable style={{
+              background: 'linear-gradient(135deg, #e8f5e8, #c8e6c9)',
+              border: 'none',
+              borderRadius: '12px'
+            }}>
               <Statistic
-                title={t('app.solvedProblems')}
+                title={t('app.solvedProblems', 'Solved Problems')}
                 value={stats.solvedProblems}
-                prefix={<CheckCircleOutlined />}
-                valueStyle={{ color: '#52c41a' }}
+                prefix={<CheckCircleOutlined style={{ color: '#388e3c' }} />}
+                valueStyle={{ color: '#388e3c', fontWeight: 'bold' }}
                 suffix={`/ ${stats.totalProblems}`}
               />
             </Card>
           </Col>
 
           <Col xs={24} sm={12} lg={6}>
-            <Card>
+            <Card hoverable style={{
+              background: 'linear-gradient(135deg, #fff3e0, #ffcc02)',
+              border: 'none',
+              borderRadius: '12px'
+            }}>
               <Statistic
-                title={t('app.reviewProblems')}
+                title={t('app.reviewProblems', 'Review Problems')}
                 value={stats.reviewProblems}
-                prefix={<ClockCircleOutlined />}
-                valueStyle={{ color: '#faad14' }}
+                prefix={<ClockCircleOutlined style={{ color: '#f57c00' }} />}
+                valueStyle={{ color: '#f57c00', fontWeight: 'bold' }}
               />
             </Card>
           </Col>
 
           <Col xs={24} sm={12} lg={6}>
-            <Card>
+            <Card hoverable style={{
+              background: 'linear-gradient(135deg, #fce4ec, #f8bbd9)',
+              border: 'none',
+              borderRadius: '12px'
+            }}>
               <Statistic
-                title={t('app.streakDays')}
+                title={t('app.streakDays', 'Streak Days')}
                 value={stats.streakDays}
-                prefix={<TrophyOutlined />}
-                valueStyle={{ color: '#f5222d' }}
-                suffix={t('app.days')}
+                prefix={<TrophyOutlined style={{ color: '#c2185b' }} />}
+                valueStyle={{ color: '#c2185b', fontWeight: 'bold' }}
+                suffix={t('app.days', 'days')}
+              />
+            </Card>
+          </Col>
+          </Row>
+        </ModernCard>
+      )}
+
+      {/* Git Sync Statistics */}
+      <ModernCard
+        title={t('git.title', 'Git Sync Statistics')}
+        icon={<SyncOutlined />}
+        iconGradient={GRADIENT_THEMES.success}
+        isMobile={isMobile}
+        style={{ marginBottom: isMobile ? 16 : 24 }}
+      >
+        <Row gutter={[16, 16]}>
+
+          <Col xs={24} sm={12} lg={6}>
+            <Card hoverable style={{
+              background: 'linear-gradient(135deg, #e1f5fe, #b3e5fc)',
+              border: 'none',
+              borderRadius: '12px'
+            }}>
+              <Statistic
+                title={t('app.totalSubmissions', 'Total Submissions')}
+                value={gitStats.total_records}
+                prefix={<CodeOutlined style={{ color: '#0277bd' }} />}
+                valueStyle={{ color: '#0277bd', fontWeight: 'bold' }}
+              />
+            </Card>
+          </Col>
+
+          <Col xs={24} sm={12} lg={6}>
+            <Card hoverable style={{
+              background: 'linear-gradient(135deg, #e8f5e8, #c8e6c9)',
+              border: 'none',
+              borderRadius: '12px'
+            }}>
+              <Statistic
+                title={t('app.syncedCount', 'Synced')}
+                value={gitStats.synced_count}
+                prefix={<CheckCircleFilled style={{ color: '#2e7d32' }} />}
+                valueStyle={{ color: '#2e7d32', fontWeight: 'bold' }}
+                suffix={`/ ${gitStats.total_records}`}
+              />
+            </Card>
+          </Col>
+
+          <Col xs={24} sm={12} lg={6}>
+            <Card hoverable style={{
+              background: 'linear-gradient(135deg, #fff8e1, #ffecb3)',
+              border: 'none',
+              borderRadius: '12px'
+            }}>
+              <Statistic
+                title={t('records.gitSyncStatusPending', 'Pending')}
+                value={gitStats.pending_count}
+                prefix={<ClockCircleFilled style={{ color: '#f57c00' }} />}
+                valueStyle={{ color: '#f57c00', fontWeight: 'bold' }}
+              />
+            </Card>
+          </Col>
+
+          <Col xs={24} sm={12} lg={6}>
+            <Card hoverable style={{
+              background: 'linear-gradient(135deg, #ffebee, #ffcdd2)',
+              border: 'none',
+              borderRadius: '12px'
+            }}>
+              <Statistic
+                title={t('records.gitSyncStatusFailed', 'Failed')}
+                value={gitStats.failed_count}
+                prefix={<ExclamationCircleOutlined style={{ color: '#d32f2f' }} />}
+                valueStyle={{ color: '#d32f2f', fontWeight: 'bold' }}
               />
             </Card>
           </Col>
         </Row>
-      )}
-
-      {/* Git Sync Statistics */}
-      <Row gutter={[24, 24]} style={{ marginTop: 24 }}>
-        <Col xs={24}>
-          <Title level={3}>{t('git.title')}</Title>
-        </Col>
-
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title={t('app.totalSubmissions')}
-              value={gitStats.total_records}
-              prefix={<CodeOutlined />}
-              valueStyle={{ color: '#1890ff' }}
-            />
-          </Card>
-        </Col>
-
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title={t('app.syncedCount')}
-              value={gitStats.synced_count}
-              prefix={<CheckCircleFilled />}
-              valueStyle={{ color: '#52c41a' }}
-              suffix={`/ ${gitStats.total_records}`}
-            />
-          </Card>
-        </Col>
-
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title={t('records.gitSyncStatusPending')}
-              value={gitStats.pending_count}
-              prefix={<ClockCircleFilled />}
-              valueStyle={{ color: '#faad14' }}
-            />
-          </Card>
-        </Col>
-
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title={t('records.gitSyncStatusFailed')}
-              value={gitStats.failed_count}
-              prefix={<ExclamationCircleOutlined />}
-              valueStyle={{ color: '#f5222d' }}
-            />
-          </Card>
-        </Col>
-      </Row>
+      </ModernCard>
+    </div>
 
       {/* Git Sync Progress */}
       <Row gutter={[24, 24]} style={{ marginTop: 24 }}>

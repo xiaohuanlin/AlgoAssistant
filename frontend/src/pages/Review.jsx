@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Card,
   Tag,
   Button,
   Modal,
@@ -11,7 +10,6 @@ import {
   Select,
   message,
   Space,
-  Statistic,
   Row,
   Col,
   Tooltip,
@@ -24,20 +22,37 @@ import {
   EditOutlined,
   DeleteOutlined,
   EyeOutlined,
-  ClearOutlined
+  ClearOutlined,
+  CalendarOutlined,
+  BarChartOutlined
 } from '@ant-design/icons';
 import reviewService from '../services/reviewService';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { DataTable, StatusIndicator } from '../components/common';
 import ResponsiveStatCard from '../components/dashboard/ResponsiveStatCard';
+import {
+  GradientPageHeader,
+  ModernCard,
+  GRADIENT_THEMES
+} from '../components/ui/ModernDesignSystem';
 import { useNavigate } from 'react-router-dom';
+import useTableFilters from '../hooks/useTableFilters';
 
 const { TextArea } = Input;
 
 const Review = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Options for form selects
   const notificationTypeOptions = [
@@ -61,20 +76,30 @@ const Review = () => {
   const [form] = Form.useForm();
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
-  const [filters, setFilters] = useState({});
   const [batchLoading, setBatchLoading] = useState(false);
   const [sorter] = useState({ field: 'created_at', order: 'descend' });
+
+  // Use the new table filters hook
+  const {
+    filters,
+    handleFilter,
+    clearAllFilters,
+    createAutoFilterHandler,
+    createFilterClearHandler
+  } = useTableFilters((apiFilters) => {
+    setPagination(prev => ({ ...prev, current: 1 }));
+    fetchReviews(apiFilters);
+  });
 
   const fetchReviews = useCallback(async (newFilters = {}) => {
     setLoading(true);
     try {
-      const queryFilters = { ...filters, ...newFilters };
       const { total, items } = await reviewService.filterReviews({
         limit: pagination.pageSize,
         offset: (pagination.current - 1) * pagination.pageSize,
         sort_by: sorter.field,
         sort_order: sorter.order === 'descend' ? 'desc' : 'asc',
-        ...queryFilters,
+        ...newFilters,
       });
       setReviews(items || []);
       setPagination(prev => ({ ...prev, total: total || 0 }));
@@ -88,7 +113,7 @@ const Review = () => {
     } finally {
       setLoading(false);
     }
-  }, [filters, pagination.current, pagination.pageSize, sorter.field, sorter.order, t]);
+  }, [pagination.current, pagination.pageSize, sorter.field, sorter.order, t]);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -159,22 +184,6 @@ const Review = () => {
     }
   };
 
-  const handleFilter = (values) => {
-    const newFilters = {};
-    Object.keys(values).forEach(key => {
-      if (values[key] !== undefined && values[key] !== null && values[key] !== '') {
-        if (key === 'timeRange' && values[key]?.length === 2) {
-          newFilters.start_date = values[key][0].startOf('day').toISOString();
-          newFilters.end_date = values[key][1].endOf('day').toISOString();
-        } else {
-          newFilters[key] = values[key];
-        }
-      }
-    });
-    setFilters(newFilters);
-    setPagination(prev => ({ ...prev, current: 1 }));
-    fetchReviews(newFilters);
-  };
 
   const handleViewReview = (record) => {
     navigate(`/review/${record.id}`);
@@ -224,7 +233,7 @@ const Review = () => {
 
   const columns = [
     {
-      title: t('review.problemId'),
+      title: t('review.problemId', 'Problem ID'),
       dataIndex: 'problem_id',
       key: 'problem_id',
       width: 80,
@@ -239,7 +248,7 @@ const Review = () => {
       ),
     },
     {
-      title: t('review.problemTitle'),
+      title: t('review.problemTitle', 'Problem Title'),
       dataIndex: 'problem_title',
       key: 'problem_title',
       width: 300,
@@ -257,7 +266,7 @@ const Review = () => {
       ),
     },
     {
-      title: t('review.wrongReason'),
+      title: t('review.wrongReason', 'Wrong Reason'),
       dataIndex: 'wrong_reason',
       key: 'wrong_reason',
       width: 200,
@@ -269,7 +278,7 @@ const Review = () => {
       ),
     },
     {
-      title: t('review.reviewCount'),
+      title: t('review.reviewCount', 'Review Count'),
       dataIndex: 'review_count',
       key: 'review_count',
       width: 100,
@@ -280,7 +289,7 @@ const Review = () => {
       ),
     },
     {
-      title: t('review.nextReview'),
+      title: t('review.nextReview', 'Next Review'),
       dataIndex: 'next_review_date',
       key: 'next_review_date',
       width: 150,
@@ -293,7 +302,7 @@ const Review = () => {
       ),
     },
     {
-      title: t('review.notificationStatus'),
+      title: t('review.notificationStatus', 'Notification Status'),
       dataIndex: 'notification_status',
       key: 'notification_status',
       width: 120,
@@ -306,18 +315,18 @@ const Review = () => {
       ),
     },
     {
-      title: t('review.notificationType'),
+      title: t('review.notificationType', 'Notification Type'),
       dataIndex: 'notification_type',
       key: 'notification_type',
       width: 100,
       render: (type) => (
         <Tag color="blue">
-          {t(`review.type.${type}`, type)}
+          {t(`review.type.${type}`, type || 'Unknown')}
         </Tag>
       ),
     },
     {
-      title: t('review.notificationSentAt'),
+      title: t('review.notificationSentAt', 'Sent At'),
       dataIndex: 'notification_sent_at',
       key: 'notification_sent_at',
       width: 160,
@@ -328,28 +337,28 @@ const Review = () => {
       ),
     },
     {
-      title: t('common.actions'),
+      title: t('common.actions', 'Actions'),
       key: 'actions',
       width: 200,
       fixed: 'right',
       render: (_, record) => (
         <Space>
-          <Tooltip title={t('common.view')}>
+          <Tooltip title={t('common.view', 'View')}>
             <Button
               icon={<EyeOutlined />}
               size="small"
               onClick={() => handleViewReview(record)}
             >
-              {t('common.view')}
+              {t('common.view', 'View')}
             </Button>
           </Tooltip>
-          <Tooltip title={t('common.edit')}>
+          <Tooltip title={t('common.edit', 'Edit')}>
             <Button
               icon={<EditOutlined />}
               size="small"
               onClick={() => handleEditReview(record)}
             >
-              {t('common.edit')}
+              {t('common.edit', 'Edit')}
             </Button>
           </Tooltip>
         </Space>
@@ -361,59 +370,64 @@ const Review = () => {
   const filterConfig = [
     {
       key: 'problem_id',
-      label: t('review.problemId'),
+      label: t('review.problemId', 'Problem ID'),
       type: 'input',
-      placeholder: t('review.problemId'),
+      placeholder: t('review.problemId', 'Problem ID'),
       value: filters.problem_id,
-      onChange: (value) => setFilters(prev => ({ ...prev, problem_id: value }))
+      onChange: createAutoFilterHandler('problem_id', 500),
+      onClear: createFilterClearHandler('problem_id')
     },
     {
       key: 'problem_title',
-      label: t('review.problemTitle'),
+      label: t('review.problemTitle', 'Problem Title'),
       type: 'input',
-      placeholder: t('review.problemTitlePlaceholder'),
+      placeholder: t('review.problemTitlePlaceholder', 'Search by problem title'),
       value: filters.problem_title,
-      onChange: (value) => setFilters(prev => ({ ...prev, problem_title: value }))
+      onChange: createAutoFilterHandler('problem_title', 500),
+      onClear: createFilterClearHandler('problem_title')
     },
     {
       key: 'notification_status',
-      label: t('review.notificationStatus'),
+      label: t('review.notificationStatus', 'Notification Status'),
       type: 'select',
-      placeholder: t('review.notificationStatus'),
+      placeholder: t('review.notificationStatus', 'Notification Status'),
       value: filters.notification_status,
-      onChange: (value) => setFilters(prev => ({ ...prev, notification_status: value })),
+      onChange: createAutoFilterHandler('notification_status'),
+      onClear: createFilterClearHandler('notification_status'),
       options: [
-        { label: t('review.status.pending'), value: 'pending' },
-        { label: t('review.status.sent'), value: 'sent' },
-        { label: t('review.status.failed'), value: 'failed' }
+        { label: t('review.status.pending', 'Pending'), value: 'pending' },
+        { label: t('review.status.sent', 'Sent'), value: 'sent' },
+        { label: t('review.status.failed', 'Failed'), value: 'failed' }
       ]
     },
     {
       key: 'notification_type',
-      label: t('review.notificationType'),
+      label: t('review.notificationType', 'Notification Type'),
       type: 'select',
-      placeholder: t('review.notificationType'),
+      placeholder: t('review.notificationType', 'Notification Type'),
       value: filters.notification_type,
-      onChange: (value) => setFilters(prev => ({ ...prev, notification_type: value })),
+      onChange: createAutoFilterHandler('notification_type'),
+      onClear: createFilterClearHandler('notification_type'),
       options: [
-        { label: t('review.type.email'), value: 'email' },
-        { label: t('review.type.push'), value: 'push' },
-        { label: t('review.type.sms'), value: 'sms' }
+        { label: t('review.type.email', 'Email'), value: 'email' },
+        { label: t('review.type.push', 'Push'), value: 'push' },
+        { label: t('review.type.sms', 'SMS'), value: 'sms' }
       ]
     },
     {
       key: 'timeRange',
-      label: t('review.nextReview'),
+      label: t('review.nextReview', 'Next Review'),
       type: 'dateRange',
       value: filters.timeRange,
-      onChange: (value) => setFilters(prev => ({ ...prev, timeRange: value }))
+      onChange: createAutoFilterHandler('timeRange'),
+      onClear: createFilterClearHandler('timeRange')
     }
   ];
 
   // Actions configuration
   const actions = [
     {
-      text: `${t('review.batchDelete')} (${selectedRowKeys.length})`,
+      text: `${t('review.batchDelete', 'Batch Delete')} (${selectedRowKeys.length})`,
       icon: <DeleteOutlined />,
       onClick: handleBatchDelete,
       loading: batchLoading,
@@ -421,7 +435,7 @@ const Review = () => {
       danger: true
     },
     {
-      text: t('review.deleteAll'),
+      text: t('review.deleteAll', 'Delete All'),
       icon: <ClearOutlined />,
       onClick: handleDeleteAll,
       loading: batchLoading,
@@ -430,73 +444,121 @@ const Review = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
-      {/* Statistics Cards */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={24} sm={12} md={6}>
-          <ResponsiveStatCard
-            title={t('review.totalReviews')}
-            value={stats.total || 0}
-            prefix={<BookOutlined />}
-            color="#1890ff"
-            loading={loading}
-          />
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <ResponsiveStatCard
-            title={t('review.pendingReviews')}
-            value={stats.pending || 0}
-            prefix={<ClockCircleOutlined />}
-            color="#faad14"
-            loading={loading}
-          />
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <ResponsiveStatCard
-            title={t('review.completedReviews')}
-            value={stats.completed || 0}
-            prefix={<CheckCircleOutlined />}
-            color="#52c41a"
-            loading={loading}
-          />
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <ResponsiveStatCard
-            title={t('review.overdueReviews')}
-            value={stats.overdue || 0}
-            prefix={<ExclamationCircleOutlined />}
-            color="#f5222d"
-            loading={loading}
-          />
-        </Col>
-      </Row>
-
-      {/* Main Data Table */}
-      <DataTable
-        title={t('review.title')}
-        subtitle={t('review.reviewList')}
-        data={reviews}
-        columns={columns}
-        loading={loading}
-        pagination={{
-          ...pagination,
-          onChange: (page, pageSize) => {
-            setPagination(prev => ({ ...prev, current: page, pageSize }));
-            // Don't clear selection when changing pages to allow cross-page selection
-          }
-        }}
-        filters={filterConfig}
-        selectedRowKeys={selectedRowKeys}
-        onSelectionChange={handleSelectionChange}
-        onRefresh={() => fetchReviews()}
-        onFilterChange={handleFilter}
-        actions={actions}
-        rowKey="id"
+    <div style={{
+      maxWidth: 1200,
+      margin: '0 auto',
+      padding: isMobile ? '16px' : '24px'
+    }}>
+      {/* Modern Page Header */}
+      <GradientPageHeader
+        icon={<CalendarOutlined style={{
+          fontSize: isMobile ? '24px' : '36px',
+          color: 'white'
+        }} />}
+        title={t('review.title', 'Reviews')}
+        subtitle={(
+          <>
+            <BarChartOutlined style={{ fontSize: isMobile ? '16px' : '20px' }} />
+            {t('review.manageProblemReviews', 'Manage your problem reviews')}
+          </>
+        )}
+        isMobile={isMobile}
+        gradient={GRADIENT_THEMES.warning}
       />
+
+      {/* Statistics Section */}
+      <ModernCard
+        title={t('common.statistics', 'Statistics')}
+        icon={<BarChartOutlined />}
+        iconGradient={GRADIENT_THEMES.cyan}
+        isMobile={isMobile}
+        style={{ marginBottom: isMobile ? 16 : 24 }}
+      >
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12} md={6}>
+            <ResponsiveStatCard
+              title={t('review.totalReviews', 'Total Reviews')}
+              value={stats.total || 0}
+              prefix={<BookOutlined />}
+              color="#1890ff"
+              loading={loading}
+            />
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <ResponsiveStatCard
+              title={t('review.pendingReviews', 'Pending Reviews')}
+              value={stats.pending || 0}
+              prefix={<ClockCircleOutlined />}
+              color="#faad14"
+              loading={loading}
+            />
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <ResponsiveStatCard
+              title={t('review.completedReviews', 'Completed Reviews')}
+              value={stats.completed || 0}
+              prefix={<CheckCircleOutlined />}
+              color="#52c41a"
+              loading={loading}
+            />
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <ResponsiveStatCard
+              title={t('review.overdueReviews', 'Overdue Reviews')}
+              value={stats.overdue || 0}
+              prefix={<ExclamationCircleOutlined />}
+              color="#f5222d"
+              loading={loading}
+            />
+          </Col>
+        </Row>
+      </ModernCard>
+
+      {/* Reviews List */}
+      <ModernCard
+        title={t('review.reviewList', 'Review List')}
+        icon={<CalendarOutlined />}
+        iconGradient={GRADIENT_THEMES.purple}
+        isMobile={isMobile}
+      >
+        <DataTable
+          data={reviews}
+          columns={columns}
+          loading={loading}
+          pagination={{
+            ...pagination,
+            onChange: (page, pageSize) => {
+              setPagination(prev => ({ ...prev, current: page, pageSize }));
+              // Don't clear selection when changing pages to allow cross-page selection
+            }
+          }}
+          filters={filterConfig}
+          selectedRowKeys={selectedRowKeys}
+          onSelectionChange={handleSelectionChange}
+          onRefresh={() => fetchReviews()}
+          onFilterChange={() => {
+            const currentValues = {};
+            filterConfig.forEach(filter => {
+              if (filter.value !== undefined && filter.value !== null && filter.value !== '') {
+                // Special handling for timeRange which is an array
+                if (filter.key === 'timeRange' && Array.isArray(filter.value) && filter.value.length === 2) {
+                  currentValues[filter.key] = filter.value;
+                } else if (filter.key !== 'timeRange') {
+                  currentValues[filter.key] = filter.value;
+                }
+              }
+            });
+            handleFilter(currentValues);
+          }}
+          onClearFilters={clearAllFilters}
+          actions={actions}
+          showFilterButtons={false}
+          rowKey="id"
+        />      </ModernCard>
 
       {/* Edit review record modal */}
       <Modal
-        title={t('review.editReview')}
+        title={t('review.editReview', 'Edit Review')}
         open={modalVisible}
         onOk={form.submit}
         onCancel={handleCancelEdit}
@@ -537,13 +599,13 @@ const Review = () => {
             label={t('review.notificationType', 'Notification Type')}
             name="notification_type"
           >
-            <Select options={notificationTypeOptions.map(opt => ({ ...opt, label: t(`review.type.${opt.value}`, opt.label) }))} allowClear />
+            <Select options={notificationTypeOptions.map(opt => ({ ...opt, label: t(`review.type.${opt.value}`, opt.label) }))} allowClear placeholder={t('review.selectNotificationType', 'Select notification type')} />
           </Form.Item>
           <Form.Item
             label={t('review.notificationStatus', 'Notification Status')}
             name="notification_status"
           >
-            <Select options={notificationStatusOptions.map(opt => ({ ...opt, label: t(`review.status.${opt.value}`, opt.label) }))} allowClear />
+            <Select options={notificationStatusOptions.map(opt => ({ ...opt, label: t(`review.status.${opt.value}`, opt.label) }))} allowClear placeholder={t('review.selectNotificationStatus', 'Select notification status')} />
           </Form.Item>
         </Form>
       </Modal>

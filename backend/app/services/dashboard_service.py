@@ -102,6 +102,7 @@ class DashboardService:
         try:
             records = (
                 self.db.query(models.Record)
+                .join(models.Problem, models.Record.problem_id == models.Problem.id, isouter=True)
                 .filter(models.Record.user_id == user_id)
                 .all()
             )
@@ -336,7 +337,7 @@ class DashboardService:
             raise
 
     def _extract_categories(self, record: models.Record) -> List[str]:
-        """Extract categories from record topic_tags and AI analysis.
+        """Extract categories from record topic_tags, AI analysis, problem tags, and problem title.
 
         Args:
             record: Record instance
@@ -346,7 +347,7 @@ class DashboardService:
         """
         categories = []
 
-        # Extract from topic_tags
+        # Extract from record topic_tags
         if record.topic_tags and isinstance(record.topic_tags, list):
             categories.extend([tag for tag in record.topic_tags if tag])
 
@@ -355,6 +356,36 @@ class DashboardService:
             algorithm_type = record.ai_analysis.get("algorithm_type")
             if algorithm_type and algorithm_type not in categories:
                 categories.append(algorithm_type)
+
+        # Extract from problem tags if record tags are empty
+        if not categories and record.problem and record.problem.tags:
+            if isinstance(record.problem.tags, list):
+                categories.extend([tag for tag in record.problem.tags if tag])
+
+        # Basic title-based inference if still no categories
+        if not categories and record.problem and record.problem.title:
+            title_lower = record.problem.title.lower()
+            title_categories = []
+            
+            # Basic keyword matching for common patterns
+            if any(keyword in title_lower for keyword in ['array', 'list', 'matrix']):
+                title_categories.append('Array')
+            if any(keyword in title_lower for keyword in ['tree', 'binary tree', 'bst']):
+                title_categories.append('Tree')
+            if any(keyword in title_lower for keyword in ['string', 'substring', 'character']):
+                title_categories.append('String')
+            if any(keyword in title_lower for keyword in ['dynamic', 'dp', 'memo']):
+                title_categories.append('Dynamic Programming')
+            if any(keyword in title_lower for keyword in ['graph', 'node', 'edge']):
+                title_categories.append('Graph')
+            if any(keyword in title_lower for keyword in ['sort', 'merge', 'quick']):
+                title_categories.append('Sorting')
+            if any(keyword in title_lower for keyword in ['search', 'binary search']):
+                title_categories.append('Search')
+            if any(keyword in title_lower for keyword in ['hash', 'map', 'dict']):
+                title_categories.append('Hash Table')
+                
+            categories.extend(title_categories)
 
         return categories if categories else ["Uncategorized"]
 

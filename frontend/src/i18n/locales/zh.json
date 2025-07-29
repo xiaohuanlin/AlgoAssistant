@@ -20,10 +20,12 @@
     "previous": "上一步",
     "submit": "提交",
     "reset": "重置",
+    "statistics": "统计信息",
     "close": "关闭",
     "open": "打开",
     "yes": "是",
     "no": "否",
+    "other": "其他",
     "items": "项",
     "pause": "暂停",
     "stop": "停止",
@@ -50,7 +52,9 @@
     "create": "新建",
     "clear": "清除",
     "settings": "设置",
-    "review": "复习"
+    "review": "复习",
+    "custom": "自定义",
+    "manage": "管理"
   },
   "auth": {
     "login": "登录",
@@ -121,7 +125,8 @@
     "totalToSync": "待同步总数",
     "syncingCount": "同步中数量",
     "pendingCount": "待同步数量",
-    "syncedCount": "已同步数量"
+    "syncedCount": "已同步数量",
+    "welcomeToDashboard": "欢迎来到您的算法学习仪表盘"
   },
   "navigation": {
     "dashboard": "仪表盘",
@@ -163,6 +168,8 @@
     "leetcodeUrl": "LeetCode题目链接",
     "leetcodeUrlRequired": "请输入有效的LeetCode题目链接",
     "relatedRecords": "相关提交记录",
+    "detail": "题目详情",
+    "basicInfo": "基本信息",
     "relatedReviews": "相关复习记录",
     "searchPlaceholder": "搜索题目...",
     "batchImport": "批量导入",
@@ -196,10 +203,12 @@
     "activeDays": "活跃天数",
     "bankStatisticsLoadError": "加载题库统计信息失败",
     "viewMode": "查看模式",
-    "viewModePlaceholder": "选择查看模式"
+    "viewModePlaceholder": "选择查看模式",
+    "totalReviews": "总复习数"
   },
   "review": {
     "title": "复习计划",
+    "manageProblemReviews": "管理您的题目复习",
     "subtitle": "管理您的算法题目复习计划",
     "dueReviews": "到期复习",
     "allReviews": "所有复习记录",
@@ -336,6 +345,7 @@
     "confirmDeleteTask": "确定要删除这个任务吗？",
     "refresh": "刷新",
     "createTask": "创建任务",
+    "manageSyncTasks": "管理您的同步任务",
     "syncTasks": "同步任务",
     "syncTasksList": "同步任务列表",
     "createSyncTask": "创建同步任务",
@@ -506,6 +516,7 @@
   },
   "records": {
     "title": "题目记录",
+    "manageSubmissionRecords": "管理您的提交记录",
     "recordList": "记录列表",
     "addRecord": "添加记录",
     "editRecord": "编辑记录",
@@ -521,9 +532,14 @@
     "problemTitle": "题目名称",
     "difficulty": "难度",
     "status": "状态",
+    "submitStatus": "提交状态",
     "language": "编程语言",
     "runtime": "运行时间",
+    "runtimeUnit": "例如：100ms, 1s",
+    "runtimePlaceholder": "例如：100ms",
     "memory": "内存使用",
+    "memoryUnit": "例如：50MB, 1GB",
+    "memoryPlaceholder": "例如：50MB",
     "submitTime": "提交时间",
     "code": "代码",
     "actions": "操作",
@@ -552,9 +568,10 @@
     "codeRequired": "请输入代码",
     "loadError": "加载记录失败",
     "loadProblemsError": "加载题目失败",
-    "problemSearchHint": "搜索题目标题或直接输入题目ID",
+    "problemSearchHint": "您可以按题目标题搜索或直接输入题目ID（例如：\"1\"，\"两数之和\"）",
     "problemSelectionHint": "从您的题目中选择或按标题搜索",
     "problemSelectionPlaceholder": "选择题目或按标题搜索",
+    "problemSearchPlaceholder": "按题目标题搜索或输入题目ID",
     "noProblemsFound": "未找到题目。请尝试搜索或输入ID。",
     "manualIdEntry": "您也可以直接输入题目ID",
     "noProblemsHint": "未找到题目。您可以按标题搜索或直接输入题目ID。",
@@ -566,6 +583,7 @@
     "noRecords": "暂无记录",
     "openInLeetCode": "在LeetCode中打开",
     "topicTags": "主题标签",
+    "topicTagsPlaceholder": "选择或添加主题标签",
     "submissionUrl": "提交链接",
     "viewSubmission": "查看提交",
     "totalTestcases": "总测试用例",
@@ -635,6 +653,7 @@
     "gitSyncStatusRetry": "重试中",
     "githubSyncStatus": "GitHub同步状态",
     "aiAnalysisStatus": "AI分析状态",
+    "aiSyncStatus": "AI分析状态",
     "startDate": "开始日期",
     "endDate": "结束日期",
     "statusAccepted": "通过",
@@ -688,7 +707,11 @@
     "importedCount": "成功导入{{count}}道题目",
     "codeCompletion": "代码补全",
     "createRecord": "新建记录",
-    "searchByTitle": "按题目标题搜索"
+    "searchByTitle": "按题目标题搜索",
+    "problemId": "题目ID",
+    "searchByProblemId": "按题目ID搜索",
+    "noCodeAvailable": "暂无代码",
+    "noAIAnalysis": "暂无AI分析"
   },
   "record": {
     "id": "记录ID",
@@ -857,7 +880,8 @@
     "tokenStep3": "找到 API Token 选项",
     "tokenStep4": "点击生成新 Token",
     "tokenStep5": "复制 Token 并粘贴到此处",
-    "startSync": "开始同步"
+    "startSync": "开始同步",
+    "configurationTabs": "配置选项"
   },
   "accountSettings": {
     "title": "账户设置",
@@ -972,6 +996,7 @@
     "loadingFailed": "加载失败",
     "retry": "重试",
     "refresh": "刷新",
+    "statistics": "统计信息",
     "noErrors": "暂无错误记录",
     "progressChart": "进度图表",
     "solved": "已解决",

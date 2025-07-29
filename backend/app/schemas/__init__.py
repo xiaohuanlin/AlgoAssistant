@@ -28,6 +28,7 @@ from .problem import (
     ProblemCreate,
     ProblemOut,
     ProblemSource,
+    ProblemStatisticsOut,
     ProblemUpdate,
 )
 from .record import (
@@ -35,11 +36,14 @@ from .record import (
     RecordDeleteResponse,
     RecordDetailOut,
     RecordListOut,
+    RecordListResponse,
     RecordManualCreate,
     RecordStatsOut,
     RecordUpdate,
     SyncTaskCreate,
     SyncTaskOut,
+    SyncTaskListOut,
+    SyncTaskStatsOut,
     TagAssignRequest,
     TagOut,
     TagWikiUpdateRequest,
@@ -93,6 +97,7 @@ __all__ = [
     RecordCreate,
     RecordManualCreate,
     RecordListOut,
+    RecordListResponse,
     RecordDetailOut,
     RecordUpdate,
     RecordStatsOut,
@@ -111,4 +116,5 @@ __all__ = [
     ReviewOut,
     ProblemBatchCreate,
     ProblemBankStatsOut,
+    ProblemStatisticsOut,
 ]

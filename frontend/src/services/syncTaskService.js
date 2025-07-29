@@ -65,28 +65,15 @@ class SyncTaskService {
 
   /**
    * Get task statistics
+   * @param {Object} filters - Filter parameters to apply to statistics
    * @returns {Promise<Object>} Task statistics
    */
-  async getTaskStats() {
+  async getTaskStats(filters = {}) {
     try {
-      const tasks = await this.getTasks({ limit: 1000 });
-
-      const stats = {
-        total: tasks.length,
-        pending: 0,
-        running: 0,
-        completed: 0,
-        failed: 0,
-        paused: 0,
-      };
-
-      tasks.forEach(task => {
-        if (stats.hasOwnProperty(task.status)) {
-          stats[task.status]++;
-        }
+      const response = await api.get(API_ENDPOINTS.SYNC_TASKS.STATS, { 
+        params: filters
       });
-
-      return stats;
+      return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
     }

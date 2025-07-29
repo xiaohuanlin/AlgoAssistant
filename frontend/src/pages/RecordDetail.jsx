@@ -12,13 +12,33 @@ import {
   LinkOutlined,
   FileTextOutlined,
   CloudOutlined,
-  RobotOutlined
+  RobotOutlined,
+  EyeOutlined,
+  PlayCircleOutlined,
+  HistoryOutlined,
+  ThunderboltOutlined,
+  DatabaseOutlined,
+  BugOutlined,
+  TagsOutlined,
+  GithubOutlined,
+  ApiOutlined,
+  ProfileOutlined,
+  GlobalOutlined,
+  InteractionOutlined,
+  ProjectOutlined
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import recordsService from '../services/recordsService';
 import dayjs from 'dayjs';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import {
+  GradientPageHeader,
+  ModernCard,
+  ModernInfoItem,
+  ModernTag,
+  GRADIENT_THEMES
+} from '../components/ui/ModernDesignSystem';
 
 const { Title, Text, Link } = Typography;
 
@@ -33,6 +53,22 @@ const getLanguageForHighlight = (language) => {
   if (lower.includes('go')) return 'go';
   if (lower.includes('rust')) return 'rust';
   return 'plaintext';
+};
+
+const formatValue = (value, unit, t) => {
+  if (!value || value === '-') return '-';
+
+  // If value already contains unit, return as is
+  if (typeof value === 'string' && (value.includes('ms') || value.includes('MB') || value.includes('KB'))) {
+    return value;
+  }
+
+  // If value is a number, add default unit
+  if (typeof value === 'number' || !isNaN(Number(value))) {
+    return `${value} ${unit}`;
+  }
+
+  return value;
 };
 
 // Status color mapping
@@ -97,6 +133,48 @@ const getStatusIcon = (status) => {
   }
 };
 
+// Get status color and theme mapping
+const getStatusTheme = (status) => {
+  const lowerStatus = status?.toLowerCase();
+  switch (lowerStatus) {
+    case 'synced':
+    case 'accepted':
+    case 'completed':
+      return {
+        gradient: GRADIENT_THEMES.success,
+        tagType: 'success'
+      };
+    case 'pending':
+    case 'syncing':
+      return {
+        gradient: GRADIENT_THEMES.warning,
+        tagType: 'warning'
+      };
+    case 'failed':
+    case 'wrong answer':
+    case 'wrong_answer':
+    case 'runtime error':
+    case 'runtime_error':
+    case 'compile error':
+    case 'compile_error':
+      return {
+        gradient: GRADIENT_THEMES.error,
+        tagType: 'error'
+      };
+    case 'paused':
+    case 'retry':
+      return {
+        gradient: GRADIENT_THEMES.slate,
+        tagType: 'default'
+      };
+    default:
+      return {
+        gradient: GRADIENT_THEMES.slate,
+        tagType: 'default'
+      };
+  }
+};
+
 // Get status translation text
 const getStatusText = (status, t) => {
   const lowerStatus = status.toLowerCase();
@@ -132,8 +210,36 @@ const getStatusText = (status, t) => {
       return t('records.statusPaused');
     case 'retry':
       return t('records.statusRetry');
+    case 'other':
+      return t('common.other');
     default:
       return status;
+  }
+};
+
+// Get OJ type translation text
+const getOjTypeText = (ojType, t) => {
+  const lowerOjType = ojType?.toLowerCase();
+  switch (lowerOjType) {
+    case 'leetcode':
+      return 'LeetCode';
+    case 'other':
+      return t('common.other');
+    default:
+      return ojType || t('common.unknown');
+  }
+};
+
+// Check if URL is valid
+const isValidUrl = (url) => {
+  if (!url || typeof url !== 'string') return false;
+  const trimmed = url.trim();
+  if (!trimmed || trimmed === '#' || trimmed === '-') return false;
+  try {
+    new URL(trimmed);
+    return true;
+  } catch {
+    return false;
   }
 };
 
@@ -142,6 +248,16 @@ const RecordDetail = () => {
   const { id } = useParams();
   const [record, setRecord] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     const fetchDetail = async () => {
@@ -166,369 +282,521 @@ const RecordDetail = () => {
   }
 
   return (
-    <div style={{ maxWidth: 1200, margin: '24px auto', padding: '0 24px' }}>
-      {/* Page title */}
-      <div style={{ marginBottom: 24 }}>
-        <Title level={2} style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <BookOutlined style={{ color: '#1890ff' }} />
-          {t('records.viewRecord')}
-          <Text code style={{ fontSize: '24px', fontWeight: 'normal' }}>#{record.id}</Text>
-        </Title>
-      </div>
+    <div style={{
+      maxWidth: 1200,
+      margin: '0 auto',
+      padding: isMobile ? '16px' : '24px'
+    }}>
+      {/* Modern Page Header */}
+      <GradientPageHeader
+        icon={<CodeOutlined style={{
+          fontSize: isMobile ? '24px' : '36px',
+          color: 'white'
+        }} />}
+        title={`${record.problem_title || t('records.problemTitle')}`}
+        subtitle={(
+          <>
+            <HistoryOutlined style={{ fontSize: isMobile ? '16px' : '20px' }} />
+            {t('records.viewRecord')} #{record.id}
+          </>
+        )}
+        isMobile={isMobile}
+        gradient={GRADIENT_THEMES.success}
+      />
 
-      <Row gutter={[24, 24]}>
+      <Row gutter={isMobile ? [16, 16] : [24, 24]}>
         {/* Left column - Main information */}
         <Col xs={24} lg={16}>
           {/* Problem information card */}
-          <Card
-            title={
-              <Space>
-                <BookOutlined style={{ color: '#1890ff' }} />
-                {t('records.problemInfo')}
-              </Space>
-            }
-            style={{ marginBottom: 24 }}
-            size="small"
+          <ModernCard
+            title={t('records.problemInfo')}
+            icon={<BookOutlined />}
+            iconGradient={GRADIENT_THEMES.primary}
+            isMobile={isMobile}
           >
-            <Row gutter={[16, 16]}>
-              <Col xs={24} sm={12}>
-                <div style={{ marginBottom: 12 }}>
-                  <Text strong>{t('records.problemTitle')}：</Text>
-                  <Link href={record.submission_url} target="_blank" rel="noopener noreferrer">
-                    {record.problem_title}
-                  </Link>
-                </div>
+            <Row gutter={isMobile ? [16, 20] : [32, 24]}>
+              <Col xs={24} md={12}>
+                <ModernInfoItem
+                  icon={<ProfileOutlined />}
+                  label={t('records.problemTitle')}
+                  iconGradient={GRADIENT_THEMES.primary}
+                  isMobile={isMobile}
+                  valueComponent={
+                    record.problem_number ? (
+                      <Button
+                        type="link"
+                        style={{ 
+                          padding: 0, 
+                          height: 'auto',
+                          color: GRADIENT_THEMES.primary.split(',')[0].split('(')[1],
+                          fontWeight: 500
+                        }}
+                        onClick={() => window.location.href = `/problem/${record.problem_number}`}
+                      >
+                        <EyeOutlined style={{ marginRight: 6 }} />
+                        {record.problem_title}
+                      </Button>
+                    ) : (
+                      <span>{record.problem_title}</span>
+                    )
+                  }
+                />
+                
+                <ModernInfoItem
+                  icon={<GlobalOutlined />}
+                  label={t('records.ojType')}
+                  iconGradient={GRADIENT_THEMES.info}
+                  isMobile={isMobile}
+                  valueComponent={
+                    <ModernTag type="info" isMobile={isMobile}>
+                      {getOjTypeText(record.oj_type, t)}
+                    </ModernTag>
+                  }
+                />
+                
+                <ModernInfoItem
+                  icon={<ClockCircleOutlined />}
+                  label={t('records.submitTime')}
+                  value={dayjs(record.submit_time).format('YYYY-MM-DD HH:mm:ss')}
+                  iconGradient={GRADIENT_THEMES.purple}
+                  isMobile={isMobile}
+                />
               </Col>
-              <Col xs={24} sm={12}>
-                <div style={{ marginBottom: 12 }}>
-                  <Text strong>{t('records.problemNumber')}：</Text>
-                  <Button
-                    type="link"
-                    style={{ padding: 0, height: 'auto' }}
-                    onClick={() => window.location.href = `/problem/${record.problem_number}`}
-                  >
-                    <Text code>{record.problem_number}</Text>
-                  </Button>
-                </div>
-              </Col>
-              <Col xs={24} sm={12}>
-                <div style={{ marginBottom: 12 }}>
-                  <Text strong>{t('records.ojType')}：</Text>
-                  <Tag color="blue">{record.oj_type}</Tag>
-                </div>
-              </Col>
-              <Col xs={24} sm={12}>
-                <div style={{ marginBottom: 12 }}>
-                  <Text strong>{t('records.language')}：</Text>
-                  <Tag color="green">{record.language}</Tag>
-                </div>
-              </Col>
-              <Col xs={24} sm={12}>
-                <div style={{ marginBottom: 12 }}>
-                  <Text strong>{t('records.submitTime')}：</Text>
-                  <Text>{dayjs(record.submit_time).format('YYYY-MM-DD HH:mm:ss')}</Text>
-                </div>
-              </Col>
-              <Col xs={24} sm={12}>
-                <div style={{ marginBottom: 12 }}>
-                  <Text strong>{t('records.executionResult')}：</Text>
-                  <Tag
-                    color={getStatusColor(record.execution_result)}
-                    icon={getStatusIcon(record.execution_result)}
-                  >
-                    {getStatusText(record.execution_result, t)}
-                  </Tag>
-                </div>
+              
+              <Col xs={24} md={12}>
+                <ModernInfoItem
+                  icon={<ProjectOutlined />}
+                  label={t('records.problemNumber')}
+                  iconGradient={GRADIENT_THEMES.slate}
+                  isMobile={isMobile}
+                  valueComponent={
+                    <Button
+                      type="link"
+                      style={{ 
+                        padding: 0, 
+                        height: 'auto',
+                        fontFamily: 'monospace',
+                        background: '#f5f5f5',
+                        padding: '4px 8px',
+                        borderRadius: '6px'
+                      }}
+                      onClick={() => window.location.href = `/problem/${record.problem_number}`}
+                    >
+                      #{record.problem_number}
+                    </Button>
+                  }
+                />
+                
+                <ModernInfoItem
+                  icon={<CodeOutlined />}
+                  label={t('records.language')}
+                  iconGradient={GRADIENT_THEMES.success}
+                  isMobile={isMobile}
+                  valueComponent={
+                    <ModernTag type="success" isMobile={isMobile}>
+                      {record.language}
+                    </ModernTag>
+                  }
+                />
+                
+                <ModernInfoItem
+                  icon={<CheckCircleOutlined />}
+                  label={t('records.executionResult')}
+                  iconGradient={getStatusTheme(record.execution_result).gradient}
+                  isMobile={isMobile}
+                  valueComponent={
+                    <ModernTag 
+                      type={getStatusTheme(record.execution_result).tagType}
+                      isMobile={isMobile}
+                    >
+                      {getStatusIcon(record.execution_result)}
+                      <span style={{ marginLeft: 6 }}>
+                        {getStatusText(record.execution_result, t)}
+                      </span>
+                    </ModernTag>
+                  }
+                />
               </Col>
             </Row>
-          </Card>
+          </ModernCard>
 
           {/* Judging information card */}
-          <Card
-            title={
-              <Space>
-                <CheckCircleOutlined style={{ color: '#52c41a' }} />
-                {t('records.judgingInfo')}
-              </Space>
-            }
-            style={{ marginBottom: 24 }}
-            size="small"
+          <ModernCard
+            title={t('records.judgingInfo')}
+            icon={<ThunderboltOutlined />}
+            iconGradient={GRADIENT_THEMES.warning}
+            isMobile={isMobile}
           >
-            <Row gutter={[16, 16]}>
-              <Col xs={24} sm={8}>
-                <div style={{ marginBottom: 12 }}>
-                  <Text strong>{t('records.runtime')}：</Text>
-                  <Text>{record.runtime || '-'}</Text>
-                </div>
+            <Row gutter={isMobile ? [16, 20] : [32, 24]}>
+              <Col xs={24} md={12}>
+                <ModernInfoItem
+                  icon={<ThunderboltOutlined />}
+                  label={t('records.runtime')}
+                  value={formatValue(record.runtime, 'ms', t)}
+                  iconGradient={GRADIENT_THEMES.warning}
+                  isMobile={isMobile}
+                />
+                
+                <ModernInfoItem
+                  icon={<InteractionOutlined />}
+                  label={t('records.runtimePercentile')}
+                  value={record.runtime_percentile ? `${record.runtime_percentile}%` : '-'}
+                  iconGradient={GRADIENT_THEMES.success}
+                  isMobile={isMobile}
+                />
+                
+                <ModernInfoItem
+                  icon={<CheckCircleOutlined />}
+                  label={t('records.totalCorrect')}
+                  value={record.total_correct || '-'}
+                  iconGradient={GRADIENT_THEMES.success}
+                  isMobile={isMobile}
+                />
               </Col>
-              <Col xs={24} sm={8}>
-                <div style={{ marginBottom: 12 }}>
-                  <Text strong>{t('records.memory')}：</Text>
-                  <Text>{record.memory || '-'}</Text>
-                </div>
-              </Col>
-              <Col xs={24} sm={8}>
-                <div style={{ marginBottom: 12 }}>
-                  <Text strong>{t('records.runtimePercentile')}：</Text>
-                  <Text>{record.runtime_percentile ? `${record.runtime_percentile}%` : '-'}</Text>
-                </div>
-              </Col>
-              <Col xs={24} sm={8}>
-                <div style={{ marginBottom: 12 }}>
-                  <Text strong>{t('records.memoryPercentile')}：</Text>
-                  <Text>{record.memory_percentile ? `${record.memory_percentile}%` : '-'}</Text>
-                </div>
-              </Col>
-              <Col xs={24} sm={8}>
-                <div style={{ marginBottom: 12 }}>
-                  <Text strong>{t('records.totalCorrect')}：</Text>
-                  <Text>{record.total_correct || '-'}</Text>
-                </div>
-              </Col>
-              <Col xs={24} sm={8}>
-                <div style={{ marginBottom: 12 }}>
-                  <Text strong>{t('records.totalTestcases')}：</Text>
-                  <Text>{record.total_testcases || '-'}</Text>
-                </div>
+              
+              <Col xs={24} md={12}>
+                <ModernInfoItem
+                  icon={<DatabaseOutlined />}
+                  label={t('records.memory')}
+                  value={formatValue(record.memory, 'MB', t)}
+                  iconGradient={GRADIENT_THEMES.info}
+                  isMobile={isMobile}
+                />
+                
+                <ModernInfoItem
+                  icon={<InteractionOutlined />}
+                  label={t('records.memoryPercentile')}
+                  value={record.memory_percentile ? `${record.memory_percentile}%` : '-'}
+                  iconGradient={GRADIENT_THEMES.cyan}
+                  isMobile={isMobile}
+                />
+                
+                <ModernInfoItem
+                  icon={<BugOutlined />}
+                  label={t('records.totalTestcases')}
+                  value={record.total_testcases || '-'}
+                  iconGradient={GRADIENT_THEMES.slate}
+                  isMobile={isMobile}
+                />
               </Col>
             </Row>
-          </Card>
+          </ModernCard>
 
           {/* Code card */}
-          <Card
-            title={
-              <Space>
-                <CodeOutlined style={{ color: '#722ed1' }} />
-                {t('records.code')}
-              </Space>
-            }
-            style={{ marginBottom: 24 }}
-            size="small"
+          <ModernCard
+            title={t('records.code')}
+            icon={<CodeOutlined />}
+            iconGradient={GRADIENT_THEMES.purple}
+            isMobile={isMobile}
           >
-            <SyntaxHighlighter
-              language={getLanguageForHighlight(record.language)}
-              style={tomorrow}
-              customStyle={{
-                margin: 0,
-                borderRadius: 6,
-                fontSize: '14px',
-                lineHeight: '1.5'
-              }}
-            >
-              {record.code || t('records.noCode')}
-            </SyntaxHighlighter>
-          </Card>
+            <div style={{
+              background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)',
+              padding: '4px',
+              borderRadius: '12px',
+              border: '1px solid #e2e8f0'
+            }}>
+              <SyntaxHighlighter
+                language={getLanguageForHighlight(record.language)}
+                style={tomorrow}
+                customStyle={{
+                  margin: 0,
+                  borderRadius: 8,
+                  fontSize: isMobile ? '12px' : '14px',
+                  lineHeight: '1.5'
+                }}
+              >
+                {record.code || t('records.noCodeAvailable')}
+              </SyntaxHighlighter>
+            </div>
+          </ModernCard>
 
           {/* AI Analysis card */}
-          <Card
-            title={
-              <Space>
-                <RobotOutlined style={{ color: '#faad14' }} />
-                {t('records.aiAnalysis', 'AI Analysis')}
-              </Space>
-            }
-            style={{ marginBottom: 24 }}
-            size="small"
+          <ModernCard
+            title={t('records.aiAnalysis', 'AI Analysis')}
+            icon={<RobotOutlined />}
+            iconGradient={GRADIENT_THEMES.warning}
+            isMobile={isMobile}
           >
             {record.ai_analysis ? (
-              <div style={{ textAlign: 'left' }}>
-                <div style={{ marginBottom: 8 }}>
-                  <Text strong>{t('records.aiSummary', 'Summary')}：</Text>
-                  <Text>{record.ai_analysis.summary}</Text>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 12 : 16 }}>
+                <div style={{
+                  background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
+                  padding: '12px 16px',
+                  borderRadius: '10px',
+                  border: '1px solid #f59e0b20'
+                }}>
+                  <Text strong style={{ color: '#92400e' }}>{t('records.aiSummary', 'Summary')}: </Text>
+                  <Text style={{ color: '#451a03' }}>{record.ai_analysis.summary}</Text>
                 </div>
-                <div style={{ marginBottom: 8 }}>
-                  <Text strong>{t('records.aiSolutionTypes', 'Solution Types')}：</Text>
-                  <Text>{record.ai_analysis.solution_types?.join(', ') || '-'}</Text>
+                
+                <Row gutter={[12, 12]}>
+                  <Col xs={24} sm={12}>
+                    <Text strong>{t('records.aiTimeComplexity', 'Time')}: </Text>
+                    <ModernTag type="warning" isMobile={isMobile}>
+                      {record.ai_analysis.time_complexity}
+                    </ModernTag>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <Text strong>{t('records.aiSpaceComplexity', 'Space')}: </Text>
+                    <ModernTag type="info" isMobile={isMobile}>
+                      {record.ai_analysis.space_complexity}
+                    </ModernTag>
+                  </Col>
+                </Row>
+                
+                <div>
+                  <Text strong>{t('records.aiAlgorithmType', 'Algorithm')}: </Text>
+                  <ModernTag type="default" isMobile={isMobile}>
+                    {record.ai_analysis.algorithm_type}
+                  </ModernTag>
                 </div>
-                <div style={{ marginBottom: 8 }}>
-                  <Text strong>{t('records.aiTimeComplexity', 'Time Complexity')}：</Text>
-                  <Text>{record.ai_analysis.time_complexity}</Text>
-                  <Text strong style={{ marginLeft: 16 }}>{t('records.aiSpaceComplexity', 'Space Complexity')}：</Text>
-                  <Text>{record.ai_analysis.space_complexity}</Text>
+                
+                <div>
+                  <Text strong>{t('records.aiSolutionTypes', 'Solution Types')}: </Text>
+                  <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {record.ai_analysis.solution_types?.map((type, idx) => (
+                      <ModernTag key={idx} type="info" isMobile={isMobile}>
+                        {type}
+                      </ModernTag>
+                    )) || '-'}
+                  </div>
                 </div>
-                <div style={{ marginBottom: 8 }}>
-                  <Text strong>{t('records.aiAlgorithmType', 'Algorithm Type')}：</Text>
-                  <Text>{record.ai_analysis.algorithm_type}</Text>
-                </div>
-                <div style={{ marginBottom: 8 }}>
-                  <Text strong>{t('records.aiCodeQualityScore', 'Code Quality Score')}：</Text>
-                  <Text>{record.ai_analysis.code_quality_score}</Text>
-                  <Text strong style={{ marginLeft: 16 }}>{t('records.aiStyleScore', 'Style Score')}：</Text>
-                  <Text>{record.ai_analysis.style_score}</Text>
-                  <Text strong style={{ marginLeft: 16 }}>{t('records.aiCorrectnessConfidence', 'Correctness Confidence')}：</Text>
-                  <Text>{record.ai_analysis.correctness_confidence}</Text>
-                </div>
-                <div style={{ marginBottom: 8 }}>
-                  <Text strong>{t('records.aiStepAnalysis', 'Step Analysis')}：</Text>
-                  <ul style={{ margin: 0, paddingLeft: 20, textAlign: 'left' }}>
-                    {record.ai_analysis.step_analysis?.map((step, idx) => (
-                      <li key={idx}>{step}</li>
-                    ))}
-                  </ul>
-                </div>
-                <div style={{ marginBottom: 8 }}>
-                  <Text strong>{t('records.aiImprovementSuggestions', 'Improvement Suggestions')}：</Text>
-                  <Text>{record.ai_analysis.improvement_suggestions}</Text>
-                </div>
-                <div style={{ marginBottom: 8 }}>
-                  <Text strong>{t('records.aiEdgeCasesCovered', 'Edge Cases Covered')}：</Text>
-                  <Text>{record.ai_analysis.edge_cases_covered?.join(', ') || '-'}</Text>
-                </div>
-                <div style={{ marginBottom: 8 }}>
-                  <Text strong>{t('records.aiRelatedProblems', 'Related Problems')}：</Text>
-                  <Text>{record.ai_analysis.related_problems?.join(', ') || '-'}</Text>
-                </div>
-                <div style={{ marginBottom: 8 }}>
-                  <Text strong>{t('records.aiRiskAreas', 'Risk Areas')}：</Text>
-                  <Text>{record.ai_analysis.risk_areas?.join(', ') || '-'}</Text>
-                </div>
-                <div style={{ marginBottom: 8 }}>
-                  <Text strong>{t('records.aiLearningPoints', 'Learning Points')}：</Text>
-                  <Text>{record.ai_analysis.learning_points?.join(', ') || '-'}</Text>
-                </div>
-                <div style={{ marginBottom: 8 }}>
-                  <Text strong>{t('records.aiModelVersion', 'Model Version')}：</Text>
-                  <Text>{record.ai_analysis.model_version}</Text>
-                </div>
+                
+                {record.ai_analysis.step_analysis && record.ai_analysis.step_analysis.length > 0 && (
+                  <div>
+                    <Text strong>{t('records.aiStepAnalysis', 'Step Analysis')}:</Text>
+                    <div style={{
+                      marginTop: 8,
+                      background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: '1px solid #bae6fd'
+                    }}>
+                      <ol style={{ margin: 0, paddingLeft: 20, color: '#0369a1' }}>
+                        {record.ai_analysis.step_analysis.map((step, idx) => (
+                          <li key={idx} style={{ marginBottom: 4 }}>{step}</li>
+                        ))}
+                      </ol>
+                    </div>
+                  </div>
+                )}
+                
+                {record.ai_analysis.improvement_suggestions && (
+                  <div style={{
+                    background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: '1px solid #bbf7d0'
+                  }}>
+                    <Text strong style={{ color: '#166534' }}>{t('records.aiImprovementSuggestions', 'Improvements')}: </Text>
+                    <Text style={{ color: '#15803d' }}>{record.ai_analysis.improvement_suggestions}</Text>
+                  </div>
+                )}
               </div>
             ) : (
-              <Text type="secondary">{t('records.noAIAnalysis', 'No AI analysis available')}</Text>
+              <Text type="secondary">{t('records.noAIAnalysis')}</Text>
             )}
-          </Card>
+          </ModernCard>
 
         </Col>
 
         {/* Right column - Sync status and other information */}
         <Col xs={24} lg={8}>
           {/* Sync status card */}
-          <Card
-            title={
-              <Space>
-                <SyncOutlined style={{ color: '#fa8c16' }} />
-                {t('records.syncStatus')}
-              </Space>
-            }
-            style={{ marginBottom: 24 }}
-            size="small"
+          <ModernCard
+            title={t('records.syncStatus')}
+            icon={<SyncOutlined />}
+            iconGradient={GRADIENT_THEMES.warning}
+            isMobile={isMobile}
           >
-            <Row gutter={[16, 16]}>
-              <Col span={24}>
-                <div style={{ marginBottom: 12 }}>
-                  <Text strong>{t('records.ojSyncStatus')}：</Text>
-                  <Tag
-                    color={getStatusColor(record.oj_sync_status)}
-                    icon={getStatusIcon(record.oj_sync_status)}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 12 : 16 }}>
+              <ModernInfoItem
+                icon={<ApiOutlined />}
+                label={t('records.ojSyncStatus')}
+                iconGradient={getStatusTheme(record.oj_sync_status).gradient}
+                isMobile={isMobile}
+                valueComponent={
+                  <ModernTag 
+                    type={getStatusTheme(record.oj_sync_status).tagType}
+                    isMobile={isMobile}
                   >
-                    {getStatusText(record.oj_sync_status, t)}
-                  </Tag>
-                </div>
-              </Col>
-              <Col span={24}>
-                <div style={{ marginBottom: 12 }}>
-                  <Text strong>{t('records.githubSyncStatus')}：</Text>
-                  <Tag
-                    color={getStatusColor(record.github_sync_status)}
-                    icon={getStatusIcon(record.github_sync_status)}
+                    {getStatusIcon(record.oj_sync_status)}
+                    <span style={{ marginLeft: 6 }}>
+                      {getStatusText(record.oj_sync_status, t)}
+                    </span>
+                  </ModernTag>
+                }
+              />
+              
+              <ModernInfoItem
+                icon={<GithubOutlined />}
+                label={t('records.githubSyncStatus')}
+                iconGradient={getStatusTheme(record.github_sync_status).gradient}
+                isMobile={isMobile}
+                valueComponent={
+                  <ModernTag 
+                    type={getStatusTheme(record.github_sync_status).tagType}
+                    isMobile={isMobile}
                   >
-                    {getStatusText(record.github_sync_status, t)}
-                  </Tag>
-                </div>
-              </Col>
-              <Col span={24}>
-                <div style={{ marginBottom: 12 }}>
-                  <Text strong>{t('records.aiSyncStatus')}：</Text>
-                  <Tag
-                    color={getStatusColor(record.ai_sync_status)}
-                    icon={getStatusIcon(record.ai_sync_status)}
+                    {getStatusIcon(record.github_sync_status)}
+                    <span style={{ marginLeft: 6 }}>
+                      {getStatusText(record.github_sync_status, t)}
+                    </span>
+                  </ModernTag>
+                }
+              />
+              
+              <ModernInfoItem
+                icon={<RobotOutlined />}
+                label={t('records.aiSyncStatus')}
+                iconGradient={getStatusTheme(record.ai_sync_status).gradient}
+                isMobile={isMobile}
+                valueComponent={
+                  <ModernTag 
+                    type={getStatusTheme(record.ai_sync_status).tagType}
+                    isMobile={isMobile}
                   >
-                    {getStatusText(record.ai_sync_status, t)}
-                  </Tag>
-                </div>
-              </Col>
-              <Col span={24}>
-                <div style={{ marginBottom: 12 }}>
-                  <Text strong>{t('records.notionSyncStatus')}：</Text>
-                  <Tag
-                    color={getStatusColor(record.notion_sync_status)}
-                    icon={getStatusIcon(record.notion_sync_status)}
+                    {getStatusIcon(record.ai_sync_status)}
+                    <span style={{ marginLeft: 6 }}>
+                      {getStatusText(record.ai_sync_status, t)}
+                    </span>
+                  </ModernTag>
+                }
+              />
+              
+              <ModernInfoItem
+                icon={<FileTextOutlined />}
+                label={t('records.notionSyncStatus')}
+                iconGradient={getStatusTheme(record.notion_sync_status).gradient}
+                isMobile={isMobile}
+                valueComponent={
+                  <ModernTag 
+                    type={getStatusTheme(record.notion_sync_status).tagType}
+                    isMobile={isMobile}
                   >
-                    {getStatusText(record.notion_sync_status, t)}
-                  </Tag>
-                </div>
-              </Col>
-            </Row>
-          </Card>
+                    {getStatusIcon(record.notion_sync_status)}
+                    <span style={{ marginLeft: 6 }}>
+                      {getStatusText(record.notion_sync_status, t)}
+                    </span>
+                  </ModernTag>
+                }
+              />
+            </div>
+          </ModernCard>
 
           {/* Other information card */}
-          <Card
-            title={
-              <Space>
-                <FileTextOutlined style={{ color: '#13c2c2' }} />
-                {t('records.otherInfo')}
-              </Space>
-            }
-            style={{ marginBottom: 24 }}
-            size="small"
+          <ModernCard
+            title={t('records.otherInfo')}
+            icon={<LinkOutlined />}
+            iconGradient={GRADIENT_THEMES.cyan}
+            isMobile={isMobile}
           >
-            <Row gutter={[16, 16]}>
-              <Col span={24}>
-                <div style={{ marginBottom: 12 }}>
-                  <Text strong>{t('records.submissionUrl')}：</Text>
-                  {record.submission_url ? (
-                    <Link href={record.submission_url} target="_blank" rel="noopener noreferrer">
-                      <LinkOutlined /> {t('records.viewSubmission')}
-                    </Link>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 12 : 16 }}>
+              <ModernInfoItem
+                icon={<LinkOutlined />}
+                label={t('records.submissionUrl')}
+                iconGradient={GRADIENT_THEMES.pink}
+                isMobile={isMobile}
+                valueComponent={
+                  isValidUrl(record.submission_url) ? (
+                    <a 
+                      href={record.submission_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{
+                        color: '#ec4899',
+                        fontWeight: 500,
+                        textDecoration: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <EyeOutlined />
+                      {t('records.viewSubmission')}
+                    </a>
                   ) : (
-                    <Text type="secondary">-</Text>
-                  )}
-                </div>
-              </Col>
-              <Col span={24}>
-                <div style={{ marginBottom: 12 }}>
-                  <Text strong>{t('records.gitFilePath')}：</Text>
-                  {record.git_file_path ? (
-                    <Link href={record.git_file_path} target="_blank" rel="noopener noreferrer">
-                      <CloudOutlined /> {t('records.viewInGit')}
-                    </Link>
+                    <span style={{ color: '#9ca3af' }}>-</span>
+                  )
+                }
+              />
+              
+              <ModernInfoItem
+                icon={<CloudOutlined />}
+                label={t('records.gitFilePath')}
+                iconGradient={GRADIENT_THEMES.slate}
+                isMobile={isMobile}
+                valueComponent={
+                  isValidUrl(record.git_file_path) ? (
+                    <a 
+                      href={record.git_file_path} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{
+                        color: '#64748b',
+                        fontWeight: 500,
+                        textDecoration: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <EyeOutlined />
+                      {t('records.viewInGit')}
+                    </a>
                   ) : (
-                    <Text type="secondary">-</Text>
-                  )}
-                </div>
-              </Col>
-              <Col span={24}>
-                <div style={{ marginBottom: 12 }}>
-                  <Text strong>{t('records.notionUrl')}：</Text>
-                  {record.notion_url ? (
-                    <Link href={record.notion_url} target="_blank" rel="noopener noreferrer">
-                      <LinkOutlined /> {t('records.viewInNotion')}
-                    </Link>
+                    <span style={{ color: '#9ca3af' }}>-</span>
+                  )
+                }
+              />
+              
+              <ModernInfoItem
+                icon={<FileTextOutlined />}
+                label={t('records.notionUrl')}
+                iconGradient={GRADIENT_THEMES.info}
+                isMobile={isMobile}
+                valueComponent={
+                  isValidUrl(record.notion_url) ? (
+                    <a 
+                      href={record.notion_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{
+                        color: '#3b82f6',
+                        fontWeight: 500,
+                        textDecoration: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <EyeOutlined />
+                      {t('records.viewInNotion')}
+                    </a>
                   ) : (
-                    <Text type="secondary">-</Text>
-                  )}
-                </div>
-              </Col>
-            </Row>
-          </Card>
+                    <span style={{ color: '#9ca3af' }}>-</span>
+                  )
+                }
+              />
+            </div>
+          </ModernCard>
 
           {/* Topic tags card */}
           {record.topic_tags && record.topic_tags.length > 0 && (
-            <Card
-              title={
-                <Space>
-                  <BookOutlined style={{ color: '#1890ff' }} />
-                  {t('records.topicTags')}
-                </Space>
-              }
-              size="small"
+            <ModernCard
+              title={t('records.topicTags')}
+              icon={<TagsOutlined />}
+              iconGradient={GRADIENT_THEMES.primary}
+              isMobile={isMobile}
             >
-              <div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: isMobile ? 6 : 8 }}>
                 {record.topic_tags.map((tag, index) => (
-                  <Tag key={index} color="blue" style={{ marginBottom: 8 }}>
+                  <ModernTag key={index} type="info" isMobile={isMobile}>
                     {tag}
-                  </Tag>
+                  </ModernTag>
                 ))}
               </div>
-            </Card>
+            </ModernCard>
           )}
         </Col>
       </Row>

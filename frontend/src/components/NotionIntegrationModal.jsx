@@ -10,7 +10,7 @@ const NotionIntegrationModal = ({ visible, onCancel, onSuccess, initialValues })
   const { t } = useTranslation();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [testing, setTesting] = useState(false);
+  const [testing] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -46,7 +46,7 @@ const NotionIntegrationModal = ({ visible, onCancel, onSuccess, initialValues })
 
   const handleTestConnection = async () => {
     try {
-      const values = await form.validateFields();
+      await form.validateFields();
       const result = await notionService.testConnection();
       if (result.connected) {
         message.success(t('notion.connectionSuccess'));

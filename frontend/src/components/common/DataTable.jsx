@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Table, Card, Space, Button, Input, Select, DatePicker, Row, Col, Typography, Alert } from 'antd';
 import { SearchOutlined, FilterOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
+import useDebounce from '../../hooks/useDebounce';
 
 const { RangePicker } = DatePicker;
 const { Text } = Typography;
@@ -20,6 +21,7 @@ const DataTable = ({
   onSelectionChange,
   onRefresh,
   onFilterChange,
+  onClearFilters,
   error = null,
   extra = null,
   className = '',
@@ -28,6 +30,38 @@ const DataTable = ({
   showFilterButtons = true
 }) => {
   const { t } = useTranslation();
+  const [inputValues, setInputValues] = useState({});
+  const [searchInputValue, setSearchInputValue] = useState('');
+  
+  // Create debounced values for search
+  const debouncedSearchValue = useDebounce(searchInputValue, 500);
+  
+  // Create debounced values for all input values at once
+  const debouncedInputValues = useDebounce(inputValues, 500);
+
+  // Handle debounced input changes
+  useEffect(() => {
+    filters.forEach(filter => {
+      if (filter.type === 'input' && filter.onChange) {
+        const debouncedValue = debouncedInputValues[filter.key] || '';
+        if (debouncedValue !== (filter.value || '')) {
+          filter.onChange(debouncedValue);
+        }
+      }
+    });
+  }, [debouncedInputValues, filters]);
+
+  // Handle debounced search changes
+  useEffect(() => {
+    if (searchConfig && searchConfig.onChange && debouncedSearchValue !== (searchConfig.value || '')) {
+      searchConfig.onChange(debouncedSearchValue);
+    }
+  }, [debouncedSearchValue]);
+
+  const handleInputChange = (key, value) => {
+    setInputValues(prev => ({ ...prev, [key]: value }));
+    // Only set the input value, let the debounced useEffect handle the onChange call
+  };
 
   const renderFilters = () => {
     if (filters.length === 0) return null;
@@ -44,9 +78,10 @@ const DataTable = ({
                 {filter.type === 'input' && (
                   <Input
                     placeholder={filter.placeholder}
-                    value={filter.value}
-                    onChange={(e) => filter.onChange && filter.onChange(e.target.value)}
+                    value={inputValues[filter.key] !== undefined ? inputValues[filter.key] : (filter.value || '')}
+                    onChange={(e) => handleInputChange(filter.key, e.target.value)}
                     allowClear
+                    onClear={() => handleInputChange(filter.key, '')}
                   />
                 )}
                 {filter.type === 'select' && (
@@ -86,15 +121,24 @@ const DataTable = ({
               <div style={{ paddingTop: 16 }}>
                 <Button
                   onClick={() => {
-                    filters.forEach(filter => {
-                      if (filter.onClear) {
-                        filter.onClear();
-                      } else if (filter.onChange) {
-                        filter.onChange(filter.type === 'select' ? undefined : '');
+                    // Clear input values in DataTable component
+                    setInputValues({});
+                    setSearchInputValue('');
+                    
+                    if (onClearFilters) {
+                      onClearFilters();
+                    } else {
+                      // Fallback to individual filter clearing
+                      filters.forEach(filter => {
+                        if (filter.onClear) {
+                          filter.onClear();
+                        } else if (filter.onChange) {
+                          filter.onChange(filter.type === 'select' ? undefined : '');
+                        }
+                      });
+                      if (onFilterChange) {
+                        onFilterChange();
                       }
-                    });
-                    if (onFilterChange) {
-                      onFilterChange();
                     }
                   }}
                 >
@@ -115,13 +159,22 @@ const DataTable = ({
                   </Button>
                   <Button
                     onClick={() => {
-                      filters.forEach(filter => {
-                        if (filter.onClear) {
-                          filter.onClear();
-                        } else if (filter.onChange) {
-                          filter.onChange(undefined);
-                        }
-                      });
+                      // Clear input values in DataTable component
+                      setInputValues({});
+                      setSearchInputValue('');
+                      
+                      if (onClearFilters) {
+                        onClearFilters();
+                      } else {
+                        // Fallback to individual filter clearing
+                        filters.forEach(filter => {
+                          if (filter.onClear) {
+                            filter.onClear();
+                          } else if (filter.onChange) {
+                            filter.onChange(undefined);
+                          }
+                        });
+                      }
                     }}
                   >
                     {t('records.clearFilters')}
@@ -166,11 +219,12 @@ const DataTable = ({
             <Input
               placeholder={searchConfig.placeholder}
               prefix={<SearchOutlined />}
-              value={searchConfig.value}
-              onChange={(e) => searchConfig.onChange(e.target.value)}
+              value={searchInputValue !== '' ? searchInputValue : (searchConfig.value || '')}
+              onChange={(e) => setSearchInputValue(e.target.value)}
               onPressEnter={searchConfig.onSearch}
               style={{ width: isMobile ? '100%' : 200, minWidth: isMobile ? 200 : 200 }}
               allowClear
+              onClear={() => setSearchInputValue('')}
             />
           )}
           {onRefresh && (

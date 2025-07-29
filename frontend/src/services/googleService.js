@@ -152,4 +152,5 @@ class GoogleService {
   }
 }
 
-export default new GoogleService();
+const googleService = new GoogleService();
+export default googleService;

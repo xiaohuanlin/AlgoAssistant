@@ -1,11 +1,11 @@
 import React from 'react';
-import { List, Avatar, Tag, Empty, Spin, Typography, Space } from 'antd';
+import { List, Avatar, Tag, Empty, Spin, Typography } from 'antd';
 import { CodeOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import ActionButton from '../common/ActionButton';
 
-const { Text, Paragraph } = Typography;
+const { Text } = Typography;
 
 const RecentActivityList = ({ data = [], loading = false, mobile = false }) => {
   const { t } = useTranslation();

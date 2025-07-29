@@ -64,10 +64,6 @@ const ProblemBankStatistics = () => {
     return Math.round(rate * 100);
   };
 
-  const formatAvgAttempts = (avg) => {
-    if (!avg || avg === 0) return 0;
-    return Math.round(avg * 10) / 10;
-  };
 
   if (loading) {
     return (
