@@ -30,6 +30,7 @@ import reviewService from '../services/reviewService';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { DataTable, StatusIndicator } from '../components/common';
+import ResponsiveStatCard from '../components/dashboard/ResponsiveStatCard';
 import { useNavigate } from 'react-router-dom';
 
 const { TextArea } = Input;
@@ -431,42 +432,42 @@ const Review = () => {
   return (
     <div style={{ padding: '24px' }}>
       {/* Statistics Cards */}
-      <Row gutter={16} style={{ marginBottom: 24 }}>
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title={t('review.totalReviews')}
-              value={stats.total || 0}
-              prefix={<BookOutlined />}
-            />
-          </Card>
+          <ResponsiveStatCard
+            title={t('review.totalReviews')}
+            value={stats.total || 0}
+            prefix={<BookOutlined />}
+            color="#1890ff"
+            loading={loading}
+          />
         </Col>
         <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title={t('review.pendingReviews')}
-              value={stats.pending || 0}
-              prefix={<ClockCircleOutlined />}
-            />
-          </Card>
+          <ResponsiveStatCard
+            title={t('review.pendingReviews')}
+            value={stats.pending || 0}
+            prefix={<ClockCircleOutlined />}
+            color="#faad14"
+            loading={loading}
+          />
         </Col>
         <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title={t('review.completedReviews')}
-              value={stats.completed || 0}
-              prefix={<CheckCircleOutlined />}
-            />
-          </Card>
+          <ResponsiveStatCard
+            title={t('review.completedReviews')}
+            value={stats.completed || 0}
+            prefix={<CheckCircleOutlined />}
+            color="#52c41a"
+            loading={loading}
+          />
         </Col>
         <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title={t('review.overdueReviews')}
-              value={stats.overdue || 0}
-              prefix={<ExclamationCircleOutlined />}
-            />
-          </Card>
+          <ResponsiveStatCard
+            title={t('review.overdueReviews')}
+            value={stats.overdue || 0}
+            prefix={<ExclamationCircleOutlined />}
+            color="#f5222d"
+            loading={loading}
+          />
         </Col>
       </Row>
 

@@ -7,6 +7,8 @@ export { default as notionService } from './notionService';
 export { default as syncTaskService } from './syncTaskService';
 export { default as reviewService } from './reviewService';
 export { default as googleService } from './googleService';
+export { default as dashboardService } from './dashboardService';
+export { default as problemService } from './problemService';
 
 // Export service type constants
 export const SERVICE_TYPES = {

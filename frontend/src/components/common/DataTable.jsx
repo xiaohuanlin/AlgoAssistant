@@ -24,7 +24,8 @@ const DataTable = ({
   extra = null,
   className = '',
   size = 'middle',
-  rowKey = 'id'
+  rowKey = 'id',
+  showFilterButtons = true
 }) => {
   const { t } = useTranslation();
 
@@ -80,31 +81,55 @@ const DataTable = ({
               </div>
             </Col>
           ))}
-          <Col xs={24} sm={12} md={8} lg={6}>
-            <div style={{ paddingTop: 16 }}>
-              <Space>
-                <Button
-                  icon={<FilterOutlined />}
-                  onClick={() => onFilterChange && onFilterChange()}
-                >
-                  {t('common.filter')}
-                </Button>
+          {!showFilterButtons && (
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <div style={{ paddingTop: 16 }}>
                 <Button
                   onClick={() => {
                     filters.forEach(filter => {
                       if (filter.onClear) {
                         filter.onClear();
                       } else if (filter.onChange) {
-                        filter.onChange(undefined);
+                        filter.onChange(filter.type === 'select' ? undefined : '');
                       }
                     });
+                    if (onFilterChange) {
+                      onFilterChange();
+                    }
                   }}
                 >
                   {t('records.clearFilters')}
                 </Button>
-              </Space>
-            </div>
-          </Col>
+              </div>
+            </Col>
+          )}
+          {showFilterButtons && (
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <div style={{ paddingTop: 16 }}>
+                <Space>
+                  <Button
+                    icon={<FilterOutlined />}
+                    onClick={() => onFilterChange && onFilterChange()}
+                  >
+                    {t('common.filter')}
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      filters.forEach(filter => {
+                        if (filter.onClear) {
+                          filter.onClear();
+                        } else if (filter.onChange) {
+                          filter.onChange(undefined);
+                        }
+                      });
+                    }}
+                  >
+                    {t('records.clearFilters')}
+                  </Button>
+                </Space>
+              </div>
+            </Col>
+          )}
         </Row>
       </Card>
     );

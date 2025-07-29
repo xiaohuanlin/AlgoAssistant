@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Typography, Alert, Tabs } from 'antd';
+import { Row, Col, Typography, Tabs } from 'antd';
 import {
   SettingOutlined,
   UserOutlined,
   BookOutlined,
   RobotOutlined,
-  WarningOutlined,
-  InfoCircleOutlined,
+  BellOutlined,
   CodeOutlined,
   GithubOutlined
 } from '@ant-design/icons';
@@ -22,6 +21,8 @@ import authService from '../services/authService';
 import GeminiIntegrationModal from '../components/GeminiIntegrationModal';
 import { useConfig } from '../contexts/ConfigContext';
 import NotificationConfigModal from '../components/NotificationConfigModal';
+import AccountSettingsModal from '../components/AccountSettingsModal';
+import PasswordChangeModal from '../components/PasswordChangeModal';
 
 const { Title, Text } = Typography;
 
@@ -39,6 +40,9 @@ const Settings = () => {
     const [geminiModalVisible, setGeminiModalVisible] = useState(false);
     const [notificationConfig, setNotificationConfig] = useState(null);
     const [notificationModalVisible, setNotificationModalVisible] = useState(false);
+    const [accountModalVisible, setAccountModalVisible] = useState(false);
+    const [passwordModalVisible, setPasswordModalVisible] = useState(false);
+    const [allConfigs, setAllConfigs] = useState({});
 
     useEffect(() => {
         if (authService.isAuthenticated()) {
@@ -51,6 +55,7 @@ const Settings = () => {
         try {
             // Load all configs in one request
             const allConfigs = await configService.getAllConfigs();
+            setAllConfigs(allConfigs);
 
             // Set GitHub config
             if (allConfigs.github_config) {
@@ -144,6 +149,7 @@ const Settings = () => {
         }
     };
 
+
     const items = [
         {
             key: 'integrations',
@@ -207,7 +213,7 @@ const Settings = () => {
                     <Col xs={24} lg={12}>
                         <ConfigCard
                             title={t('settings.notificationSettings') || 'Notification Settings'}
-                            icon={<WarningOutlined style={{ fontSize: '18px', color: '#faad14' }} />}
+                            icon={<BellOutlined style={{ fontSize: '18px', color: '#1890ff' }} />}
                             description={t('settings.notificationDescription') || 'Configure email, push, SMS and other notification methods'}
                             status={notificationConfig?.notification_config?.email?.enabled || notificationConfig?.notification_config?.push?.enabled || notificationConfig?.notification_config?.sms?.enabled ? 'configured' : 'not_configured'}
                             onConfigure={() => setNotificationModalVisible(true)}
@@ -228,23 +234,30 @@ const Settings = () => {
             label: t('settings.accountSettings'),
             children: (
                 <Row gutter={[16, 16]}>
+                    {/* 基本信息管理 */}
                     <Col xs={24} lg={12}>
-                        <Card size="small" style={{ height: '100%' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
-                                <UserOutlined style={{ fontSize: '18px', marginRight: '8px', color: '#1890ff' }} />
-                                <Title level={5} style={{ margin: 0 }}>{t('settings.accountSettings')}</Title>
-                            </div>
-
-                            <Alert
-                                message={t('settings.featureInDevelopment')}
-                                description={t('settings.accountDescription')}
-                                type="info"
-                                showIcon
-                                icon={<InfoCircleOutlined />}
-                                style={{ fontSize: '12px' }}
-                            />
-                        </Card>
+                        <ConfigCard
+                            title={t('accountSettings.basicInfo') || 'Basic Information'}
+                            icon={<UserOutlined style={{ fontSize: '18px', color: '#1890ff' }} />}
+                            description={t('accountSettings.basicInfoDesc') || 'Manage your username, email, nickname and avatar'}
+                            status="configured"
+                            onConfigure={() => setAccountModalVisible(true)}
+                            loading={loading}
+                        />
                     </Col>
+
+                    {/* 密码管理 */}
+                    <Col xs={24} lg={12}>
+                        <ConfigCard
+                            title={t('accountSettings.security') || 'Security Settings'}
+                            icon={<SettingOutlined style={{ fontSize: '18px', color: '#1890ff' }} />}
+                            description={t('accountSettings.securityDesc') || 'Change password and manage account security'}
+                            status="configured"
+                            onConfigure={() => setPasswordModalVisible(true)}
+                            loading={loading}
+                        />
+                    </Col>
+
                 </Row>
             )
         }
@@ -285,6 +298,20 @@ const Settings = () => {
                 onCancel={() => setNotionModalVisible(false)}
                 onSuccess={async () => { setNotionModalVisible(false); await loadConfigs(); }}
                 initialValues={notionConfig}
+            />
+
+            {/* Account Settings Modal */}
+            <AccountSettingsModal
+                visible={accountModalVisible}
+                onCancel={() => setAccountModalVisible(false)}
+                onSuccess={async () => { setAccountModalVisible(false); await loadConfigs(); }}
+            />
+
+            {/* Password Change Modal */}
+            <PasswordChangeModal
+                visible={passwordModalVisible}
+                onCancel={() => setPasswordModalVisible(false)}
+                onSuccess={async () => { setPasswordModalVisible(false); }}
             />
         </div>
     );

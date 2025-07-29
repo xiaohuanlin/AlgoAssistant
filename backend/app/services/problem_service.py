@@ -170,12 +170,20 @@ class ProblemService:
                 query = query.filter(models.Problem.tags.contains([tag]))
         if difficulty:
             query = query.filter(models.Problem.difficulty == difficulty)
-        if records_only:
-            subq = self.db.query(models.Record.problem_id)
-            if user:
-                subq = subq.filter(models.Record.user_id == user.id)
-            subq = subq.distinct()
+
+        # Filter by user's submissions (only_self functionality)
+        if user:
+            subq = (
+                self.db.query(models.Record.problem_id)
+                .filter(models.Record.user_id == user.id)
+                .distinct()
+            )
             query = query.filter(models.Problem.id.in_(subq))
+        elif records_only:
+            # If records_only is True but no specific user, show problems with any records
+            subq = self.db.query(models.Record.problem_id).distinct()
+            query = query.filter(models.Problem.id.in_(subq))
+
         total = query.count()
         sort_column = getattr(models.Problem, sort_by, models.Problem.created_at)
         if sort_order == "asc":
@@ -197,3 +205,79 @@ class ProblemService:
         for problem in problems:
             self.db.refresh(problem)
         return problems
+
+    def get_problem_bank_stats(self, user: models.User) -> dict:
+        """Get problem bank statistics for a specific user"""
+        # Total problems count
+        total_problems = self.db.query(models.Problem).count()
+
+        # Problems by difficulty
+        easy_problems = (
+            self.db.query(models.Problem)
+            .filter(models.Problem.difficulty == "Easy")
+            .count()
+        )
+        medium_problems = (
+            self.db.query(models.Problem)
+            .filter(models.Problem.difficulty == "Medium")
+            .count()
+        )
+        hard_problems = (
+            self.db.query(models.Problem)
+            .filter(models.Problem.difficulty == "Hard")
+            .count()
+        )
+
+        # Problems by source
+        leetcode_problems = (
+            self.db.query(models.Problem)
+            .filter(models.Problem.source == "leetcode")
+            .count()
+        )
+        custom_problems = (
+            self.db.query(models.Problem)
+            .filter(models.Problem.source == "custom")
+            .count()
+        )
+
+        # User-specific statistics
+        # Get distinct problems that user has solved (has accepted records)
+        solved_problems_query = (
+            self.db.query(models.Record.problem_id)
+            .filter(
+                models.Record.user_id == user.id,
+                models.Record.execution_result == "Accepted",
+            )
+            .distinct()
+        )
+        solved_problems = solved_problems_query.count()
+
+        # Total attempts by user
+        total_attempts = (
+            self.db.query(models.Record)
+            .filter(models.Record.user_id == user.id)
+            .count()
+        )
+
+        # Calculate solve rate
+        solve_rate = solved_problems / total_problems if total_problems > 0 else 0
+
+        # Total reviews by user
+        total_reviews = (
+            self.db.query(models.Review)
+            .filter(models.Review.user_id == user.id)
+            .count()
+        )
+
+        return {
+            "total_problems": total_problems,
+            "easy_problems": easy_problems,
+            "medium_problems": medium_problems,
+            "hard_problems": hard_problems,
+            "leetcode_problems": leetcode_problems,
+            "custom_problems": custom_problems,
+            "solved_problems": solved_problems,
+            "total_attempts": total_attempts,
+            "solve_rate": solve_rate,
+            "total_reviews": total_reviews,
+        }

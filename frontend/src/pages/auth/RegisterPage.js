@@ -23,11 +23,26 @@ const RegisterPage = () => {
         password: values.password,
         nickname: values.nickname || values.username,
       });
-      
+
       message.success(t('auth.registerSuccess'));
       navigate('/login');
     } catch (error) {
-      message.error(error.message || t('auth.registerFailed'));
+      console.error('Registration error:', error);
+
+      // Handle specific error messages
+      const errorMessage = error.message || t('auth.registerFailed');
+
+      // If it's a validation error with multiple lines, show each line separately
+      if (errorMessage.includes('\n')) {
+        const lines = errorMessage.split('\n');
+        lines.forEach((line, index) => {
+          setTimeout(() => {
+            message.error(line);
+          }, index * 100); // Small delay between messages
+        });
+      } else {
+        message.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -44,9 +59,9 @@ const RegisterPage = () => {
             </Title>
             <Text type="secondary">{t('app.subtitle')}</Text>
           </div>
-          
+
           <Divider />
-          
+
           <Form
             name="register"
             onFinish={onFinish}
@@ -100,9 +115,9 @@ const RegisterPage = () => {
               rules={[
                 { required: true, message: t('auth.passwordRequired') },
                 { min: 6, message: t('auth.passwordMinLength') },
-                { 
-                  pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 
-                  message: t('auth.passwordPattern') 
+                {
+                  pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+                  message: t('auth.passwordPattern')
                 },
               ]}
             >
@@ -167,4 +182,4 @@ const RegisterPage = () => {
   );
 };
 
-export default RegisterPage; 
+export default RegisterPage;

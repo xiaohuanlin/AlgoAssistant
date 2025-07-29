@@ -92,7 +92,7 @@ class ProblemService {
    */
   async getProblemUserRecords(problemId) {
     try {
-      const response = await api.get(`/api/problem/${problemId}/user-records`);
+      const response = await api.get(API_ENDPOINTS.PROBLEM.USER_RECORDS(problemId));
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -106,7 +106,7 @@ class ProblemService {
    */
   async getProblemStats(problemId) {
     try {
-      const response = await api.get(`/api/problem/${problemId}/stats`);
+      const response = await api.get(API_ENDPOINTS.PROBLEM.STATS(problemId));
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -120,7 +120,20 @@ class ProblemService {
    */
   async getProblemStatistics(problemId) {
     try {
-      const response = await api.get(`/api/problem/${problemId}/statistics`);
+      const response = await api.get(API_ENDPOINTS.PROBLEM.STATISTICS(problemId));
+      return handleApiSuccess(response);
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
+
+  /**
+   * Get problem bank statistics for current user
+   * @returns {Promise<Object>} Problem bank statistics
+   */
+  async getProblemBankStats() {
+    try {
+      const response = await api.get(API_ENDPOINTS.PROBLEM.BANK_STATS);
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));

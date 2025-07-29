@@ -2,6 +2,7 @@ import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app import models
 from app.api import (
@@ -50,6 +51,12 @@ app.include_router(review.router)
 app.include_router(sync_task.router)
 app.include_router(gemini.router)
 app.include_router(problem.router)
+
+# Mount static files for avatar uploads
+uploads_dir = "uploads"
+if not os.path.exists(uploads_dir):
+    os.makedirs(uploads_dir, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 
 @app.get("/")

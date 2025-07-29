@@ -21,3 +21,6 @@ google-genai
 beautifulsoup4
 notion-client
 markdownify
+Pillow
+pytest
+pytest-asyncio

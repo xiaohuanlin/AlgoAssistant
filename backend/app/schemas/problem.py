@@ -63,3 +63,16 @@ class ProblemUserRecordsOut(BaseModel):
 class ProblemListOut(BaseModel):
     total: int
     items: List[ProblemOut]
+
+
+class ProblemBankStatsOut(BaseModel):
+    total_problems: int = Field(..., description="Total number of problems")
+    easy_problems: int = Field(..., description="Number of easy problems")
+    medium_problems: int = Field(..., description="Number of medium problems")
+    hard_problems: int = Field(..., description="Number of hard problems")
+    leetcode_problems: int = Field(..., description="Number of LeetCode problems")
+    custom_problems: int = Field(..., description="Number of custom problems")
+    solved_problems: int = Field(..., description="Number of problems user has solved")
+    total_attempts: int = Field(..., description="Total attempts by user")
+    solve_rate: float = Field(..., description="User's solve rate (0.0 to 1.0)")
+    total_reviews: int = Field(..., description="Total reviews by user")

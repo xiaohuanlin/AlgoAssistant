@@ -31,6 +31,7 @@ import {
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { DataTable, StatusIndicator } from '../components/common';
+import ResponsiveStatCard from '../components/dashboard/ResponsiveStatCard';
 
 import syncTaskService from '../services/syncTaskService';
 import recordsService from '../services/recordsService';
@@ -518,46 +519,42 @@ const SyncTasks = () => {
   return (
     <div style={{ padding: '24px' }}>
       {/* Statistics Cards */}
-      <Row gutter={16} style={{ marginBottom: 24 }}>
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title={t('syncTasks.stats.total')}
-              value={stats.total || 0}
-              prefix={<SyncOutlined />}
-              valueStyle={{ color: '#1890ff' }}
-            />
-          </Card>
+          <ResponsiveStatCard
+            title={t('syncTasks.stats.total')}
+            value={stats.total || 0}
+            prefix={<SyncOutlined />}
+            color="#1890ff"
+            loading={loading}
+          />
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title={t('syncTasks.stats.running')}
-              value={stats.running || 0}
-              prefix={<SyncOutlined spin />}
-              valueStyle={{ color: '#faad14' }}
-            />
-          </Card>
+          <ResponsiveStatCard
+            title={t('syncTasks.stats.running')}
+            value={stats.running || 0}
+            prefix={<SyncOutlined spin />}
+            color="#faad14"
+            loading={loading}
+          />
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title={t('syncTasks.stats.completed')}
-              value={stats.completed || 0}
-              prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Card>
+          <ResponsiveStatCard
+            title={t('syncTasks.stats.completed')}
+            value={stats.completed || 0}
+            prefix={<CheckCircleOutlined />}
+            color="#52c41a"
+            loading={loading}
+          />
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title={t('syncTasks.stats.failed')}
-              value={stats.failed || 0}
-              prefix={<CloseCircleOutlined />}
-              valueStyle={{ color: '#ff4d4f' }}
-            />
-          </Card>
+          <ResponsiveStatCard
+            title={t('syncTasks.stats.failed')}
+            value={stats.failed || 0}
+            prefix={<CloseCircleOutlined />}
+            color="#ff4d4f"
+            loading={loading}
+          />
         </Col>
       </Row>
 

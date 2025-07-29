@@ -195,9 +195,9 @@ def get_records_stats(
         .scalar()
     )
 
-    # Unique problems (deduplicate by problem_title)
+    # Unique problems (deduplicate by problem_id)
     unique_problems = (
-        db.query(func.count(func.distinct(models.Record.problem_title)))
+        db.query(func.count(func.distinct(models.Record.problem_id)))
         .filter(models.Record.user_id == current_user.id)
         .scalar()
     )

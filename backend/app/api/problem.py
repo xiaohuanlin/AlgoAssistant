@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.deps import get_current_user, get_db
 from app.schemas import (
+    ProblemBankStatsOut,
     ProblemBatchCreate,
     ProblemCreate,
     ProblemOut,
@@ -43,6 +44,17 @@ def batch_create_problems(batch_in: ProblemBatchCreate, db: Session = Depends(ge
     service = ProblemService(db)
     problems = service.batch_create_problems(batch_in)
     return [ProblemOut.from_orm(p) for p in problems]
+
+
+@router.get("/stats", response_model=ProblemBankStatsOut)
+def get_problem_bank_stats(
+    db: Session = Depends(get_db),
+    current_user: UserOut = Depends(get_current_user),
+):
+    """Get problem bank statistics for the current user"""
+    service = ProblemService(db)
+    stats = service.get_problem_bank_stats(current_user)
+    return ProblemBankStatsOut(**stats)
 
 
 @router.get("/{problem_id}", response_model=ProblemOut)
@@ -96,6 +108,7 @@ def delete_problem(problem_id: int, db: Session = Depends(get_db)):
 @router.get("/", response_model=ProblemListOut)
 def list_problems(
     db: Session = Depends(get_db),
+    current_user: UserOut = Depends(get_current_user),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     source: Optional[ProblemSource] = Query(None),
@@ -105,6 +118,9 @@ def list_problems(
     sort_by: str = Query("created_at"),
     sort_order: str = Query("desc"),
     records_only: bool = Query(False, description="Only show problems with records"),
+    only_self: bool = Query(
+        False, description="Only show problems with user's own records"
+    ),
 ):
     service = ProblemService(db)
     tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else None
@@ -118,5 +134,6 @@ def list_problems(
         sort_by=sort_by,
         sort_order=sort_order,
         records_only=records_only,
+        user=current_user if only_self else None,
     )
     return ProblemListOut(total=total, items=[ProblemOut.from_orm(p) for p in problems])

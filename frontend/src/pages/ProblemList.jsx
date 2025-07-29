@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button, message, Tag, Modal, Upload, Switch, Space } from 'antd';
-import { BookOutlined, EyeOutlined, PlusOutlined, UploadOutlined } from '@ant-design/icons';
+import { Button, message, Tag, Space } from 'antd';
+import { BookOutlined, EyeOutlined, PlusOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import problemService from '../services/problemService';
 import { useNavigate } from 'react-router-dom';
 import DataTable from '../components/common/DataTable';
 import ActionButton from '../components/common/ActionButton';
+import ProblemBankStatistics from '../components/problem/ProblemBankStatistics';
 
 
 const ProblemList = () => {
@@ -14,11 +15,6 @@ const ProblemList = () => {
   const [loading, setLoading] = useState(false);
   const [problems, setProblems] = useState([]);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
-  const [importModalVisible, setImportModalVisible] = useState(false);
-  const [importing, setImporting] = useState(false);
-  const [importError, setImportError] = useState(null);
-  const [importedCount, setImportedCount] = useState(0);
-  const [fileList, setFileList] = useState([]);
   const [onlySelf, setOnlySelf] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [filters, setFilters] = useState({});
@@ -51,28 +47,6 @@ const ProblemList = () => {
     navigate(`/problem/${problem.id}`);
   };
 
-  const handleImport = async () => {
-    if (!fileList.length) return;
-    setImporting(true);
-    setImportError(null);
-    try {
-      const file = fileList[0].originFileObj;
-      const text = await file.text();
-      const json = JSON.parse(text);
-      if (!Array.isArray(json)) throw new Error('Invalid format: should be an array');
-      await problemService.batchCreateProblems(json);
-      setImportedCount(json.length);
-      setImportModalVisible(false);
-      setFileList([]);
-      message.success(t('problem.createSuccess'));
-      fetchProblems();
-    } catch (error) {
-      setImportError(error.message);
-    } finally {
-      setImporting(false);
-    }
-  };
-
   const handleOnlySelfChange = (checked) => {
     setOnlySelf(checked);
     setPagination(prev => ({ ...prev, current: 1 }));
@@ -97,37 +71,14 @@ const ProblemList = () => {
   const clearFilters = () => {
     setFilters({});
     setSearchValue('');
+    setOnlySelf(false);
     setPagination(prev => ({ ...prev, current: 1 }));
   };
 
-  const importModal = (
-    <Modal
-      title={t('problem.batchImport')}
-      open={importModalVisible}
-      onCancel={() => setImportModalVisible(false)}
-      onOk={handleImport}
-      confirmLoading={importing}
-      okText={t('common.confirm')}
-      cancelText={t('common.cancel')}
-    >
-      <Upload.Dragger
-        accept="application/json"
-        fileList={fileList}
-        beforeUpload={() => false}
-        onRemove={() => setFileList([])}
-        onChange={({ fileList }) => setFileList(fileList.slice(-1))}
-        maxCount={1}
-      >
-        <p className="ant-upload-drag-icon">
-          <UploadOutlined />
-        </p>
-        <p className="ant-upload-text">{t('problem.importTip')}</p>
-        <p className="ant-upload-hint">{t('problem.importHint')}</p>
-      </Upload.Dragger>
-      {importError && <div style={{ color: 'red', marginTop: 8 }}>{importError}</div>}
-      {importedCount > 0 && <div style={{ color: 'green', marginTop: 8 }}>{t('problem.importedCount', { count: importedCount })}</div>}
-    </Modal>
-  );
+  const handleRefresh = () => {
+    // Only refresh data, keep all filters
+    fetchProblems();
+  };
 
   const difficultyColor = {
     Easy: 'success',
@@ -187,6 +138,14 @@ const ProblemList = () => {
 
   const dataTableFilters = [
     {
+      key: 'search',
+      label: t('problem.searchPlaceholder'),
+      type: 'input',
+      placeholder: t('problem.searchPlaceholder'),
+      value: searchValue,
+      onChange: setSearchValue,
+    },
+    {
       key: 'source',
       label: t('problem.source'),
       type: 'select',
@@ -211,31 +170,21 @@ const ProblemList = () => {
         { label: 'Hard', value: 'Hard' },
       ],
     },
+    {
+      key: 'onlySelf',
+      label: t('problem.viewMode'),
+      type: 'select',
+      placeholder: t('problem.viewModePlaceholder'),
+      value: onlySelf ? 'self' : 'all',
+      onChange: (value) => handleOnlySelfChange(value === 'self'),
+      options: [
+        { label: t('problem.allUsers'), value: 'all' },
+        { label: t('problem.onlySelf'), value: 'self' },
+      ],
+    },
   ];
 
-  const searchConfig = {
-    placeholder: t('problem.searchPlaceholder'),
-    value: searchValue,
-    onChange: setSearchValue,
-  };
-
   const headerActions = [
-    {
-      text: (
-        <Switch
-          checked={onlySelf}
-          onChange={handleOnlySelfChange}
-          checkedChildren={t('problem.onlySelf')}
-          unCheckedChildren={t('problem.allUsers')}
-        />
-      ),
-      type: 'default',
-    },
-    {
-      text: t('problem.batchImport'),
-      icon: <UploadOutlined />,
-      onClick: () => setImportModalVisible(true),
-    },
     {
       text: t('common.create'),
       type: 'primary',
@@ -246,6 +195,9 @@ const ProblemList = () => {
 
   return (
     <div>
+      {/* Statistics Section */}
+      <ProblemBankStatistics />
+
       <DataTable
         title={t('problem.listTitle')}
         subtitle={t('problem.subtitle')}
@@ -261,12 +213,11 @@ const ProblemList = () => {
           },
         }}
         filters={dataTableFilters}
-        searchConfig={searchConfig}
         actions={headerActions}
-        onRefresh={fetchProblems}
+        onRefresh={handleRefresh}
         onFilterChange={clearFilters}
+        showFilterButtons={false}
       />
-      {importModal}
     </div>
   );
 };

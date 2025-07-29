@@ -21,11 +21,26 @@ const LoginPage = () => {
         username: values.username,
         password: values.password,
       });
-      
+
       message.success(t('auth.loginSuccess'));
       navigate('/');
     } catch (error) {
-      message.error(error.message || t('auth.loginFailed'));
+      console.error('Login error:', error);
+
+      // Handle specific error messages
+      const errorMessage = error.message || t('auth.loginFailed');
+
+      // If it's a validation error with multiple lines, show each line separately
+      if (errorMessage.includes('\n')) {
+        const lines = errorMessage.split('\n');
+        lines.forEach((line, index) => {
+          setTimeout(() => {
+            message.error(line);
+          }, index * 100); // Small delay between messages
+        });
+      } else {
+        message.error(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -42,9 +57,9 @@ const LoginPage = () => {
             </Title>
             <Text type="secondary">{t('app.subtitle')}</Text>
           </div>
-          
+
           <Divider />
-          
+
           <Form
             name="login"
             onFinish={onFinish}
@@ -111,4 +126,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage; 
+export default LoginPage;

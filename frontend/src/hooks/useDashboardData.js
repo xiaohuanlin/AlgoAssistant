@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
+import dashboardService from '../services/dashboardService';
 import api from '../services/api';
 import { useResponsive } from './useResponsive';
 
-const MOBILE_PRIORITY_CONFIG = {
-  critical: ['basicStats'],
-  important: ['recentActivity'],
-  secondary: ['categoryStats', 'progressTrend'],
-  expandable: ['errorAnalysis']
-};
+// const MOBILE_PRIORITY_CONFIG = {
+//   critical: ['basicStats'],
+//   important: ['recentActivity'],
+//   secondary: ['categoryStats', 'progressTrend'],
+//   expandable: ['errorAnalysis']
+// };
 
 export const useDashboardData = () => {
   const { isMobile } = useResponsive();
@@ -23,19 +24,17 @@ export const useDashboardData = () => {
 
   const fetchBasicStats = useCallback(async () => {
     try {
-      const response = await api.get('/api/dashboard/stats/basic');
-      return response.data;
+      return await dashboardService.getBasicStats();
     } catch (error) {
-      throw new Error(error.response?.data?.detail || 'Failed to load basic stats');
+      throw new Error(error.message || 'Failed to load basic stats');
     }
   }, []);
 
   const fetchCategoryStats = useCallback(async () => {
     try {
-      const response = await api.get('/api/dashboard/stats/categories');
-      return response.data;
+      return await dashboardService.getCategoryStats();
     } catch (error) {
-      throw new Error(error.response?.data?.detail || 'Failed to load category stats');
+      throw new Error(error.message || 'Failed to load category stats');
     }
   }, []);
 
@@ -257,11 +256,12 @@ export const useDashboardSection = (sectionName, dependencies = []) => {
     } finally {
       setLoading(false);
     }
-  }, [sectionName]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sectionName, ...dependencies]);
 
   useEffect(() => {
     fetchSection();
-  }, [fetchSection, ...dependencies]);
+  }, [fetchSection]);
 
   return {
     data,

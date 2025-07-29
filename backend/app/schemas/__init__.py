@@ -11,18 +11,19 @@ from .google import (
 )
 from .leetcode import LeetCodeConfig, LeetCodeConnectionTestOut
 from .notification import (
-    EmailSettings,
     EmailChannelConfig,
-    PushChannelConfig,
-    SmsChannelConfig,
+    EmailSettings,
     NotificationConfig,
     NotificationConfigResponse,
     NotificationConfigUpdate,
+    PushChannelConfig,
     PushSettings,
+    SmsChannelConfig,
     SmsSettings,
 )
 from .notion import NotionConfig, NotionConnectionTestOut
 from .problem import (
+    ProblemBankStatsOut,
     ProblemBatchCreate,
     ProblemCreate,
     ProblemOut,
@@ -45,6 +46,8 @@ from .record import (
 )
 from .review import ReviewOut
 from .user import (
+    PasswordChange,
+    PasswordChangeResponse,
     UserConfigCreate,
     UserConfigOut,
     UserCreate,
@@ -63,6 +66,8 @@ __all__ = [
     UserLoginResponse,
     UserOut,
     UserUpdate,
+    PasswordChange,
+    PasswordChangeResponse,
     UserConfigCreate,
     UserConfigOut,
     GitHubConfig,
@@ -105,4 +110,5 @@ __all__ = [
     ProblemSource,
     ReviewOut,
     ProblemBatchCreate,
+    ProblemBankStatsOut,
 ]

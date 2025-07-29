@@ -1,12 +1,18 @@
+import os
+import uuid
 from datetime import datetime, timedelta
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi.responses import JSONResponse
 from jose import jwt
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.deps import get_current_user, get_db
 from app.schemas import (
+    PasswordChange,
+    PasswordChangeResponse,
     UserConfigCreate,
     UserConfigOut,
     UserCreate,
@@ -43,7 +49,9 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
     expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode = {"sub": db_user.username, "exp": expire}
     access_token = jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
-    return UserLoginResponse(access_token=access_token, token_type="bearer")
+    return UserLoginResponse(
+        access_token=access_token, token_type="bearer", user=db_user
+    )
 
 
 @router.get("/me", response_model=UserOut)
@@ -77,11 +85,97 @@ def update_profile(
     if user.username is not None:
         db_user.username = user.username
     if user.password is not None:
-        db_user.password_hash = security.hash_password(user.password)
+        db_user.password_hash = security.get_password_hash(user.password)
 
     db.commit()
     db.refresh(db_user)
     return db_user
+
+
+@router.post("/change-password", response_model=PasswordChangeResponse)
+def change_password(
+    password_data: PasswordChange,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """Change user password with current password verification."""
+    service = UserService(db)
+    db_user = service.get_user_by_username(current_user.username)
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Verify current password
+    if not security.verify_password(
+        password_data.current_password, db_user.password_hash
+    ):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    # Update password
+    db_user.password_hash = security.get_password_hash(password_data.new_password)
+    db_user.updated_at = datetime.utcnow()
+
+    db.commit()
+    db.refresh(db_user)
+
+    return PasswordChangeResponse(
+        message="Password changed successfully", updated_at=db_user.updated_at
+    )
+
+
+@router.post("/upload-avatar")
+async def upload_avatar(
+    file: UploadFile = File(...),
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Upload user avatar image."""
+    # Validate file type
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Only image files are allowed")
+
+    # Validate file size (2MB limit)
+    file_size = 0
+    content = await file.read()
+    file_size = len(content)
+
+    if file_size > 2 * 1024 * 1024:  # 2MB in bytes
+        raise HTTPException(status_code=400, detail="File size must be less than 2MB")
+
+    # Create upload directory if it doesn't exist
+    upload_dir = "uploads/avatars"
+    os.makedirs(upload_dir, exist_ok=True)
+
+    # Generate unique filename
+    file_extension = os.path.splitext(file.filename)[1] if file.filename else ".jpg"
+    unique_filename = f"{uuid.uuid4()}{file_extension}"
+    file_path = os.path.join(upload_dir, unique_filename)
+
+    # Save file
+    try:
+        with open(file_path, "wb") as f:
+            f.write(content)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save file: {str(e)}")
+
+    # Update user avatar in database
+    service = UserService(db)
+    db_user = service.get_user_by_username(current_user.username)
+    if db_user:
+        # Store relative path for avatar URL
+        avatar_url = f"/uploads/avatars/{unique_filename}"
+        db_user.avatar = avatar_url
+        db_user.updated_at = datetime.utcnow()
+        db.commit()
+        db.refresh(db_user)
+
+    return JSONResponse(
+        status_code=200,
+        content={
+            "message": "Avatar uploaded successfully",
+            "url": avatar_url,
+            "filename": unique_filename,
+        },
+    )
 
 
 @router.post("/config", response_model=UserConfigOut)

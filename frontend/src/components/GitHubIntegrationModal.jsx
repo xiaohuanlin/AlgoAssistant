@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input, Button, Select, message, Steps, Table, Typography, Divider } from 'antd';
-import { SaveOutlined, CheckCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { Form, Input, Select, message, Table, Typography, Divider } from 'antd';
+import { GithubOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import configService from '../services/configService';
 import gitSyncService from '../services/gitSyncService';
+import ConfigModal from './common/ConfigModal';
 
 const { TextArea } = Input;
 const { Title, Text } = Typography;
@@ -13,7 +14,6 @@ const GitHubIntegrationModal = ({ visible, onCancel, onSuccess, initialValues })
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
-  const [currentStep] = useState(0);
 
   const permissionsData = [
     {
@@ -84,7 +84,7 @@ const GitHubIntegrationModal = ({ visible, onCancel, onSuccess, initialValues })
     }
   }, [visible, initialValues, form]);
 
-  const handleSubmit = async (values) => {
+  const handleSave = async (values) => {
     setLoading(true);
     try {
       await configService.updateGitConfig(values);
@@ -93,183 +93,161 @@ const GitHubIntegrationModal = ({ visible, onCancel, onSuccess, initialValues })
       onCancel();
     } catch (error) {
       message.error(t('git.configError') + ': ' + error.message);
+      throw error;
     } finally {
       setLoading(false);
     }
   };
 
-  const testConnection = async () => {
-    const values = form.getFieldsValue();
-    if (!values.repo_url || !values.token) {
-      message.warning(t('git.configRequired'));
-      return;
-    }
-
+  const handleTestConnection = async () => {
     setTesting(true);
     try {
+      const values = await form.validateFields();
+      if (!values.repo_url || !values.token) {
+        message.warning(t('git.configRequired'));
+        return { success: false };
+      }
+
       const response = await gitSyncService.testGitConnection(values);
       if (response.connected) {
         message.success(t('git.connectionSuccess'));
+        return { success: true };
       } else {
         message.error(t('git.connectionFailed') + ': ' + (response.message || ''));
+        return { success: false };
       }
     } catch (error) {
+      if (error.errorFields) {
+        message.warning(t('git.configRequired'));
+        return { success: false };
+      }
       message.error(t('git.connectionError') + ': ' + error.message);
+      throw error;
     } finally {
       setTesting(false);
     }
   };
 
-  const steps = [
+  const helpSections = [
     {
-      title: t('git.configTitle'),
-      content: (
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-        >
-          <Form.Item
-            name="repo_url"
-            label={t('git.repoUrl')}
-            rules={[{ required: true, message: t('git.repoUrlRequired') }]}
-          >
-            <Input
-              placeholder="https://github.com/username/repo.git"
-              size="large"
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="branch"
-            label={t('git.branch')}
-            rules={[{ required: true, message: t('git.branchRequired') }]}
-          >
-            <Select size="large">
-              <Select.Option value="main">main</Select.Option>
-              <Select.Option value="master">master</Select.Option>
-              <Select.Option value="develop">develop</Select.Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="base_path"
-            label={t('git.filePath')}
-            rules={[{ required: true, message: t('git.filePathRequired') }]}
-          >
-            <Input
-              placeholder="solutions/leetcode/"
-              size="large"
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="file_template"
-            label={t('git.fileTemplate')}
-            rules={[{ required: true, message: t('git.fileTemplateRequired') }]}
-            extra={t('git.fileTemplateHelp')}
-          >
-            <Input
-              placeholder="solution_{problem_title}_{date}_{time}.{ext}"
-              size="large"
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="commit_template"
-            label={t('git.commitTemplate')}
-            extra={t('git.commitTemplateHelp')}
-          >
-            <TextArea
-              placeholder="feat: solve {problem_title} - {date}"
-              rows={3}
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="token"
-            label={t('git.token')}
-            rules={[{ required: true, message: t('git.tokenRequired') }]}
-            extra={
-              <div>
-                <div>{t('git.tokenHelp')}</div>
-                <div style={{ marginTop: '8px' }}>
-                  <strong>{t('git.howToGetToken')}</strong>
-                  <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                    <div>1. {t('git.tokenStep1')}</div>
-                    <div>2. {t('git.tokenStep2')}</div>
-                    <div>3. {t('git.tokenStep3')}</div>
-                    <div>4. {t('git.tokenStep4')}</div>
-                    <div>5. {t('git.tokenStep5')}</div>
-                  </div>
-                </div>
-              </div>
-            }
-          >
-            <Input.Password size="large" />
-          </Form.Item>
-
-          <Divider />
-
-          <div style={{ marginBottom: '16px' }}>
-            <Title level={5} style={{ marginBottom: '8px' }}>
-              <InfoCircleOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
-              {t('git.permissionsTitle')}
-            </Title>
-            <Text type="secondary" style={{ fontSize: '14px' }}>
-              {t('git.permissionsDescription')}
-            </Text>
-          </div>
-
-          <Table
-            dataSource={permissionsData}
-            columns={permissionsColumns}
-            pagination={false}
-            size="small"
-            style={{ marginBottom: '16px' }}
-            scroll={{ x: 600 }}
-          />
-
-
-        </Form>
-      )
+      title: t('git.howToGetToken'),
+      steps: [
+        t('git.tokenStep1'),
+        t('git.tokenStep2'),
+        t('git.tokenStep3'),
+        t('git.tokenStep4'),
+        t('git.tokenStep5'),
+      ]
     }
   ];
 
+  const renderPermissionsSection = () => (
+    <>
+      <Divider />
+      <div style={{ marginBottom: '16px' }}>
+        <Title level={5} style={{ marginBottom: '8px' }}>
+          <InfoCircleOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
+          {t('git.permissionsTitle')}
+        </Title>
+        <Text type="secondary" style={{ fontSize: '14px' }}>
+          {t('git.permissionsDescription')}
+        </Text>
+      </div>
+      <Table
+        dataSource={permissionsData}
+        columns={permissionsColumns}
+        pagination={false}
+        size="small"
+        style={{ marginBottom: '16px' }}
+        scroll={{ x: 600 }}
+      />
+    </>
+  );
+
   return (
-    <Modal
-      title={t('git.configTitle')}
-      open={visible}
+    <ConfigModal
+      visible={visible}
       onCancel={onCancel}
-      footer={[
-        <div key="footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Button
-            icon={<CheckCircleOutlined />}
-            loading={testing}
-            onClick={testConnection}
-          >
-            {t('git.testConnection')}
-          </Button>
-          <div>
-            <Button onClick={onCancel} style={{ marginRight: '8px' }}>
-              {t('common.cancel')}
-            </Button>
-            <Button
-              type="primary"
-              loading={loading}
-              icon={<SaveOutlined />}
-              onClick={() => form.submit()}
-            >
-              {t('git.saveConfig')}
-            </Button>
-          </div>
-        </div>
-      ]}
-      width={700}
+      title={t('git.title')}
+      icon={<GithubOutlined />}
+      description={t('settings.githubDescription')}
+      width={800}
+      onSave={handleSave}
+      onTest={handleTestConnection}
+      loading={loading}
+      testLoading={testing}
+      form={form}
+      helpSections={helpSections}
+      okText={t('git.saveConfig')}
     >
-      <Steps current={currentStep} items={steps} style={{ marginBottom: '24px' }} />
-      {steps[currentStep].content}
-    </Modal>
+      <Form.Item
+        name="repo_url"
+        label={t('git.repoUrl')}
+        rules={[{ required: true, message: t('git.repoUrlRequired') }]}
+      >
+        <Input
+          placeholder="https://github.com/username/repo.git"
+          size="large"
+        />
+      </Form.Item>
+
+      <Form.Item
+        name="branch"
+        label={t('git.branch')}
+        rules={[{ required: true, message: t('git.branchRequired') }]}
+      >
+        <Select size="large">
+          <Select.Option value="main">main</Select.Option>
+          <Select.Option value="master">master</Select.Option>
+          <Select.Option value="develop">develop</Select.Option>
+        </Select>
+      </Form.Item>
+
+      <Form.Item
+        name="base_path"
+        label={t('git.filePath')}
+        rules={[{ required: true, message: t('git.filePathRequired') }]}
+      >
+        <Input
+          placeholder="solutions/leetcode/"
+          size="large"
+        />
+      </Form.Item>
+
+      <Form.Item
+        name="file_template"
+        label={t('git.fileTemplate')}
+        rules={[{ required: true, message: t('git.fileTemplateRequired') }]}
+        extra={t('git.fileTemplateHelp')}
+      >
+        <Input
+          placeholder="solution_{problem_title}_{date}_{time}.{ext}"
+          size="large"
+        />
+      </Form.Item>
+
+      <Form.Item
+        name="commit_template"
+        label={t('git.commitTemplate')}
+        extra={t('git.commitTemplateHelp')}
+      >
+        <TextArea
+          placeholder="feat: solve {problem_title} - {date}"
+          rows={3}
+        />
+      </Form.Item>
+
+      <Form.Item
+        name="token"
+        label={t('git.token')}
+        rules={[{ required: true, message: t('git.tokenRequired') }]}
+        extra={t('git.tokenHelp')}
+      >
+        <Input.Password size="large" />
+      </Form.Item>
+
+      {renderPermissionsSection()}
+    </ConfigModal>
   );
 };
 

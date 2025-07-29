@@ -7,8 +7,8 @@ from app.schemas.gemini import GeminiConfig
 from app.schemas.github import GitHubConfig
 from app.schemas.google import GoogleConfig
 from app.schemas.leetcode import LeetCodeConfig
-from app.schemas.notion import NotionConfig
 from app.schemas.notification import NotificationConfig
+from app.schemas.notion import NotionConfig
 
 
 class UserBase(BaseModel):
@@ -119,6 +119,34 @@ class UserUpdate(BaseModel):
         min_length=6,
         max_length=128,
         description="New password for the account. Will be hashed before storage.",
+    )
+
+
+class PasswordChange(BaseModel):
+    """Schema for changing user password with current password verification."""
+
+    current_password: str = Field(
+        ...,
+        description="Current password for verification. Must match the existing password in the database.",
+    )
+    new_password: str = Field(
+        ...,
+        min_length=6,
+        max_length=128,
+        description="New password for the account. Must be at least 6 characters long for security.",
+    )
+
+
+class PasswordChangeResponse(BaseModel):
+    """Response schema for successful password change."""
+
+    message: str = Field(
+        default="Password changed successfully",
+        description="Success message indicating the password has been updated.",
+    )
+    updated_at: datetime = Field(
+        ...,
+        description="Timestamp when the password was changed in ISO 8601 format (UTC timezone).",
     )
 
 

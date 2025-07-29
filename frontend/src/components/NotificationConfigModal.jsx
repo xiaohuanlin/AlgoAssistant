@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Form, Input, Button, Switch, Select, Collapse, message, Alert } from 'antd';
-import { SaveOutlined } from '@ant-design/icons';
+import { Form, Input, Switch, Select, Collapse, message } from 'antd';
+import { BellOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import configService from '../services/configService';
+import ConfigModal from './common/ConfigModal';
 
 const { Panel } = Collapse;
 
@@ -26,9 +27,9 @@ const NotificationConfigModal = ({ visible, onCancel, onSuccess, initialValues }
     }
   }, [visible, initialValues, form]);
 
-  const handleSave = async () => {
+  const handleSave = async (values) => {
+    setLoading(true);
     try {
-      const values = await form.validateFields();
       const notification_config = ["email", "push", "sms"].reduce((acc, channel) => {
         const c = values[channel];
         if (c && c.enabled === true) {
@@ -36,42 +37,47 @@ const NotificationConfigModal = ({ visible, onCancel, onSuccess, initialValues }
         }
         return acc;
       }, {});
-      setLoading(true);
+
       await configService.updateConfigs({ notification_config: Object.keys(notification_config).length === 0 ? null : notification_config });
       message.success(t('notificationConfig.saveSuccess') || 'Save successful');
       onSuccess && onSuccess(notification_config);
       onCancel();
     } catch (error) {
-      if (error.errorFields) return;
       message.error(t('notificationConfig.saveError') + ': ' + error.message);
+      throw error;
     } finally {
       setLoading(false);
     }
   };
 
+  const helpSections = [
+    {
+      title: t('notificationConfig.title') + ' 说明',
+      steps: [
+        '启用后可通过邮件、推送、短信等方式接收复习提醒、任务到期等通知。',
+        '邮件通知需填写有效邮箱、SMTP服务器及授权码。',
+        '推送需填写设备Token和平台类型。',
+        '短信需填写手机号和服务商。',
+        '可设置通知频率（如每日、每周）。',
+        '建议优先配置常用渠道，确保能及时收到重要提醒。'
+      ]
+    }
+  ];
+
   return (
-    <Modal
-      title={t('notificationConfig.title') || 'Notification Settings'}
-      open={visible}
+    <ConfigModal
+      visible={visible}
       onCancel={onCancel}
-      width={700}
-      footer={[
-        <Button key="cancel" onClick={onCancel}>{t('common.cancel')}</Button>,
-        <Button key="save" type="primary" loading={loading} icon={<SaveOutlined />} onClick={() => form.submit()}>{t('common.save')}</Button>
-      ]}
+      title={t('notificationConfig.title')}
+      icon={<BellOutlined />}
+      description={t('notificationConfig.description')}
+      width={800}
+      onSave={handleSave}
+      loading={loading}
+      form={form}
+      helpSections={helpSections}
+      okText={t('common.save')}
     >
-      <Alert
-        type="info"
-        showIcon
-        style={{ marginBottom: 16 }}
-        message={<span dangerouslySetInnerHTML={{ __html: t('notificationConfig.help') }} />}
-      />
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={handleSave}
-        style={{ padding: '20px 0' }}
-      >
         <Collapse defaultActiveKey={['email', 'push', 'sms']}>
           <Panel header={t('notificationConfig.email')} key="email">
             <Form.Item name={["email", "enabled"]} label={t('notificationConfig.enabled')} valuePropName="checked">
@@ -80,16 +86,16 @@ const NotificationConfigModal = ({ visible, onCancel, onSuccess, initialValues }
             <Form.Item name={["email", "settings", "email"]} label={t('notificationConfig.emailAddress')} rules={[{ type: 'email', required: true, message: t('notificationConfig.emailRequired') }]}>
               <Input placeholder={t('notificationConfig.emailAddressPlaceholder')} />
             </Form.Item>
-            <Form.Item name={["email", "settings", "smtp_server"]} label={t('notificationConfig.smtpServer')}>
+            <Form.Item name={["email", "settings", "smtp_server"]} label={t('notificationConfig.smtpServer')} rules={[{ required: true, message: 'Please enter SMTP server' }]}>
               <Input placeholder={t('notificationConfig.smtpServerPlaceholder')} />
             </Form.Item>
-            <Form.Item name={["email", "settings", "smtp_port"]} label={t('notificationConfig.smtpPort')}>
+            <Form.Item name={["email", "settings", "smtp_port"]} label={t('notificationConfig.smtpPort')} rules={[{ required: true, message: 'Please enter SMTP port' }]}>
               <Input type="number" placeholder={t('notificationConfig.smtpPortPlaceholder')} />
             </Form.Item>
-            <Form.Item name={["email", "settings", "password"]} label={t('notificationConfig.emailPassword')}>
+            <Form.Item name={["email", "settings", "password"]} label={t('notificationConfig.emailPassword')} rules={[{ required: true, message: 'Please enter email password' }]}>
               <Input.Password placeholder={t('notificationConfig.emailPasswordPlaceholder')} />
             </Form.Item>
-            <Form.Item name={["email", "frequency"]} label={t('notificationConfig.frequency')}>
+            <Form.Item name={["email", "frequency"]} label={t('notificationConfig.frequency')} rules={[{ required: true, message: 'Please select frequency' }]}>
               <Select options={frequencyOptions} />
             </Form.Item>
           </Panel>
@@ -97,16 +103,16 @@ const NotificationConfigModal = ({ visible, onCancel, onSuccess, initialValues }
             <Form.Item name={["push", "enabled"]} label={t('notificationConfig.enabled')} valuePropName="checked">
               <Switch />
             </Form.Item>
-            <Form.Item name={["push", "settings", "device_token"]} label={t('notificationConfig.deviceToken')}>
+            <Form.Item name={["push", "settings", "device_token"]} label={t('notificationConfig.deviceToken')} rules={[{ required: true, message: 'Please enter device token' }]}>
               <Input placeholder={t('notificationConfig.deviceTokenPlaceholder')} />
             </Form.Item>
-            <Form.Item name={["push", "settings", "platform"]} label={t('notificationConfig.platform')}>
+            <Form.Item name={["push", "settings", "platform"]} label={t('notificationConfig.platform')} rules={[{ required: true, message: 'Please select platform' }]}>
               <Select options={[
                 { value: 'ios', label: t('notificationConfig.platformIOS') },
                 { value: 'android', label: t('notificationConfig.platformAndroid') }
               ]} />
             </Form.Item>
-            <Form.Item name={["push", "frequency"]} label={t('notificationConfig.frequency')}>
+            <Form.Item name={["push", "frequency"]} label={t('notificationConfig.frequency')} rules={[{ required: true, message: 'Please select frequency' }]}>
               <Select options={frequencyOptions} />
             </Form.Item>
           </Panel>
@@ -114,22 +120,21 @@ const NotificationConfigModal = ({ visible, onCancel, onSuccess, initialValues }
             <Form.Item name={["sms", "enabled"]} label={t('notificationConfig.enabled')} valuePropName="checked">
               <Switch />
             </Form.Item>
-            <Form.Item name={["sms", "settings", "phone_number"]} label={t('notificationConfig.phoneNumber')}>
+            <Form.Item name={["sms", "settings", "phone_number"]} label={t('notificationConfig.phoneNumber')} rules={[{ required: true, message: 'Please enter phone number' }]}>
               <Input placeholder={t('notificationConfig.phoneNumberPlaceholder')} />
             </Form.Item>
-            <Form.Item name={["sms", "settings", "provider"]} label={t('notificationConfig.provider')}>
+            <Form.Item name={["sms", "settings", "provider"]} label={t('notificationConfig.provider')} rules={[{ required: true, message: 'Please select provider' }]}>
               <Select options={[
                 { value: 'twilio', label: t('notificationConfig.providerTwilio') },
                 { value: 'aliyun', label: t('notificationConfig.providerAliyun') }
               ]} />
             </Form.Item>
-            <Form.Item name={["sms", "frequency"]} label={t('notificationConfig.frequency')}>
+            <Form.Item name={["sms", "frequency"]} label={t('notificationConfig.frequency')} rules={[{ required: true, message: 'Please select frequency' }]}>
               <Select options={frequencyOptions} />
             </Form.Item>
           </Panel>
         </Collapse>
-      </Form>
-    </Modal>
+    </ConfigModal>
   );
 };
 

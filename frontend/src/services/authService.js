@@ -105,6 +105,22 @@ class AuthService {
   }
 
   /**
+   * Change user password
+   * @param {Object} passwordData - Password data
+   * @param {string} passwordData.current_password - Current password
+   * @param {string} passwordData.new_password - New password
+   * @returns {Promise<Object>} Change result
+   */
+  async changePassword(passwordData) {
+    try {
+      const response = await api.post('/api/users/change-password', passwordData);
+      return handleApiSuccess(response);
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
+
+  /**
    * Get user config
    * @returns {Promise<Object>} User config
    */

@@ -61,6 +61,7 @@ export const API_ENDPOINTS = {
     DETAIL: (id) => `/api/records/${id}`,
     UPDATE: (id) => `/api/records/${id}`,
     DELETE: (id) => `/api/records/${id}`,
+    STATS: '/api/records/stats',
     TAGS: '/api/records/tags',
     ASSIGN_TAGS: (id) => `/api/records/${id}/tags`,
     UPDATE_TAG_WIKI: (tagId) => `/api/records/tags/${tagId}/wiki`,
@@ -178,6 +179,17 @@ export const API_ENDPOINTS = {
     UPDATE: (id) => `/api/problem/${id}`,
     DELETE: (id) => `/api/problem/${id}`,
     BATCH_CREATE: '/api/problem/batch-create',
+    USER_RECORDS: (id) => `/api/problem/${id}/user-records`,
+    STATS: (id) => `/api/problem/${id}/stats`,
+    STATISTICS: (id) => `/api/problem/${id}/statistics`,
+    BANK_STATS: '/api/problem/stats',
+  },
+
+  // Dashboard
+  DASHBOARD: {
+    BASIC_STATS: '/api/dashboard/stats/basic',
+    CATEGORY_STATS: '/api/dashboard/stats/categories',
+    OVERVIEW: '/api/dashboard/overview',
   },
 };
 
@@ -186,30 +198,70 @@ export const handleApiError = (error) => {
   if (error.response) {
     // Server responded with error status
     const { status, data } = error.response;
+
+    // Handle detailed validation errors (422 status)
+    if (status === 422 && data.detail) {
+      // If detail is an array of validation errors (FastAPI style)
+      if (Array.isArray(data.detail)) {
+        const errorMessages = data.detail.map(err => {
+          let fieldName = 'Unknown field';
+          let message = err.msg || err;
+
+          if (err.loc && err.loc.length > 0) {
+            // Get the field name from the last element of loc array
+            fieldName = err.loc[err.loc.length - 1];
+
+            // Translate common field names
+            const fieldTranslations = {
+              'username': 'Username',
+              'email': 'Email',
+              'password': 'Password',
+              'nickname': 'Nickname'
+            };
+            fieldName = fieldTranslations[fieldName] || fieldName;
+          }
+
+          return `${fieldName}: ${message}`;
+        });
+        return `Validation errors:\n${errorMessages.join('\n')}`;
+      }
+      // If detail is a string
+      return data.detail;
+    }
+
     switch (status) {
       case 400:
-        return `Request parameter error: ${data.detail || 'Please check the input data'}`;
+        // Handle both string and object responses
+        if (typeof data.detail === 'string') {
+          return data.detail;
+        } else if (data.message) {
+          return data.message;
+        } else {
+          return `Bad request: ${JSON.stringify(data)}`;
+        }
       case 401:
-        return 'Authentication failed, please login again';
+        return data.detail || 'Authentication failed, please login again';
       case 403:
-        return 'Permission denied, cannot access this resource';
+        return data.detail || 'Permission denied, cannot access this resource';
       case 404:
-        return 'The requested resource does not exist';
+        return data.detail || 'The requested resource does not exist';
+      case 409:
+        return data.detail || 'Resource conflict';
       case 422:
-        return `Data validation failed: ${data.detail || 'Please check the input format'}`;
+        return data.detail || 'Data validation failed';
       case 429:
-        return 'Request too frequent, please try again later';
+        return data.detail || 'Request too frequent, please try again later';
       case 500:
-        return 'Server internal error, please try again later';
+        return data.detail || 'Server internal error, please try again later';
       default:
-        return `Request failed (${status}): ${data.detail || 'Unknown error'}`;
+        return data.detail || data.message || `Request failed with status ${status}`;
     }
   } else if (error.request) {
     // Network error
-    return 'Network connection failed, please check the network settings';
+    return 'Network connection failed, please check your internet connection';
   } else {
     // Other error
-    return `Request error: ${error.message}`;
+    return error.message || 'An unexpected error occurred';
   }
 };
 

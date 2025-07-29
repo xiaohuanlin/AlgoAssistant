@@ -11,7 +11,6 @@ import {
   Statistic,
   Tooltip,
   Tabs,
-  Select,
   Alert,
   Form,
   Input,
@@ -30,8 +29,8 @@ import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 
 import recordsService from '../services/recordsService';
-import gitSyncService from '../services/gitSyncService';
 import { DataTable, StatusIndicator, SyncAction } from '../components/common';
+import ResponsiveStatCard from '../components/dashboard/ResponsiveStatCard';
 import GitSyncAction from '../components/GitSyncAction';
 import GeminiSyncAction from '../components/GeminiSyncAction';
 import NotionSyncAction from '../components/NotionSyncAction';
@@ -95,8 +94,6 @@ const Records = () => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({});
   const [selectedRecords, setSelectedRecords] = useState([]);
-  const [batchSyncLoading, setBatchSyncLoading] = useState(false);
-  const [syncOrder, setSyncOrder] = useState('desc');
   const [filters, setFilters] = useState({});
   const [pagination, setPagination] = useState({
     current: 1,
@@ -123,8 +120,7 @@ const Records = () => {
         recordsService.getRecords({
           ...queryFilters,
           limit: pagination.pageSize,
-          offset: (pagination.current - 1) * pagination.pageSize,
-          sort_order: syncOrder
+          offset: (pagination.current - 1) * pagination.pageSize
         }),
         recordsService.getStats()
       ]);
@@ -141,7 +137,7 @@ const Records = () => {
     } finally {
       setLoading(false);
     }
-  }, [filters, pagination.current, pagination.pageSize, syncOrder, t]);
+  }, [filters, pagination.current, pagination.pageSize, t]);
 
   useEffect(() => {
     loadRecords();
@@ -156,24 +152,6 @@ const Records = () => {
     message.info(t('records.ojSyncNotImplemented'));
   };
 
-  const handleBatchSync = async () => {
-    if (selectedRecords.length === 0) {
-      message.warning(t('records.selectRecordsFirst'));
-      return;
-    }
-
-    setBatchSyncLoading(true);
-    try {
-      await gitSyncService.batchSync(selectedRecords);
-      message.success(t('git.batchSyncStarted'));
-      setSelectedRecords([]);
-      loadRecords();
-    } catch (error) {
-      message.error(t('git.syncError'));
-    } finally {
-      setBatchSyncLoading(false);
-    }
-  };
 
   const handleFilter = (values) => {
     const newFilters = {};
@@ -405,53 +383,48 @@ const Records = () => {
       icon: <PlusOutlined />,
       onClick: () => navigate('/records/create')
     },
-    {
-      text: `${t('git.batchSync')} (${selectedRecords.length})`,
-      icon: <SyncOutlined />,
-      onClick: handleBatchSync,
-      loading: batchSyncLoading,
-      disabled: selectedRecords.length === 0
-    }
   ];
 
   return (
     <div style={{ padding: '24px' }}>
       {/* Statistics Cards */}
-      <Row gutter={16} style={{ marginBottom: 24 }}>
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title={t('records.totalSubmissions')}
-              value={stats.total_submissions || 0}
-              prefix={<BookOutlined />}
-            />
-          </Card>
+          <ResponsiveStatCard
+            title={t('records.totalSubmissions')}
+            value={stats.total_submissions || 0}
+            prefix={<BookOutlined />}
+            color="#1890ff"
+            loading={loading}
+          />
         </Col>
         <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title={t('records.solvedProblems')}
-              value={stats.accepted_submissions || 0}
-              prefix={<CheckCircleOutlined />}
-            />
-          </Card>
+          <ResponsiveStatCard
+            title={t('records.solvedProblems')}
+            value={stats.accepted_submissions || 0}
+            prefix={<CheckCircleOutlined />}
+            color="#52c41a"
+            loading={loading}
+          />
         </Col>
         <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title={t('records.successRate')}
-              value={stats.success_rate || 0}
-              suffix="%"
-            />
-          </Card>
+          <ResponsiveStatCard
+            title={t('records.successRate')}
+            value={stats.success_rate || 0}
+            suffix="%"
+            prefix={<SyncOutlined />}
+            color={stats.success_rate >= 70 ? "#52c41a" : stats.success_rate >= 40 ? "#faad14" : "#f5222d"}
+            loading={loading}
+          />
         </Col>
         <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title={t('records.uniqueProblems')}
-              value={stats.unique_problems || 0}
-            />
-          </Card>
+          <ResponsiveStatCard
+            title={t('records.uniqueProblems')}
+            value={stats.unique_problems || 0}
+            prefix={<EyeOutlined />}
+            color="#fa8c16"
+            loading={loading}
+          />
         </Col>
       </Row>
 
@@ -474,19 +447,6 @@ const Records = () => {
         onRefresh={() => loadRecords()}
         onFilterChange={handleFilter}
         actions={actions}
-        extra={
-          <Space>
-            <Text strong>{t('git.syncOrder')}:</Text>
-            <Select
-              value={syncOrder}
-              onChange={setSyncOrder}
-              style={{ width: 120 }}
-            >
-              <Select.Option value="asc">{t('git.timeAsc')}</Select.Option>
-              <Select.Option value="desc">{t('git.timeDesc')}</Select.Option>
-            </Select>
-          </Space>
-        }
       />
     </div>
   );
