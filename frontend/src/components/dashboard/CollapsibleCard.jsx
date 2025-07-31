@@ -11,10 +11,12 @@ const CollapsibleCard = ({
   priority = 'important',
   extra = null,
   loading = false,
-  className = ''
+  className = '',
 }) => {
   const { isMobile, touchTargetSize } = useResponsive();
-  const [expanded, setExpanded] = useState(isMobile ? (priority === 'critical') : defaultExpanded);
+  const [expanded, setExpanded] = useState(
+    isMobile ? priority === 'critical' : defaultExpanded,
+  );
 
   const handleToggle = () => {
     setExpanded(!expanded);
@@ -61,7 +63,7 @@ const CollapsibleCard = ({
     >
       <div
         className={`collapsible-content ${expanded ? 'visible' : 'hidden'}`}
-        style={{ display: (expanded || !isMobile) ? 'block' : 'none' }}
+        style={{ display: expanded || !isMobile ? 'block' : 'none' }}
       >
         {children}
       </div>

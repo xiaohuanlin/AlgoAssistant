@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.deps import get_db
 from app.models import Record, SyncStatus, SyncTaskType
-from app.schemas import SyncTaskCreate, SyncTaskOut, SyncTaskListOut, SyncTaskStatsOut
+from app.schemas import SyncTaskCreate, SyncTaskListOut, SyncTaskOut, SyncTaskStatsOut
 from app.services.sync_task_service import SyncTaskService
 from app.tasks import TaskManager
 from app.utils.logger import get_logger
@@ -57,38 +57,42 @@ async def create_sync_task(
 
 @router.get("/", response_model=SyncTaskListOut)
 async def list_sync_tasks(
-    user_id: int = 1, 
+    user_id: int = 1,
     skip: int = 0,
-    offset: int = 0, 
-    limit: int = 100, 
+    offset: int = 0,
+    limit: int = 100,
     id: Optional[int] = None,
     type: Optional[str] = None,
     status: Optional[str] = None,
     created_at_start: Optional[str] = None,
     created_at_end: Optional[str] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     from datetime import datetime
-    
+
     sync_task_service = SyncTaskService(db)
-    
+
     # Parse date filters
     created_after = None
     created_before = None
     if created_at_start:
         try:
-            created_after = datetime.fromisoformat(created_at_start.replace('Z', '+00:00'))
+            created_after = datetime.fromisoformat(
+                created_at_start.replace("Z", "+00:00")
+            )
         except ValueError:
             pass
     if created_at_end:
         try:
-            created_before = datetime.fromisoformat(created_at_end.replace('Z', '+00:00'))
+            created_before = datetime.fromisoformat(
+                created_at_end.replace("Z", "+00:00")
+            )
         except ValueError:
             pass
-    
+
     # Use offset if provided, otherwise fall back to skip for backward compatibility
     actual_offset = offset if offset > 0 else skip
-    
+
     # If filtering by specific ID, return single task in list format
     if id is not None:
         task = sync_task_service.get(id)
@@ -96,32 +100,31 @@ async def list_sync_tasks(
             return SyncTaskListOut(total=1, items=[SyncTaskOut.from_orm(task)])
         else:
             return SyncTaskListOut(total=0, items=[])
-    
+
     # Get filtered tasks
     tasks = sync_task_service.list(
-        user_id=user_id, 
+        user_id=user_id,
         type=type,
         status=status,
-        limit=limit, 
+        limit=limit,
         offset=actual_offset,
         created_after=created_after,
-        created_before=created_before
+        created_before=created_before,
     )
-    
+
     # Get total count without pagination (use a large limit)
     total_tasks = sync_task_service.list(
-        user_id=user_id, 
+        user_id=user_id,
         type=type,
         status=status,
         limit=10000,  # Large limit to get all tasks for count
         offset=0,
         created_after=created_after,
-        created_before=created_before
+        created_before=created_before,
     )
-    
+
     return SyncTaskListOut(
-        total=len(total_tasks), 
-        items=[SyncTaskOut.from_orm(task) for task in tasks]
+        total=len(total_tasks), items=[SyncTaskOut.from_orm(task) for task in tasks]
     )
 
 
@@ -132,27 +135,31 @@ async def get_sync_task_stats(
     type: Optional[str] = None,
     created_at_start: Optional[str] = None,
     created_at_end: Optional[str] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Get sync task statistics with optional filters."""
     from datetime import datetime
-    
+
     sync_task_service = SyncTaskService(db)
-    
+
     # Parse date filters
     created_after = None
     created_before = None
     if created_at_start:
         try:
-            created_after = datetime.fromisoformat(created_at_start.replace('Z', '+00:00'))
+            created_after = datetime.fromisoformat(
+                created_at_start.replace("Z", "+00:00")
+            )
         except ValueError:
             pass
     if created_at_end:
         try:
-            created_before = datetime.fromisoformat(created_at_end.replace('Z', '+00:00'))
+            created_before = datetime.fromisoformat(
+                created_at_end.replace("Z", "+00:00")
+            )
         except ValueError:
             pass
-    
+
     # If filtering by specific ID, get only that task
     if id is not None:
         task = sync_task_service.get(id)
@@ -163,14 +170,14 @@ async def get_sync_task_stats(
     else:
         # Get all tasks matching filters (with large limit to get all)
         tasks = sync_task_service.list(
-            user_id=user_id, 
+            user_id=user_id,
             type=type,
             limit=10000,  # Large limit to get all tasks for stats
             offset=0,
             created_after=created_after,
-            created_before=created_before
+            created_before=created_before,
         )
-    
+
     # Calculate statistics
     stats = {
         "total": len(tasks),
@@ -178,9 +185,9 @@ async def get_sync_task_stats(
         "running": len([t for t in tasks if t.status == "running"]),
         "completed": len([t for t in tasks if t.status == "completed"]),
         "failed": len([t for t in tasks if t.status == "failed"]),
-        "paused": len([t for t in tasks if t.status == "paused"])
+        "paused": len([t for t in tasks if t.status == "paused"]),
     }
-    
+
     return SyncTaskStatsOut(**stats)
 
 
@@ -309,9 +316,9 @@ async def get_review_candidates(
                     "problem_id": record.problem_id,
                     "title": record.problem.title if record.problem else "Unknown",
                     "execution_result": record.execution_result,
-                    "submitted_at": record.submit_time.isoformat()
-                    if record.submit_time
-                    else None,
+                    "submitted_at": (
+                        record.submit_time.isoformat() if record.submit_time else None
+                    ),
                     "language": record.language,
                 }
             )

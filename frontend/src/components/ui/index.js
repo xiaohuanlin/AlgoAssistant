@@ -1,9 +1,9 @@
 /**
  * Modern Design System - Export Index
- * 现代化设计系统组件和样式的统一导出文件
+ * Unified export file for modern design system components and styles
  */
 
-// 导入所有组件和工具
+// Import all components and utilities
 import ModernDesignSystem, {
   GradientPageHeader,
   ModernIconContainer,
@@ -11,13 +11,13 @@ import ModernDesignSystem, {
   ModernInfoItem,
   GradientButton,
   ModernTag,
-  GRADIENT_THEMES
+  GRADIENT_THEMES,
 } from './ModernDesignSystem';
 
-// 导入样式文件
+// Import style files
 import './ModernDesignSystem.css';
 
-// 统一导出
+// Unified export
 export {
   GradientPageHeader,
   ModernIconContainer,
@@ -25,7 +25,7 @@ export {
   ModernInfoItem,
   GradientButton,
   ModernTag,
-  GRADIENT_THEMES
+  GRADIENT_THEMES,
 };
 
 export default ModernDesignSystem;

@@ -59,7 +59,7 @@ class UserConfigService:
             db_config.gemini_config = config.gemini_config
         if config.google_config:
             db_config.google_config = config.google_config
-        if config.notification_config:
+        if hasattr(config, "notification_config"):
             db_config.notification_config = config.notification_config
         self.db.commit()
         self.db.refresh(db_config)

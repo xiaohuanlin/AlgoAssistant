@@ -1,0 +1,192 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: algo_assistant_db_dev
+    environment:
+      POSTGRES_DB: algo_assistant_dev
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres  # pragma: allowlist secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - algo_network_dev
+
+  # Redis queue service
+  redis:
+    image: redis:7-alpine
+    container_name: algo_assistant_redis_dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - algo_network_dev
+
+  # Backend API service (Development)
+  backend:
+    build:
+      context: ./backend
+      target: development
+    container_name: algo_assistant_backend_dev
+    env_file:
+      - ./backend/.env.dev
+    environment:
+      - PYTHONPATH=/app
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/algo_assistant_dev
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ./backend:/app
+      - backend_cache:/app/.mypy_cache
+      - backend_pytest_cache:/app/.pytest_cache
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - algo_network_dev
+    # Override command for development with hot reload
+    command: ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  # Frontend service (Development)
+  frontend:
+    build:
+      context: ./frontend
+    container_name: algo_assistant_frontend_dev
+    env_file:
+      - ./frontend/.env.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+      - FAST_REFRESH=true
+      - REACT_APP_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    networks:
+      - algo_network_dev
+
+  # Celery Worker (Development)
+  celery_worker:
+    build:
+      context: ./backend
+      target: development
+    container_name: algo_assistant_celery_worker_dev
+    command: ["uv", "run", "celery", "-A", "app.celery_app.celery_app", "worker", "--loglevel=INFO", "--concurrency=2", "-Q", "leetcode_sync_queue,git_sync_queue,gemini_sync_queue,notion_sync_queue,notification_queue"]
+    env_file:
+      - ./backend/.env.dev
+    environment:
+      - PYTHONPATH=/app
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/algo_assistant_dev
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ./backend:/app
+    depends_on:
+      backend:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - algo_network_dev
+
+  # Celery Beat (Development - scheduled tasks)
+  celery_beat:
+    build:
+      context: ./backend
+      target: development
+    container_name: algo_assistant_celery_beat_dev
+    command: ["uv", "run", "celery", "-A", "app.celery_app.celery_app", "beat", "--loglevel=INFO", "--pidfile=/tmp/celerybeat.pid"]
+    env_file:
+      - ./backend/.env.dev
+    environment:
+      - PYTHONPATH=/app
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/algo_assistant_dev
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ./backend:/app
+    depends_on:
+      backend:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - algo_network_dev
+
+  # Celery Flower (Development monitoring)
+  flower:
+    build:
+      context: ./backend
+      target: development
+    container_name: algo_assistant_flower_dev
+    command: ["uv", "run", "celery", "-A", "app.celery_app.celery_app", "flower", "--port=5555"]
+    env_file:
+      - ./backend/.env.dev
+    environment:
+      - PYTHONPATH=/app
+      - ENVIRONMENT=development
+      - REDIS_URL=redis://redis:6379/0
+    ports:
+      - "5555:5555"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - redis
+      - celery_worker
+    networks:
+      - algo_network_dev
+
+  # Development tools container
+  dev_tools:
+    build:
+      context: ./backend
+      target: development
+    container_name: algo_assistant_dev_tools
+    volumes:
+      - ./backend:/app
+    working_dir: /app
+    profiles:
+      - tools
+    networks:
+      - algo_network_dev
+    # This container is used for running development commands
+    # docker-compose -f docker-compose.dev.yml --profile tools run dev_tools uv run pytest
+    # docker-compose -f docker-compose.dev.yml --profile tools run dev_tools uv run black .
+
+volumes:
+  postgres_dev_data:
+  redis_dev_data:
+  backend_cache:
+  backend_pytest_cache:
+
+networks:
+  algo_network_dev:
+    driver: bridge

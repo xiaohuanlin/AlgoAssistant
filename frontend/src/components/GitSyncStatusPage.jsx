@@ -3,7 +3,7 @@ import { Card, Row, Col, Statistic, message, Spin } from 'antd';
 import {
   SyncOutlined,
   CheckCircleOutlined,
-  CloseCircleOutlined
+  CloseCircleOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import gitSyncService from '../services/gitSyncService';
@@ -63,7 +63,9 @@ const GitSyncStatusPage = () => {
                   <Statistic
                     title={t('git.syncedRecords')}
                     value={syncStatus.synced_count || 0}
-                    prefix={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
+                    prefix={
+                      <CheckCircleOutlined style={{ color: '#52c41a' }} />
+                    }
                     valueStyle={{ color: '#52c41a' }}
                   />
                 </Col>
@@ -79,7 +81,9 @@ const GitSyncStatusPage = () => {
                   <Statistic
                     title={t('git.failedRecords')}
                     value={syncStatus.failed_count || 0}
-                    prefix={<CloseCircleOutlined style={{ color: '#ff4d4f' }} />}
+                    prefix={
+                      <CloseCircleOutlined style={{ color: '#ff4d4f' }} />
+                    }
                     valueStyle={{ color: '#ff4d4f' }}
                   />
                 </Col>

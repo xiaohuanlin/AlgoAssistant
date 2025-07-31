@@ -9,7 +9,7 @@ const IntegrationCard = ({
   status,
   onConfigure,
   loading = false,
-  children
+  children,
 }) => {
   const { t } = useTranslation();
 
@@ -40,12 +40,10 @@ const IntegrationCard = ({
   };
 
   return (
-    <Card
-      size="small"
-      style={{ height: '100%' }}
-      loading={loading}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
+    <Card size="small" style={{ height: '100%' }} loading={loading}>
+      <div
+        style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}
+      >
         {icon}
         <Space style={{ flex: 1, marginLeft: '8px' }}>
           <span style={{ fontSize: '16px', fontWeight: '500' }}>{title}</span>

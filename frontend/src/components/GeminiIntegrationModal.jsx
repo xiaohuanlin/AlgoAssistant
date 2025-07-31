@@ -13,7 +13,12 @@ const MODEL_OPTIONS = [
   { label: 'Gemini 1.5 Flash', value: 'gemini-1.5-flash' },
 ];
 
-const GeminiIntegrationModal = ({ visible, onCancel, onSuccess, initialValues }) => {
+const GeminiIntegrationModal = ({
+  visible,
+  onCancel,
+  onSuccess,
+  initialValues,
+}) => {
   const { t } = useTranslation();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -55,7 +60,11 @@ const GeminiIntegrationModal = ({ visible, onCancel, onSuccess, initialValues })
         message.success(t('gemini.connectionSuccess'));
         return { success: true };
       } else {
-        message.error(t('gemini.connectionFailed') + ': ' + (result.message || 'Unknown error'));
+        message.error(
+          t('gemini.connectionFailed') +
+            ': ' +
+            (result.message || 'Unknown error'),
+        );
         return { success: false };
       }
     } catch (error) {
@@ -77,8 +86,8 @@ const GeminiIntegrationModal = ({ visible, onCancel, onSuccess, initialValues })
         t('gemini.apiKeyStep3'),
         t('gemini.apiKeyStep4'),
         t('gemini.apiKeyStep5'),
-      ]
-    }
+      ],
+    },
   ];
 
   return (

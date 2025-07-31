@@ -6,7 +6,12 @@ import configService from '../services/configService';
 import notionService from '../services/notionService';
 import ConfigModal from './common/ConfigModal';
 
-const NotionIntegrationModal = ({ visible, onCancel, onSuccess, initialValues }) => {
+const NotionIntegrationModal = ({
+  visible,
+  onCancel,
+  onSuccess,
+  initialValues,
+}) => {
   const { t } = useTranslation();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -19,7 +24,7 @@ const NotionIntegrationModal = ({ visible, onCancel, onSuccess, initialValues })
       } else {
         form.setFieldsValue({
           token: '',
-          db_id: ''
+          db_id: '',
         });
       }
     }
@@ -74,7 +79,7 @@ const NotionIntegrationModal = ({ visible, onCancel, onSuccess, initialValues })
         t('notion.apiKeyStep3'),
         t('notion.apiKeyStep4'),
         t('notion.apiKeyStep5'),
-      ]
+      ],
     },
     {
       title: t('notion.howToGetDatabaseId'),
@@ -82,7 +87,7 @@ const NotionIntegrationModal = ({ visible, onCancel, onSuccess, initialValues })
         t('notion.databaseIdStep1'),
         t('notion.databaseIdStep2'),
         t('notion.databaseIdStep3'),
-      ]
+      ],
     },
     {
       title: t('notion.howToGrantDatabaseAccess'),
@@ -95,8 +100,8 @@ const NotionIntegrationModal = ({ visible, onCancel, onSuccess, initialValues })
         t('notion.databaseAccessStep6'),
         t('notion.databaseAccessStep7'),
       ],
-      content: t('notion.databaseAccessNote')
-    }
+      content: t('notion.databaseAccessNote'),
+    },
   ];
 
   return (
@@ -120,7 +125,7 @@ const NotionIntegrationModal = ({ visible, onCancel, onSuccess, initialValues })
         label={t('notion.apiKey')}
         rules={[
           { required: true, message: t('notion.apiKeyRequired') },
-          { min: 10, message: t('notion.apiKeyInvalid') }
+          { min: 10, message: t('notion.apiKeyInvalid') },
         ]}
       >
         <Input.Password
@@ -134,13 +139,10 @@ const NotionIntegrationModal = ({ visible, onCancel, onSuccess, initialValues })
         label={t('notion.databaseId')}
         rules={[
           { required: true, message: t('notion.databaseIdRequired') },
-          { pattern: /^[a-f0-9]{32}$/, message: t('notion.databaseIdInvalid') }
+          { pattern: /^[a-f0-9]{32}$/, message: t('notion.databaseIdInvalid') },
         ]}
       >
-        <Input
-          placeholder={t('notion.databaseIdPlaceholder')}
-          size="large"
-        />
+        <Input placeholder={t('notion.databaseIdPlaceholder')} size="large" />
       </Form.Item>
     </ConfigModal>
   );

@@ -5,7 +5,7 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined,
   LoadingOutlined,
-  PauseCircleOutlined
+  PauseCircleOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 
@@ -17,7 +17,7 @@ const SyncAction = ({
   size = 'small',
   disabled = false,
   record = null,
-  className = ''
+  className = '',
 }) => {
   const { t } = useTranslation();
 
@@ -28,7 +28,7 @@ const SyncAction = ({
         type: 'default',
         text: t('common.sync'),
         tooltip: t(`${type}.syncTooltip`),
-        onClick: onSync
+        onClick: onSync,
       },
       syncing: {
         icon: <LoadingOutlined />,
@@ -36,29 +36,29 @@ const SyncAction = ({
         text: t('records.syncing'),
         tooltip: t(`${type}.syncingTooltip`),
         loading: true,
-        disabled: true
+        disabled: true,
       },
       synced: {
         icon: <CheckCircleOutlined />,
         type: 'default',
         text: t('records.synced'),
         tooltip: t(`${type}.syncTooltip`),
-        onClick: onSync
+        onClick: onSync,
       },
       failed: {
         icon: <CloseCircleOutlined />,
         type: 'danger',
         text: t('common.retry'),
         tooltip: t(`${type}.retryTooltip`),
-        onClick: onRetry || onSync
+        onClick: onRetry || onSync,
       },
       paused: {
         icon: <PauseCircleOutlined />,
         type: 'default',
         text: t('common.retry'),
         tooltip: t(`${type}.retryTooltip`),
-        onClick: onRetry || onSync
-      }
+        onClick: onRetry || onSync,
+      },
     };
 
     return configs[status] || configs.not_synced;
@@ -74,7 +74,6 @@ const SyncAction = ({
       message.success(t(`${type}.syncStarted`));
     } catch (error) {
       message.error(t(`${type}.syncError`));
-      console.error('Sync action failed:', error);
     }
   };
 
@@ -94,10 +93,10 @@ const SyncAction = ({
   );
 
   return config.tooltip ? (
-    <Tooltip title={config.tooltip}>
-      {button}
-    </Tooltip>
-  ) : button;
+    <Tooltip title={config.tooltip}>{button}</Tooltip>
+  ) : (
+    button
+  );
 };
 
 export default SyncAction;

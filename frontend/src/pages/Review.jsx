@@ -24,17 +24,18 @@ import {
   EyeOutlined,
   ClearOutlined,
   CalendarOutlined,
-  BarChartOutlined
+  BarChartOutlined,
 } from '@ant-design/icons';
 import reviewService from '../services/reviewService';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { DataTable, StatusIndicator } from '../components/common';
+import { formatLocalTime } from '../utils';
 import ResponsiveStatCard from '../components/dashboard/ResponsiveStatCard';
 import {
   GradientPageHeader,
   ModernCard,
-  GRADIENT_THEMES
+  GRADIENT_THEMES,
 } from '../components/ui/ModernDesignSystem';
 import { useNavigate } from 'react-router-dom';
 import useTableFilters from '../hooks/useTableFilters';
@@ -58,13 +59,13 @@ const Review = () => {
   const notificationTypeOptions = [
     { label: 'Email', value: 'email' },
     { label: 'Push', value: 'push' },
-    { label: 'SMS', value: 'sms' }
+    { label: 'SMS', value: 'sms' },
   ];
 
   const notificationStatusOptions = [
     { label: 'Pending to Send', value: 'pending' },
     { label: 'Sent', value: 'sent' },
-    { label: 'Failed', value: 'failed' }
+    { label: 'Failed', value: 'failed' },
   ];
 
   // State management
@@ -75,7 +76,11 @@ const Review = () => {
   const [editingReview, setEditingReview] = useState(null);
   const [form] = Form.useForm();
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
   const [batchLoading, setBatchLoading] = useState(false);
   const [sorter] = useState({ field: 'created_at', order: 'descend' });
 
@@ -85,42 +90,45 @@ const Review = () => {
     handleFilter,
     clearAllFilters,
     createAutoFilterHandler,
-    createFilterClearHandler
+    createFilterClearHandler,
   } = useTableFilters((apiFilters) => {
-    setPagination(prev => ({ ...prev, current: 1 }));
+    setPagination((prev) => ({ ...prev, current: 1 }));
     fetchReviews(apiFilters);
   });
 
-  const fetchReviews = useCallback(async (newFilters = {}) => {
-    setLoading(true);
-    try {
-      const { total, items } = await reviewService.filterReviews({
-        limit: pagination.pageSize,
-        offset: (pagination.current - 1) * pagination.pageSize,
-        sort_by: sorter.field,
-        sort_order: sorter.order === 'descend' ? 'desc' : 'asc',
-        ...newFilters,
-      });
-      setReviews(items || []);
-      setPagination(prev => ({ ...prev, total: total || 0 }));
-      // Only clear selection when filters change, not on pagination
-      if (Object.keys(newFilters).length > 0) {
-        setSelectedRowKeys([]);
+  const fetchReviews = useCallback(
+    async (newFilters = {}) => {
+      setLoading(true);
+      try {
+        const { total, items } = await reviewService.filterReviews({
+          limit: pagination.pageSize,
+          offset: (pagination.current - 1) * pagination.pageSize,
+          sort_by: sorter.field,
+          sort_order: sorter.order === 'descend' ? 'desc' : 'asc',
+          ...newFilters,
+        });
+        setReviews(items || []);
+        setPagination((prev) => ({ ...prev, total: total || 0 }));
+        // Only clear selection when filters change, not on pagination
+        if (Object.keys(newFilters).length > 0) {
+          setSelectedRowKeys([]);
+        }
+      } catch (error) {
+        message.error(t('review.loadError'));
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      message.error(t('review.loadError'));
-      console.error('Load reviews error:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [pagination.current, pagination.pageSize, sorter.field, sorter.order, t]);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [pagination.current, pagination.pageSize, sorter.field, sorter.order, t],
+  );
 
   const fetchStats = useCallback(async () => {
     try {
       const data = await reviewService.getStats(14);
       setStats(data);
     } catch (error) {
-      console.error('Load stats error:', error);
+      // Stats fetch errors are non-critical
     }
   }, []);
 
@@ -134,7 +142,9 @@ const Review = () => {
     form.setFieldsValue({
       wrong_reason: review.wrong_reason,
       review_plan: review.review_plan,
-      next_review_date: review.next_review_date ? dayjs(review.next_review_date) : null,
+      next_review_date: review.next_review_date
+        ? dayjs(review.next_review_date)
+        : null,
       review_count: review.review_count,
       notification_type: review.notification_type,
       notification_status: review.notification_status,
@@ -146,7 +156,9 @@ const Review = () => {
     try {
       await reviewService.updateReview(editingReview.id, {
         ...values,
-        next_review_date: values.next_review_date ? values.next_review_date.toISOString() : undefined,
+        next_review_date: values.next_review_date
+          ? values.next_review_date.toISOString()
+          : undefined,
       });
       message.success(t('review.updateReviewSuccess'));
       setModalVisible(false);
@@ -184,7 +196,6 @@ const Review = () => {
     }
   };
 
-
   const handleViewReview = (record) => {
     navigate(`/review/${record.id}`);
   };
@@ -205,7 +216,9 @@ const Review = () => {
         setBatchLoading(true);
         try {
           const result = await reviewService.deleteAll();
-          message.success(t('review.deleteAllSuccess', { count: result.deleted }));
+          message.success(
+            t('review.deleteAllSuccess', { count: result.deleted }),
+          );
           setSelectedRowKeys([]);
           fetchReviews();
           fetchStats();
@@ -214,10 +227,9 @@ const Review = () => {
         } finally {
           setBatchLoading(false);
         }
-      }
+      },
     });
   };
-
 
   const getReviewStatus = (review) => {
     const now = new Date();
@@ -283,22 +295,32 @@ const Review = () => {
       key: 'review_count',
       width: 100,
       render: (count) => (
-        <Tag color={count > 0 ? 'green' : 'default'}>
-          {count}
-        </Tag>
+        <Tag color={count > 0 ? 'green' : 'default'}>{count}</Tag>
       ),
     },
     {
       title: t('review.nextReview', 'Next Review'),
       dataIndex: 'next_review_date',
       key: 'next_review_date',
-      width: 150,
+      width: 200,
       render: (date, record) => (
-        <StatusIndicator
-          status={getReviewStatus(record)}
-          type="review"
-          size="small"
-        />
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <StatusIndicator
+            status={getReviewStatus(record)}
+            type="review"
+            size="small"
+          />
+          <span style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
+            {formatLocalTime(date)}
+          </span>
+        </div>
       ),
     },
     {
@@ -307,11 +329,7 @@ const Review = () => {
       key: 'notification_status',
       width: 120,
       render: (status) => (
-        <StatusIndicator
-          status={status}
-          type="notification"
-          size="small"
-        />
+        <StatusIndicator status={status} type="notification" size="small" />
       ),
     },
     {
@@ -320,9 +338,7 @@ const Review = () => {
       key: 'notification_type',
       width: 100,
       render: (type) => (
-        <Tag color="blue">
-          {t(`review.type.${type}`, type || 'Unknown')}
-        </Tag>
+        <Tag color="blue">{t(`review.type.${type}`, type || 'Unknown')}</Tag>
       ),
     },
     {
@@ -331,8 +347,8 @@ const Review = () => {
       key: 'notification_sent_at',
       width: 160,
       render: (val) => (
-        <span style={{ fontSize: '12px' }}>
-          {val ? dayjs(val).format('YYYY-MM-DD HH:mm') : '-'}
+        <span style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
+          {formatLocalTime(val)}
         </span>
       ),
     },
@@ -375,16 +391,19 @@ const Review = () => {
       placeholder: t('review.problemId', 'Problem ID'),
       value: filters.problem_id,
       onChange: createAutoFilterHandler('problem_id', 500),
-      onClear: createFilterClearHandler('problem_id')
+      onClear: createFilterClearHandler('problem_id'),
     },
     {
       key: 'problem_title',
       label: t('review.problemTitle', 'Problem Title'),
       type: 'input',
-      placeholder: t('review.problemTitlePlaceholder', 'Search by problem title'),
+      placeholder: t(
+        'review.problemTitlePlaceholder',
+        'Search by problem title',
+      ),
       value: filters.problem_title,
       onChange: createAutoFilterHandler('problem_title', 500),
-      onClear: createFilterClearHandler('problem_title')
+      onClear: createFilterClearHandler('problem_title'),
     },
     {
       key: 'notification_status',
@@ -397,8 +416,8 @@ const Review = () => {
       options: [
         { label: t('review.status.pending', 'Pending'), value: 'pending' },
         { label: t('review.status.sent', 'Sent'), value: 'sent' },
-        { label: t('review.status.failed', 'Failed'), value: 'failed' }
-      ]
+        { label: t('review.status.failed', 'Failed'), value: 'failed' },
+      ],
     },
     {
       key: 'notification_type',
@@ -411,8 +430,8 @@ const Review = () => {
       options: [
         { label: t('review.type.email', 'Email'), value: 'email' },
         { label: t('review.type.push', 'Push'), value: 'push' },
-        { label: t('review.type.sms', 'SMS'), value: 'sms' }
-      ]
+        { label: t('review.type.sms', 'SMS'), value: 'sms' },
+      ],
     },
     {
       key: 'timeRange',
@@ -420,8 +439,12 @@ const Review = () => {
       type: 'dateRange',
       value: filters.timeRange,
       onChange: createAutoFilterHandler('timeRange'),
-      onClear: createFilterClearHandler('timeRange')
-    }
+      onClear: createFilterClearHandler('timeRange'),
+      placeholder: [
+        t('common.startDate', 'Start Date'),
+        t('common.endDate', 'End Date'),
+      ],
+    },
   ];
 
   // Actions configuration
@@ -432,36 +455,44 @@ const Review = () => {
       onClick: handleBatchDelete,
       loading: batchLoading,
       disabled: selectedRowKeys.length === 0,
-      danger: true
+      danger: true,
     },
     {
       text: t('review.deleteAll', 'Delete All'),
       icon: <ClearOutlined />,
       onClick: handleDeleteAll,
       loading: batchLoading,
-      danger: true
-    }
+      danger: true,
+    },
   ];
 
   return (
-    <div style={{
-      maxWidth: 1200,
-      margin: '0 auto',
-      padding: isMobile ? '16px' : '24px'
-    }}>
+    <div
+      style={{
+        maxWidth: 1200,
+        margin: '0 auto',
+        padding: isMobile ? '16px' : '24px',
+      }}
+    >
       {/* Modern Page Header */}
       <GradientPageHeader
-        icon={<CalendarOutlined style={{
-          fontSize: isMobile ? '24px' : '36px',
-          color: 'white'
-        }} />}
+        icon={
+          <CalendarOutlined
+            style={{
+              fontSize: isMobile ? '24px' : '36px',
+              color: 'white',
+            }}
+          />
+        }
         title={t('review.title', 'Reviews')}
-        subtitle={(
+        subtitle={
           <>
-            <BarChartOutlined style={{ fontSize: isMobile ? '16px' : '20px' }} />
+            <BarChartOutlined
+              style={{ fontSize: isMobile ? '16px' : '20px' }}
+            />
             {t('review.manageProblemReviews', 'Manage your problem reviews')}
           </>
-        )}
+        }
         isMobile={isMobile}
         gradient={GRADIENT_THEMES.warning}
       />
@@ -528,9 +559,9 @@ const Review = () => {
           pagination={{
             ...pagination,
             onChange: (page, pageSize) => {
-              setPagination(prev => ({ ...prev, current: page, pageSize }));
+              setPagination((prev) => ({ ...prev, current: page, pageSize }));
               // Don't clear selection when changing pages to allow cross-page selection
-            }
+            },
           }}
           filters={filterConfig}
           selectedRowKeys={selectedRowKeys}
@@ -538,10 +569,18 @@ const Review = () => {
           onRefresh={() => fetchReviews()}
           onFilterChange={() => {
             const currentValues = {};
-            filterConfig.forEach(filter => {
-              if (filter.value !== undefined && filter.value !== null && filter.value !== '') {
+            filterConfig.forEach((filter) => {
+              if (
+                filter.value !== undefined &&
+                filter.value !== null &&
+                filter.value !== ''
+              ) {
                 // Special handling for timeRange which is an array
-                if (filter.key === 'timeRange' && Array.isArray(filter.value) && filter.value.length === 2) {
+                if (
+                  filter.key === 'timeRange' &&
+                  Array.isArray(filter.value) &&
+                  filter.value.length === 2
+                ) {
                   currentValues[filter.key] = filter.value;
                 } else if (filter.key !== 'timeRange') {
                   currentValues[filter.key] = filter.value;
@@ -554,7 +593,8 @@ const Review = () => {
           actions={actions}
           showFilterButtons={false}
           rowKey="id"
-        />      </ModernCard>
+        />{' '}
+      </ModernCard>
 
       {/* Edit review record modal */}
       <Modal
@@ -564,30 +604,58 @@ const Review = () => {
         onCancel={handleCancelEdit}
         width={600}
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmitEdit}
-        >
+        <Form form={form} layout="vertical" onFinish={handleSubmitEdit}>
           <Form.Item
             label={t('review.wrongReason', 'Wrong Reason')}
             name="wrong_reason"
-            rules={[{ required: true, message: t('review.wrongReasonRequired', 'Please enter the wrong reason') }]}
+            rules={[
+              {
+                required: true,
+                message: t(
+                  'review.wrongReasonRequired',
+                  'Please enter the wrong reason',
+                ),
+              },
+            ]}
           >
-            <TextArea rows={3} placeholder={t('review.wrongReasonPlaceholder', 'Describe why you got this problem wrong...')} />
+            <TextArea
+              rows={3}
+              placeholder={t(
+                'review.wrongReasonPlaceholder',
+                'Describe why you got this problem wrong...',
+              )}
+            />
           </Form.Item>
           <Form.Item
             label={t('review.reviewPlan', 'Review Plan')}
             name="review_plan"
-            rules={[{ required: true, message: t('review.reviewPlanRequired', 'Please enter the review plan') }]}
+            rules={[
+              {
+                required: true,
+                message: t(
+                  'review.reviewPlanRequired',
+                  'Please enter the review plan',
+                ),
+              },
+            ]}
           >
-            <TextArea rows={4} placeholder={t('review.reviewPlanPlaceholder', 'Set a specific review plan...')} />
+            <TextArea
+              rows={4}
+              placeholder={t(
+                'review.reviewPlanPlaceholder',
+                'Set a specific review plan...',
+              )}
+            />
           </Form.Item>
           <Form.Item
             label={t('review.nextReview', 'Next Review Date')}
             name="next_review_date"
           >
-            <DatePicker showTime format="YYYY-MM-DD HH:mm" style={{ width: '100%' }} />
+            <DatePicker
+              showTime
+              format="YYYY-MM-DD HH:mm"
+              style={{ width: '100%' }}
+            />
           </Form.Item>
           <Form.Item
             label={t('review.reviewCount', 'Review Count')}
@@ -599,13 +667,33 @@ const Review = () => {
             label={t('review.notificationType', 'Notification Type')}
             name="notification_type"
           >
-            <Select options={notificationTypeOptions.map(opt => ({ ...opt, label: t(`review.type.${opt.value}`, opt.label) }))} allowClear placeholder={t('review.selectNotificationType', 'Select notification type')} />
+            <Select
+              options={notificationTypeOptions.map((opt) => ({
+                ...opt,
+                label: t(`review.type.${opt.value}`, opt.label),
+              }))}
+              allowClear
+              placeholder={t(
+                'review.selectNotificationType',
+                'Select notification type',
+              )}
+            />
           </Form.Item>
           <Form.Item
             label={t('review.notificationStatus', 'Notification Status')}
             name="notification_status"
           >
-            <Select options={notificationStatusOptions.map(opt => ({ ...opt, label: t(`review.status.${opt.value}`, opt.label) }))} allowClear placeholder={t('review.selectNotificationStatus', 'Select notification status')} />
+            <Select
+              options={notificationStatusOptions.map((opt) => ({
+                ...opt,
+                label: t(`review.status.${opt.value}`, opt.label),
+              }))}
+              allowClear
+              placeholder={t(
+                'review.selectNotificationStatus',
+                'Select notification status',
+              )}
+            />
           </Form.Item>
         </Form>
       </Modal>

@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.record import RecordListOut
 from app.schemas.review import ReviewOut
@@ -50,9 +50,7 @@ class ProblemOut(ProblemBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ProblemUserRecordsOut(BaseModel):

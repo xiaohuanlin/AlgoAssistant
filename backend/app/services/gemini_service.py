@@ -148,4 +148,3 @@ Return only the JSON object, no additional text."""
         except Exception as e:
             logger.error(f"Gemini analysis failed: {e}")
             return False, {"error": str(e)}
-

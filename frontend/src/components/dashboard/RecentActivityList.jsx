@@ -2,6 +2,7 @@ import React from 'react';
 import { List, Avatar, Tag, Empty, Spin, Typography } from 'antd';
 import { CodeOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
+import { formatLocalTime } from '../../utils';
 import { useNavigate } from 'react-router-dom';
 import ActionButton from '../common/ActionButton';
 
@@ -26,11 +27,11 @@ const RecentActivityList = ({ data = [], loading = false, mobile = false }) => {
 
   const getLanguageColor = (language) => {
     const colors = {
-      'python': 'blue',
-      'java': 'orange',
-      'cpp': 'purple',
-      'javascript': 'gold',
-      'typescript': 'cyan'
+      python: 'blue',
+      java: 'orange',
+      cpp: 'purple',
+      javascript: 'gold',
+      typescript: 'cyan',
     };
     return colors[language?.toLowerCase()] || 'default';
   };
@@ -38,7 +39,7 @@ const RecentActivityList = ({ data = [], loading = false, mobile = false }) => {
   const formatTime = (timeString) => {
     if (!timeString) return '';
     const date = new Date(timeString);
-    return date.toLocaleDateString();
+    return formatLocalTime(date, 'YYYY-MM-DD');
   };
 
   const handleViewRecord = (recordId) => {
@@ -49,7 +50,9 @@ const RecentActivityList = ({ data = [], loading = false, mobile = false }) => {
 
   const truncateText = (text, maxLength = 100) => {
     if (!text) return '';
-    return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+    return text.length > maxLength
+      ? `${text.substring(0, maxLength)}...`
+      : text;
   };
 
   if (loading) {
@@ -77,7 +80,7 @@ const RecentActivityList = ({ data = [], loading = false, mobile = false }) => {
             borderRadius: '6px',
             marginBottom: '8px',
             padding: mobile ? '8px 12px' : '10px 14px',
-            backgroundColor: '#fafafa'
+            backgroundColor: '#fafafa',
           }}
           extra={
             <ActionButton
@@ -96,10 +99,13 @@ const RecentActivityList = ({ data = [], loading = false, mobile = false }) => {
               />
             }
             title={
-              <Text strong style={{
-                fontSize: mobile ? '13px' : '14px',
-                lineHeight: 1.2
-              }}>
+              <Text
+                strong
+                style={{
+                  fontSize: mobile ? '13px' : '14px',
+                  lineHeight: 1.2,
+                }}
+              >
                 {item.problemTitle || t('records.unknownProblem')}
               </Text>
             }
@@ -107,11 +113,15 @@ const RecentActivityList = ({ data = [], loading = false, mobile = false }) => {
               <div style={{ lineHeight: 1.3 }}>
                 {/* Submit Time */}
                 <div style={{ marginBottom: '4px' }}>
-                  <Text type="secondary" style={{
-                    fontSize: mobile ? '11px' : '12px',
-                    color: '#999'
-                  }}>
-                    {t('records.submitTime')}: {formatTime(item.submissionTime || item.submitTime)}
+                  <Text
+                    type="secondary"
+                    style={{
+                      fontSize: mobile ? '11px' : '12px',
+                      color: '#999',
+                    }}
+                  >
+                    {t('records.submitTime')}:{' '}
+                    {formatTime(item.submissionTime || item.submitTime)}
                   </Text>
                 </div>
 
@@ -122,7 +132,11 @@ const RecentActivityList = ({ data = [], loading = false, mobile = false }) => {
                       <Text type="secondary" style={{ fontSize: '11px' }}>
                         {t('records.problemSource')}:
                       </Text>
-                      <Tag size="small" color="blue" style={{ marginLeft: '2px' }}>
+                      <Tag
+                        size="small"
+                        color="blue"
+                        style={{ marginLeft: '2px' }}
+                      >
                         {item.problemSource}
                       </Tag>
                     </span>
@@ -133,7 +147,7 @@ const RecentActivityList = ({ data = [], loading = false, mobile = false }) => {
                       type="secondary"
                       style={{
                         fontSize: mobile ? '11px' : '12px',
-                        color: '#666'
+                        color: '#666',
                       }}
                       ellipsis={{ tooltip: item.problemDescription }}
                     >
@@ -143,18 +157,22 @@ const RecentActivityList = ({ data = [], loading = false, mobile = false }) => {
                 </div>
 
                 {/* Status and Tags in compact layout */}
-                <div style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: '4px',
-                  alignItems: 'center'
-                }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '4px',
+                    alignItems: 'center',
+                  }}
+                >
                   <Tag
                     color={getStatusColor(item.status || item.executionResult)}
                     size="small"
                     style={{ margin: 0 }}
                   >
-                    {item.status || item.executionResult || t('records.unknown')}
+                    {item.status ||
+                      item.executionResult ||
+                      t('records.unknown')}
                   </Tag>
 
                   {item.language && (
@@ -174,10 +192,13 @@ const RecentActivityList = ({ data = [], loading = false, mobile = false }) => {
                   )}
 
                   {item.runtime && (
-                    <Text type="secondary" style={{
-                      fontSize: '11px',
-                      marginLeft: '6px'
-                    }}>
+                    <Text
+                      type="secondary"
+                      style={{
+                        fontSize: '11px',
+                        marginLeft: '6px',
+                      }}
+                    >
                       {t('records.runtime')}: {item.runtime}
                     </Text>
                   )}

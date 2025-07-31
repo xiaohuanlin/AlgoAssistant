@@ -1,5 +1,5 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
-import { Row, Col, Card, Statistic, Spin, Alert, Button } from 'antd';
+import React, { Suspense, lazy, useState } from 'react';
+import { Row, Col, Card, Statistic, Spin, Alert, Button, Select } from 'antd';
 import {
   ReloadOutlined,
   TrophyOutlined,
@@ -11,7 +11,7 @@ import {
   PieChartOutlined,
   LineChartOutlined,
   HistoryOutlined,
-  ExclamationCircleOutlined
+  ExclamationCircleOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useDashboardData } from '../../hooks/useDashboardData';
@@ -19,17 +19,26 @@ import { useResponsive } from '../../hooks/useResponsive';
 import {
   GradientPageHeader,
   ModernCard,
-  GRADIENT_THEMES
+  GRADIENT_THEMES,
 } from '../../components/ui/ModernDesignSystem';
 
 // Lazy load heavy components for better performance
-const CategoryChart = lazy(() => import('../../components/dashboard/CategoryChart'));
-const ProgressChart = lazy(() => import('../../components/dashboard/ProgressChart'));
-const RecentActivityList = lazy(() => import('../../components/dashboard/RecentActivityList'));
-const ErrorAnalysisPanel = lazy(() => import('../../components/dashboard/ErrorAnalysisPanel'));
+const CategoryChart = lazy(
+  () => import('../../components/dashboard/CategoryChart'),
+);
+const ProgressChart = lazy(
+  () => import('../../components/dashboard/ProgressChart'),
+);
+const RecentActivityList = lazy(
+  () => import('../../components/dashboard/RecentActivityList'),
+);
+const ErrorAnalysisPanel = lazy(
+  () => import('../../components/dashboard/ErrorAnalysisPanel'),
+);
 
 const EnhancedDashboardPage = () => {
   const { t } = useTranslation();
+  const [progressDays, setProgressDays] = useState(30);
   const {
     basicStats,
     categoryStats,
@@ -40,10 +49,16 @@ const EnhancedDashboardPage = () => {
     hasError,
     error,
     refresh,
-    loadProgressTrend
+    loadProgressTrend,
   } = useDashboardData();
 
   const { isMobile, cardGutter, containerPadding } = useResponsive();
+
+  // Handler for changing progress trend period
+  const handleProgressPeriodChange = (days) => {
+    setProgressDays(days);
+    loadProgressTrend(days);
+  };
 
   const getStatsCards = () => {
     if (!basicStats) return [];
@@ -55,7 +70,7 @@ const EnhancedDashboardPage = () => {
         value: basicStats.totalProblems || 0,
         prefix: <CodeOutlined />,
         gradient: 'linear-gradient(135deg, #e3f2fd, #bbdefb)',
-        color: '#1976d2'
+        color: '#1976d2',
       },
       {
         key: 'solved',
@@ -64,7 +79,7 @@ const EnhancedDashboardPage = () => {
         suffix: ` / ${basicStats.totalProblems || 0}`,
         prefix: <CheckCircleOutlined />,
         gradient: 'linear-gradient(135deg, #e8f5e8, #c8e6c9)',
-        color: '#388e3c'
+        color: '#388e3c',
       },
       {
         key: 'review',
@@ -72,7 +87,7 @@ const EnhancedDashboardPage = () => {
         value: basicStats.reviewProblems || 0,
         prefix: <ClockCircleOutlined />,
         gradient: 'linear-gradient(135deg, #fff3e0, #ffcc02)',
-        color: '#f57c00'
+        color: '#f57c00',
       },
       {
         key: 'streak',
@@ -81,19 +96,21 @@ const EnhancedDashboardPage = () => {
         suffix: t('app.days', 'days'),
         prefix: <TrophyOutlined />,
         gradient: 'linear-gradient(135deg, #fce4ec, #f8bbd9)',
-        color: '#c2185b'
-      }
+        color: '#c2185b',
+      },
     ];
   };
 
   if (isLoading && !basicStats) {
     return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '400px'
-      }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '400px',
+        }}
+      >
         <Spin size="large" />
         <span style={{ marginLeft: 16 }}>
           {t('dashboard.loading', 'Loading dashboard data...')}
@@ -120,19 +137,28 @@ const EnhancedDashboardPage = () => {
   }
 
   return (
-    <div style={{
-      maxWidth: 1200,
-      margin: '0 auto',
-      padding: containerPadding
-    }}>
+    <div
+      style={{
+        maxWidth: 1200,
+        margin: '0 auto',
+        padding: containerPadding,
+      }}
+    >
       {/* Modern Page Header */}
       <GradientPageHeader
-        icon={<DashboardOutlined style={{
-          fontSize: isMobile ? '24px' : '36px',
-          color: 'white'
-        }} />}
+        icon={
+          <DashboardOutlined
+            style={{
+              fontSize: isMobile ? '24px' : '36px',
+              color: 'white',
+            }}
+          />
+        }
         title={t('app.dashboard', 'Dashboard')}
-        subtitle={t('app.welcomeToDashboard', 'Welcome to your algorithm learning dashboard')}
+        subtitle={t(
+          'app.welcomeToDashboard',
+          'Welcome to your algorithm learning dashboard',
+        )}
         isMobile={isMobile}
         gradient={GRADIENT_THEMES.primary}
         actions={[
@@ -141,8 +167,8 @@ const EnhancedDashboardPage = () => {
             type: 'primary',
             icon: <ReloadOutlined />,
             onClick: refresh,
-            loading: isLoading
-          }
+            loading: isLoading,
+          },
         ]}
       />
 
@@ -163,13 +189,15 @@ const EnhancedDashboardPage = () => {
                 style={{
                   background: stat.gradient,
                   border: 'none',
-                  borderRadius: '12px'
+                  borderRadius: '12px',
                 }}
               >
                 <Statistic
                   title={stat.title}
                   value={stat.value}
-                  prefix={React.cloneElement(stat.prefix, { style: { color: stat.color } })}
+                  prefix={React.cloneElement(stat.prefix, {
+                    style: { color: stat.color },
+                  })}
                   suffix={stat.suffix}
                   valueStyle={{ color: stat.color, fontWeight: 'bold' }}
                 />
@@ -190,15 +218,20 @@ const EnhancedDashboardPage = () => {
           >
             <Suspense fallback={<Spin />}>
               {categoryStats && categoryStats.length > 0 ? (
-                <CategoryChart data={categoryStats} height={isMobile ? 200 : 300} />
+                <CategoryChart
+                  data={categoryStats}
+                  height={isMobile ? 200 : 300}
+                />
               ) : (
-                <div style={{
-                  height: isMobile ? 200 : 300,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#999'
-                }}>
+                <div
+                  style={{
+                    height: isMobile ? 200 : 300,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#999',
+                  }}
+                >
                   <PieChartOutlined style={{ fontSize: 48, marginRight: 16 }} />
                   {t('dashboard.noData', 'No data available')}
                 </div>
@@ -206,7 +239,7 @@ const EnhancedDashboardPage = () => {
             </Suspense>
           </ModernCard>
         </Col>
-        
+
         <Col xs={24} lg={10}>
           <ModernCard
             title={t('dashboard.progressTrend', 'Progress Trend')}
@@ -214,27 +247,42 @@ const EnhancedDashboardPage = () => {
             iconGradient={GRADIENT_THEMES.success}
             isMobile={isMobile}
             extra={
-              <Button
+              <Select
                 size="small"
-                onClick={() => loadProgressTrend(isMobile ? 7 : 30)}
+                value={progressDays}
+                onChange={handleProgressPeriodChange}
                 disabled={isLoading}
-              >
-                {isMobile ? t('dashboard.lastWeek', 'Last Week') : t('dashboard.lastMonth', 'Last Month')}
-              </Button>
+                style={{ minWidth: 100 }}
+                options={[
+                  { label: t('dashboard.lastWeek', 'Last Week'), value: 7 },
+                  { label: t('dashboard.lastMonth', 'Last Month'), value: 30 },
+                  {
+                    label: t('dashboard.last3Months', 'Last 3 Months'),
+                    value: 90,
+                  },
+                ]}
+              />
             }
           >
             <Suspense fallback={<Spin />}>
               {progressTrend && progressTrend.length > 0 ? (
-                <ProgressChart data={progressTrend} height={isMobile ? 200 : 250} />
+                <ProgressChart
+                  data={progressTrend}
+                  height={isMobile ? 200 : 250}
+                />
               ) : (
-                <div style={{
-                  height: isMobile ? 200 : 250,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#999'
-                }}>
-                  <LineChartOutlined style={{ fontSize: 48, marginRight: 16 }} />
+                <div
+                  style={{
+                    height: isMobile ? 200 : 250,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#999',
+                  }}
+                >
+                  <LineChartOutlined
+                    style={{ fontSize: 48, marginRight: 16 }}
+                  />
                   {t('dashboard.noData', 'No data available')}
                 </div>
               )}
@@ -260,13 +308,15 @@ const EnhancedDashboardPage = () => {
                   mobile={isMobile}
                 />
               ) : (
-                <div style={{
-                  height: 200,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#999'
-                }}>
+                <div
+                  style={{
+                    height: 200,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#999',
+                  }}
+                >
                   <HistoryOutlined style={{ fontSize: 48, marginRight: 16 }} />
                   {t('dashboard.noRecentActivity', 'No recent activity')}
                 </div>
@@ -290,14 +340,18 @@ const EnhancedDashboardPage = () => {
                   mobile={isMobile}
                 />
               ) : (
-                <div style={{
-                  height: 200,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#999'
-                }}>
-                  <ExclamationCircleOutlined style={{ fontSize: 48, marginRight: 16 }} />
+                <div
+                  style={{
+                    height: 200,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#999',
+                  }}
+                >
+                  <ExclamationCircleOutlined
+                    style={{ fontSize: 48, marginRight: 16 }}
+                  />
                   {t('dashboard.noErrors', 'No errors found')}
                 </div>
               )}
@@ -310,7 +364,10 @@ const EnhancedDashboardPage = () => {
       {hasError && basicStats && (
         <Alert
           message={t('dashboard.partialError', 'Partial Load Error')}
-          description={t('dashboard.partialErrorDescription', 'Some data could not be loaded')}
+          description={t(
+            'dashboard.partialErrorDescription',
+            'Some data could not be loaded',
+          )}
           type="warning"
           closable
           showIcon

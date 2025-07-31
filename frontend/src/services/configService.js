@@ -96,8 +96,8 @@ class ConfigService {
         ...currentConfigs,
         leetcode_config: {
           session_cookie: configData.session_cookie,
-          username: configData.username
-        }
+          username: configData.username,
+        },
       };
 
       const response = await api.put(API_ENDPOINTS.USERS.CONFIG, requestData);
@@ -109,7 +109,6 @@ class ConfigService {
 
       return result;
     } catch (error) {
-      console.error('Error updating LeetCode config:', error);
       throw new Error(handleApiError(error));
     }
   }
@@ -129,13 +128,14 @@ class ConfigService {
         branch: configData.branch,
         base_path: configData.base_path,
         file_template: configData.file_template,
-        commit_message_template: configData.commit_template || configData.commit_message_template,
-        token: configData.token
+        commit_message_template:
+          configData.commit_template || configData.commit_message_template,
+        token: configData.token,
       };
 
       const requestData = {
         ...currentConfigs,
-        github_config: githubConfig
+        github_config: githubConfig,
       };
 
       const response = await api.put(API_ENDPOINTS.USERS.CONFIG, requestData);
@@ -147,7 +147,6 @@ class ConfigService {
 
       return result;
     } catch (error) {
-      console.error('Error updating Git config:', error);
       throw new Error(handleApiError(error));
     }
   }
@@ -162,7 +161,7 @@ class ConfigService {
       const currentConfigs = await this.getAllConfigs();
       const requestData = {
         ...currentConfigs,
-        gemini_config: configData
+        gemini_config: configData,
       };
       const response = await api.put(API_ENDPOINTS.USERS.CONFIG, requestData);
       const result = handleApiSuccess(response);
@@ -184,7 +183,7 @@ class ConfigService {
       const currentConfigs = await this.getAllConfigs();
       const requestData = {
         ...currentConfigs,
-        notion_config: configData
+        notion_config: configData,
       };
       const response = await api.put(API_ENDPOINTS.USERS.CONFIG, requestData);
       const result = handleApiSuccess(response);
@@ -216,7 +215,7 @@ class ConfigService {
 
       const requestData = {
         ...currentConfigs,
-        ...configUpdates
+        ...configUpdates,
       };
 
       const response = await api.put(API_ENDPOINTS.USERS.CONFIG, requestData);

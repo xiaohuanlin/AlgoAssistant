@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { List, Tag, Empty, Spin, Button, Modal, Space } from 'antd';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
+import { formatLocalTime } from '../../utils';
 import { useNavigate } from 'react-router-dom';
 import ActionButton from '../common/ActionButton';
 
@@ -11,15 +12,7 @@ const ErrorAnalysisPanel = ({ data, loading = false, mobile = false }) => {
   const [showAllModal, setShowAllModal] = useState(false);
 
   const formatDate = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return formatLocalTime(dateString);
   };
 
   const getErrorTypeColor = (errorType) => {
@@ -69,40 +62,50 @@ const ErrorAnalysisPanel = ({ data, loading = false, mobile = false }) => {
     <List.Item
       style={{
         padding: mobile ? '8px 0' : '12px 0',
-        borderBottom: '1px solid #f0f0f0'
+        borderBottom: '1px solid #f0f0f0',
       }}
-      actions={showActions ? [
-        <ActionButton
-          key="view"
-          type="view"
-          size="small"
-          onClick={() => handleViewProblem(item.problemId)}
-        />,
-        ...(item.needsReview ? [
-          <ActionButton
-            key="review"
-            type="review"
-            size="small"
-            onClick={() => handleViewReview(item.problemId)}
-          />
-        ] : [])
-      ] : null}
+      actions={
+        showActions
+          ? [
+              <ActionButton
+                key="view"
+                type="view"
+                size="small"
+                onClick={() => handleViewProblem(item.problemId)}
+              />,
+              ...(item.needsReview
+                ? [
+                    <ActionButton
+                      key="review"
+                      type="review"
+                      size="small"
+                      onClick={() => handleViewReview(item.problemId)}
+                    />,
+                  ]
+                : []),
+            ]
+          : null
+      }
     >
       <div style={{ fontSize: mobile ? '13px' : '14px', width: '100%' }}>
-        <div style={{
-          fontWeight: 500,
-          marginBottom: '4px',
-          color: '#262626'
-        }}>
+        <div
+          style={{
+            fontWeight: 500,
+            marginBottom: '4px',
+            color: '#262626',
+          }}
+        >
           {item.problemTitle}
         </div>
-        <div style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: mobile ? '4px' : '8px',
-          alignItems: 'center',
-          marginBottom: '4px'
-        }}>
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: mobile ? '4px' : '8px',
+            alignItems: 'center',
+            marginBottom: '4px',
+          }}
+        >
           <Tag
             color={getErrorTypeColor(item.errorType)}
             size={mobile ? 'small' : 'default'}
@@ -120,10 +123,12 @@ const ErrorAnalysisPanel = ({ data, loading = false, mobile = false }) => {
             </Tag>
           )}
         </div>
-        <div style={{
-          color: '#999',
-          fontSize: mobile ? '11px' : '12px'
-        }}>
+        <div
+          style={{
+            color: '#999',
+            fontSize: mobile ? '11px' : '12px',
+          }}
+        >
           {formatDate(item.errorDate)}
         </div>
       </div>
@@ -133,19 +138,23 @@ const ErrorAnalysisPanel = ({ data, loading = false, mobile = false }) => {
   return (
     <div>
       {totalErrorCount > 0 && (
-        <div style={{
-          marginBottom: mobile ? 12 : 16,
-          padding: mobile ? '8px 12px' : '12px 16px',
-          background: '#fff1f0',
-          borderRadius: '6px',
-          border: '1px solid #ffccc7'
-        }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            fontSize: mobile ? '13px' : '14px'
-          }}>
+        <div
+          style={{
+            marginBottom: mobile ? 12 : 16,
+            padding: mobile ? '8px 12px' : '12px 16px',
+            background: '#fff1f0',
+            borderRadius: '6px',
+            border: '1px solid #ffccc7',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: mobile ? '13px' : '14px',
+            }}
+          >
             <ExclamationCircleOutlined style={{ color: '#ff4d4f' }} />
             <span>
               {t('dashboard.totalErrors')}: <strong>{totalErrorCount}</strong>
@@ -167,11 +176,12 @@ const ErrorAnalysisPanel = ({ data, loading = false, mobile = false }) => {
           size="small"
           style={{
             padding: '8px 0',
-            fontSize: mobile ? '12px' : '14px'
+            fontSize: mobile ? '12px' : '14px',
           }}
           onClick={() => setShowAllModal(true)}
         >
-          {t('dashboard.viewAll')} ({recentErrors.length - displayLimit} {t('dashboard.more')})
+          {t('dashboard.viewAll')} ({recentErrors.length - displayLimit}{' '}
+          {t('dashboard.more')})
         </Button>
       )}
 
@@ -185,10 +195,7 @@ const ErrorAnalysisPanel = ({ data, loading = false, mobile = false }) => {
         open={showAllModal}
         onCancel={() => setShowAllModal(false)}
         footer={[
-          <Button
-            key="close"
-            onClick={() => setShowAllModal(false)}
-          >
+          <Button key="close" onClick={() => setShowAllModal(false)}>
             {t('common.close')}
           </Button>,
           <Button
@@ -200,7 +207,7 @@ const ErrorAnalysisPanel = ({ data, loading = false, mobile = false }) => {
             }}
           >
             {t('records.title')}
-          </Button>
+          </Button>,
         ]}
         width={mobile ? '90vw' : 800}
         style={{ top: 20 }}
@@ -220,8 +227,7 @@ const ErrorAnalysisPanel = ({ data, loading = false, mobile = false }) => {
             pagination={{
               pageSize: 10,
               size: 'small',
-              showTotal: (total, range) =>
-                `${range[0]}-${range[1]} / ${total}`,
+              showTotal: (total, range) => `${range[0]}-${range[1]} / ${total}`,
             }}
           />
         </div>

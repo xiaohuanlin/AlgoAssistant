@@ -9,7 +9,12 @@ import ConfigModal from './common/ConfigModal';
 const { TextArea } = Input;
 const { Title, Text } = Typography;
 
-const GitHubIntegrationModal = ({ visible, onCancel, onSuccess, initialValues }) => {
+const GitHubIntegrationModal = ({
+  visible,
+  onCancel,
+  onSuccess,
+  initialValues,
+}) => {
   const { t } = useTranslation();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -21,22 +26,22 @@ const GitHubIntegrationModal = ({ visible, onCancel, onSuccess, initialValues })
       type: t('git.repositoryPermissions'),
       item: t('git.contents'),
       setting: t('git.readAndWrite'),
-      usage: t('git.contentsUsage')
+      usage: t('git.contentsUsage'),
     },
     {
       key: '2',
       type: t('git.repositoryPermissions'),
       item: t('git.metadata'),
       setting: t('git.readOnly'),
-      usage: t('git.metadataUsage')
+      usage: t('git.metadataUsage'),
     },
     {
       key: '3',
       type: t('git.repositoryPermissions'),
       item: t('git.commitStatuses'),
       setting: t('git.readOnly'),
-      usage: t('git.commitStatusesUsage')
-    }
+      usage: t('git.commitStatusesUsage'),
+    },
   ];
 
   const permissionsColumns = [
@@ -44,27 +49,31 @@ const GitHubIntegrationModal = ({ visible, onCancel, onSuccess, initialValues })
       title: t('git.permissionType'),
       dataIndex: 'type',
       key: 'type',
-      width: 150
+      width: 150,
     },
     {
       title: t('git.permissionItem'),
       dataIndex: 'item',
       key: 'item',
-      width: 120
+      width: 120,
     },
     {
       title: t('git.permissionSetting'),
       dataIndex: 'setting',
       key: 'setting',
       width: 120,
-      render: (text) => <Text strong style={{ color: '#52c41a' }}>{text}</Text>
+      render: (text) => (
+        <Text strong style={{ color: '#52c41a' }}>
+          {text}
+        </Text>
+      ),
     },
     {
       title: t('git.permissionUsage'),
       dataIndex: 'usage',
       key: 'usage',
-      ellipsis: true
-    }
+      ellipsis: true,
+    },
   ];
 
   useEffect(() => {
@@ -73,7 +82,7 @@ const GitHubIntegrationModal = ({ visible, onCancel, onSuccess, initialValues })
         branch: 'main',
         base_path: 'solutions/leetcode/',
         file_template: 'solution_{problem_title}_{date}_{time}.{ext}',
-        commit_template: 'feat: solve {problem_title} - {date}'
+        commit_template: 'feat: solve {problem_title} - {date}',
       };
 
       if (initialValues) {
@@ -113,7 +122,9 @@ const GitHubIntegrationModal = ({ visible, onCancel, onSuccess, initialValues })
         message.success(t('git.connectionSuccess'));
         return { success: true };
       } else {
-        message.error(t('git.connectionFailed') + ': ' + (response.message || ''));
+        message.error(
+          t('git.connectionFailed') + ': ' + (response.message || ''),
+        );
         return { success: false };
       }
     } catch (error) {
@@ -137,8 +148,8 @@ const GitHubIntegrationModal = ({ visible, onCancel, onSuccess, initialValues })
         t('git.tokenStep3'),
         t('git.tokenStep4'),
         t('git.tokenStep5'),
-      ]
-    }
+      ],
+    },
   ];
 
   const renderPermissionsSection = () => (
@@ -146,7 +157,9 @@ const GitHubIntegrationModal = ({ visible, onCancel, onSuccess, initialValues })
       <Divider />
       <div style={{ marginBottom: '16px' }}>
         <Title level={5} style={{ marginBottom: '8px' }}>
-          <InfoCircleOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
+          <InfoCircleOutlined
+            style={{ marginRight: '8px', color: '#1890ff' }}
+          />
           {t('git.permissionsTitle')}
         </Title>
         <Text type="secondary" style={{ fontSize: '14px' }}>
@@ -208,10 +221,7 @@ const GitHubIntegrationModal = ({ visible, onCancel, onSuccess, initialValues })
         label={t('git.filePath')}
         rules={[{ required: true, message: t('git.filePathRequired') }]}
       >
-        <Input
-          placeholder="solutions/leetcode/"
-          size="large"
-        />
+        <Input placeholder="solutions/leetcode/" size="large" />
       </Form.Item>
 
       <Form.Item
@@ -231,10 +241,7 @@ const GitHubIntegrationModal = ({ visible, onCancel, onSuccess, initialValues })
         label={t('git.commitTemplate')}
         extra={t('git.commitTemplateHelp')}
       >
-        <TextArea
-          placeholder="feat: solve {problem_title} - {date}"
-          rows={3}
-        />
+        <TextArea placeholder="feat: solve {problem_title} - {date}" rows={3} />
       </Form.Item>
 
       <Form.Item

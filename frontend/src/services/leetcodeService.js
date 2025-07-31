@@ -43,7 +43,7 @@ class LeetCodeService {
     if (configData.leetcode_token) {
       processedData = {
         session_cookie: configData.leetcode_token,
-        username: configData.username || ''
+        username: configData.username || '',
       };
     }
 
@@ -61,7 +61,7 @@ class LeetCodeService {
       if (config) {
         return {
           leetcode_token: config.session_cookie || '',
-          username: config.username || ''
+          username: config.username || '',
         };
       }
       return null;
@@ -143,7 +143,9 @@ class LeetCodeService {
   async getLeetCodeProfile(username = null) {
     try {
       const params = username ? { username } : {};
-      const response = await api.get(API_ENDPOINTS.LEETCODE.PROFILE, { params });
+      const response = await api.get(API_ENDPOINTS.LEETCODE.PROFILE, {
+        params,
+      });
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -201,7 +203,7 @@ class LeetCodeService {
           configured: false,
           message: 'LeetCode not configured',
           action: 'configure',
-          actionText: 'Configure LeetCode'
+          actionText: 'Configure LeetCode',
         };
       }
 
@@ -212,7 +214,7 @@ class LeetCodeService {
           message: 'LeetCode connected',
           config: config,
           action: 'test',
-          actionText: 'Test connection'
+          actionText: 'Test connection',
         };
       }
 
@@ -221,14 +223,14 @@ class LeetCodeService {
         message: 'LeetCode configuration invalid',
         config: config,
         action: 'configure',
-        actionText: 'Update configuration'
+        actionText: 'Update configuration',
       };
     } catch (error) {
       return {
         configured: false,
         message: 'Failed to check configuration',
         action: 'configure',
-        actionText: 'Configure LeetCode'
+        actionText: 'Configure LeetCode',
       };
     }
   }

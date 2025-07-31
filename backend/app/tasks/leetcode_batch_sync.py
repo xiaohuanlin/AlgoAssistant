@@ -3,7 +3,7 @@ from typing import Optional
 from app import schemas
 from app.celery_app import celery_app
 from app.deps import get_db, get_redis_client
-from app.models import OJType, Problem, Record, SyncStatus, SyncTask
+from app.models import OJType, SyncStatus, SyncTask
 from app.services.leetcode_service import LeetCodeService
 from app.services.problem_service import ProblemService
 from app.services.record_service import RecordService
@@ -53,14 +53,17 @@ def leetcode_batch_sync_task(task_id: int):
             submissions = service.fetch_user_submissions()
         sync_task.status = SyncStatus.RUNNING.value
         sync_task_service.update(task_id, status=SyncStatus.RUNNING.value)
+        early_stop = False
         for batch in submissions:
             for submission in batch:
                 record_id = submission["submission_id"]
                 record = record_service.get_record(int(record_id))
                 if record:
-                    logger.warning(f"Record {record_id} already exists")
-                    sync_count += 1
-                    continue
+                    logger.info(
+                        f"Record {record_id} already exists, stopping sync as subsequent records are likely synced"
+                    )
+                    early_stop = True
+                    break
                 try:
                     problem = problem_service.get_problem_by_title_slug(
                         submission["problem_title_slug"]
@@ -105,14 +108,23 @@ def leetcode_batch_sync_task(task_id: int):
                     )
                     failed_count += 1
                 logger.info(f"[LeetCodeBatchSyncTask] Record {record_id} synced.")
+            if early_stop:
+                logger.info(
+                    "[LeetCodeBatchSyncTask] Early stop triggered, ending sync process"
+                )
+                break
             sync_task_service.update(
                 task_id, synced_records=sync_count, failed_records=failed_count
             )
+        final_status = "COMPLETED_EARLY_STOP" if early_stop else "COMPLETED"
         sync_task_service.update(
             task_id,
             status=SyncStatus.COMPLETED.value,
             synced_records=sync_count,
             failed_records=failed_count,
+        )
+        logger.info(
+            f"[LeetCodeBatchSyncTask] Task {task_id} finished with status: {final_status}, synced: {sync_count}, failed: {failed_count}"
         )
     except Exception as e:
         logger.exception(f"[LeetCodeBatchSyncTask] Task {task_id} error: {e}")

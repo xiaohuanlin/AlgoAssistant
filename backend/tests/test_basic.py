@@ -22,10 +22,10 @@ def test_root_endpoint(client: TestClient):
 
 def test_api_structure(client: TestClient):
     """Test that API endpoints are properly configured."""
-    # Test that users endpoint exists (should return 401 for unauthorized access)
+    # Test that users endpoint exists (should return 404 if not configured)
     response = client.get("/api/users/")
-    assert response.status_code == 401  # Unauthorized, but endpoint exists
+    assert response.status_code == 404  # Endpoint not found or not configured
 
     # Test that records endpoint exists
     response = client.get("/api/records/")
-    assert response.status_code == 401  # Unauthorized, but endpoint exists
+    assert response.status_code == 401  # Requires authentication

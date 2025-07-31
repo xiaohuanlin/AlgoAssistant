@@ -81,9 +81,9 @@ class DashboardService:
                 "streakDays": streak_days,
                 "thisWeekSolved": week_solved,
                 "thisMonthSolved": month_solved,
-                "successRate": (solved_records / total_records * 100)
-                if total_records > 0
-                else 0.0,
+                "successRate": (
+                    (solved_records / total_records * 100) if total_records > 0 else 0.0
+                ),
             }
 
         except Exception as e:
@@ -102,7 +102,11 @@ class DashboardService:
         try:
             records = (
                 self.db.query(models.Record)
-                .join(models.Problem, models.Record.problem_id == models.Problem.id, isouter=True)
+                .join(
+                    models.Problem,
+                    models.Record.problem_id == models.Problem.id,
+                    isouter=True,
+                )
                 .filter(models.Record.user_id == user_id)
                 .all()
             )
@@ -264,9 +268,11 @@ class DashboardService:
                         "errorDate": record.submit_time or record.created_at,
                         "errorType": record.execution_result,
                         "reviewCount": review.review_count if review else 0,
-                        "needsReview": review.next_review_date <= datetime.utcnow()
-                        if review
-                        else True,
+                        "needsReview": (
+                            review.next_review_date <= datetime.utcnow()
+                            if review
+                            else True
+                        ),
                     }
                 )
 
@@ -315,16 +321,24 @@ class DashboardService:
             current_date = start_date
             end_date = datetime.utcnow().date()
 
-            data_map = {item.date: item for item in daily_data}
+            # Convert date strings to date objects for proper lookup
+            data_map = {}
+            for item in daily_data:
+                if isinstance(item.date, str):
+                    # Parse string date to date object
+                    date_obj = datetime.strptime(item.date, "%Y-%m-%d").date()
+                else:
+                    date_obj = item.date
+                data_map[date_obj] = item
 
             while current_date <= end_date:
                 data_item = data_map.get(current_date)
                 date_range.append(
                     {
                         "date": current_date.isoformat(),
-                        "totalSubmissions": int(data_item.total_submissions)
-                        if data_item
-                        else 0,
+                        "totalSubmissions": (
+                            int(data_item.total_submissions) if data_item else 0
+                        ),
                         "solvedCount": int(data_item.solved_count) if data_item else 0,
                     }
                 )
@@ -366,25 +380,30 @@ class DashboardService:
         if not categories and record.problem and record.problem.title:
             title_lower = record.problem.title.lower()
             title_categories = []
-            
+
             # Basic keyword matching for common patterns
-            if any(keyword in title_lower for keyword in ['array', 'list', 'matrix']):
-                title_categories.append('Array')
-            if any(keyword in title_lower for keyword in ['tree', 'binary tree', 'bst']):
-                title_categories.append('Tree')
-            if any(keyword in title_lower for keyword in ['string', 'substring', 'character']):
-                title_categories.append('String')
-            if any(keyword in title_lower for keyword in ['dynamic', 'dp', 'memo']):
-                title_categories.append('Dynamic Programming')
-            if any(keyword in title_lower for keyword in ['graph', 'node', 'edge']):
-                title_categories.append('Graph')
-            if any(keyword in title_lower for keyword in ['sort', 'merge', 'quick']):
-                title_categories.append('Sorting')
-            if any(keyword in title_lower for keyword in ['search', 'binary search']):
-                title_categories.append('Search')
-            if any(keyword in title_lower for keyword in ['hash', 'map', 'dict']):
-                title_categories.append('Hash Table')
-                
+            if any(keyword in title_lower for keyword in ["array", "list", "matrix"]):
+                title_categories.append("Array")
+            if any(
+                keyword in title_lower for keyword in ["tree", "binary tree", "bst"]
+            ):
+                title_categories.append("Tree")
+            if any(
+                keyword in title_lower
+                for keyword in ["string", "substring", "character"]
+            ):
+                title_categories.append("String")
+            if any(keyword in title_lower for keyword in ["dynamic", "dp", "memo"]):
+                title_categories.append("Dynamic Programming")
+            if any(keyword in title_lower for keyword in ["graph", "node", "edge"]):
+                title_categories.append("Graph")
+            if any(keyword in title_lower for keyword in ["sort", "merge", "quick"]):
+                title_categories.append("Sorting")
+            if any(keyword in title_lower for keyword in ["search", "binary search"]):
+                title_categories.append("Search")
+            if any(keyword in title_lower for keyword in ["hash", "map", "dict"]):
+                title_categories.append("Hash Table")
+
             categories.extend(title_categories)
 
         return categories if categories else ["Uncategorized"]

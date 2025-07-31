@@ -1,6 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Card, Alert, Modal, Form, Input, message, Space, Typography } from 'antd';
-import { GithubOutlined, SyncOutlined, SettingOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import {
+  Button,
+  Card,
+  Alert,
+  Modal,
+  Form,
+  Input,
+  message,
+  Space,
+  Typography,
+} from 'antd';
+import {
+  GithubOutlined,
+  SyncOutlined,
+  SettingOutlined,
+  CheckCircleOutlined,
+} from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import gitSyncService from '../services/gitSyncService';
 
@@ -24,12 +39,11 @@ const GitSyncManager = () => {
       const status = await gitSyncService.getConfigurationStatus();
       setConfigStatus(status);
     } catch (error) {
-      console.error('Failed to check configuration:', error);
       setConfigStatus({
         configured: false,
         message: 'Failed to check configuration',
         action: 'configure',
-        actionText: 'Configure Git Repository'
+        actionText: 'Configure Git Repository',
       });
     } finally {
       setLoading(false);
@@ -58,7 +72,9 @@ const GitSyncManager = () => {
   const handleSaveConfig = async (values) => {
     try {
       await gitSyncService.updateGitConfig(values);
-      message.success(t('git.configSaveSuccess') || 'Git configuration saved successfully');
+      message.success(
+        t('git.configSaveSuccess') || 'Git configuration saved successfully',
+      );
       setConfigModalVisible(false);
       form.resetFields();
       checkConfiguration();
@@ -108,7 +124,13 @@ const GitSyncManager = () => {
 
     return (
       <Card>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
           <div>
             <Title level={4}>
               <GithubOutlined /> {t('git.configTitle')}
@@ -138,9 +160,13 @@ const GitSyncManager = () => {
 
         {configStatus.configured && configStatus.config && (
           <div style={{ marginTop: '16px' }}>
-            <Text strong>{t('git.repoUrl')}:</Text> {configStatus.config.repo_url}<br />
-            <Text strong>{t('git.branch')}:</Text> {configStatus.config.branch}<br />
-            <Text strong>{t('git.filePath')}:</Text> {configStatus.config.base_path}
+            <Text strong>{t('git.repoUrl')}:</Text>{' '}
+            {configStatus.config.repo_url}
+            <br />
+            <Text strong>{t('git.branch')}:</Text> {configStatus.config.branch}
+            <br />
+            <Text strong>{t('git.filePath')}:</Text>{' '}
+            {configStatus.config.base_path}
           </div>
         )}
       </Card>
@@ -157,7 +183,11 @@ const GitSyncManager = () => {
             type="warning"
             showIcon
             action={
-              <Button size="small" type="primary" onClick={() => setConfigModalVisible(true)}>
+              <Button
+                size="small"
+                type="primary"
+                onClick={() => setConfigModalVisible(true)}
+              >
                 {t('git.configNotFoundAction')}
               </Button>
             }
@@ -189,9 +219,7 @@ const GitSyncManager = () => {
 
       {renderConfigurationCard()}
 
-      <div style={{ marginTop: '20px' }}>
-        {renderSyncActions()}
-      </div>
+      <div style={{ marginTop: '20px' }}>{renderSyncActions()}</div>
 
       {/* Configuration Modal */}
       <Modal
@@ -212,7 +240,7 @@ const GitSyncManager = () => {
             name="repo_url"
             rules={[
               { required: true, message: t('git.repoUrlRequired') },
-              { type: 'url', message: t('git.repoUrlRequired') }
+              { type: 'url', message: t('git.repoUrlRequired') },
             ]}
           >
             <Input
@@ -246,7 +274,13 @@ const GitSyncManager = () => {
                 <div>{t('git.tokenHelp')}</div>
                 <div style={{ marginTop: '8px' }}>
                   <strong>{t('git.howToGetToken')}</strong>
-                  <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                  <div
+                    style={{
+                      fontSize: '12px',
+                      color: '#666',
+                      marginTop: '4px',
+                    }}
+                  >
                     <div>{t('git.tokenStep1')}</div>
                     <div>{t('git.tokenStep2')}</div>
                     <div>{t('git.tokenStep3')}</div>

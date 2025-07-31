@@ -64,12 +64,7 @@ coverage.xml
 *.cover
 .hypothesis/
 
-# Tox
-.tox/
-.pytest_cache/
-.coverage
-htmlcov/
-.coverage.*
+# Additional testing tools (duplicates removed)
 
 # Logs
 *.log
@@ -82,7 +77,7 @@ logs/
 .env.production
 
 # Docker
-.dockerignore
+# .dockerignore should be tracked as it's part of the project configuration
 
 # Temporary files
 *.tmp
@@ -97,10 +92,10 @@ tmp/
 .python-version
 
 # pipenv
-Pipfile.lock
+# Pipfile.lock should be committed to ensure consistent dependencies
 
 # poetry
-poetry.lock
+# poetry.lock should be committed to ensure consistent dependencies
 
 # mypy
 .mypy_cache/
@@ -112,4 +107,4 @@ bandit-report.json
 safety-report.json
 
 # Pre-commit
-.pre-commit-config.yaml.bak 
+.pre-commit-config.yaml.bak

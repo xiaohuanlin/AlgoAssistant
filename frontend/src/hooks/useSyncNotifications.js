@@ -37,8 +37,6 @@ export const useSyncNotifications = () => {
     });
   };
 
-
-
   const showBatchSyncStart = (count) => {
     api.info({
       message: t('git.batchSyncStarted', { count }),

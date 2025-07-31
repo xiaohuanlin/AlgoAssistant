@@ -48,11 +48,11 @@ class DashboardService {
     try {
       const [basicStats, categoryStats] = await Promise.all([
         this.getBasicStats(),
-        this.getCategoryStats()
+        this.getCategoryStats(),
       ]);
       return {
         basicStats,
-        categoryStats
+        categoryStats,
       };
     } catch (error) {
       throw new Error(handleApiError(error));

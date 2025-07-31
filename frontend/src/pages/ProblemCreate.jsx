@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { Card, Form, Input, Button, Select, message, Typography, Space } from 'antd';
+import {
+  Card,
+  Form,
+  Input,
+  Button,
+  Select,
+  message,
+  Typography,
+  Space,
+} from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import problemService from '../services/problemService';
@@ -15,11 +24,21 @@ const ProblemCreate = () => {
   const [loading, setLoading] = useState(false);
   const [source, setSource] = useState('custom');
   const { configs } = useConfig();
-  const hasLeetCodeConfig = configs && configs.leetcode_config && configs.leetcode_config.session_cookie;
+  const hasLeetCodeConfig =
+    configs &&
+    configs.leetcode_config &&
+    configs.leetcode_config.session_cookie;
 
   const handleSourceChange = (value) => {
     setSource(value);
-    form.resetFields(['title', 'title_slug', 'difficulty', 'tags', 'description', 'url']);
+    form.resetFields([
+      'title',
+      'title_slug',
+      'difficulty',
+      'tags',
+      'description',
+      'url',
+    ]);
   };
 
   const handleSubmit = async (values) => {
@@ -27,7 +46,10 @@ const ProblemCreate = () => {
     try {
       // tags: comma separated string to array
       if (values.tags && typeof values.tags === 'string') {
-        values.tags = values.tags.split(',').map(tag => tag.trim()).filter(Boolean);
+        values.tags = values.tags
+          .split(',')
+          .map((tag) => tag.trim())
+          .filter(Boolean);
       }
       const data = await problemService.createProblem(values);
       message.success(t('problem.createSuccess'));
@@ -40,7 +62,10 @@ const ProblemCreate = () => {
   };
 
   return (
-    <Card title={<Title level={3}>{t('problem.createTitle')}</Title>} style={{ maxWidth: 600, margin: '0 auto' }}>
+    <Card
+      title={<Title level={3}>{t('problem.createTitle')}</Title>}
+      style={{ maxWidth: 600, margin: '0 auto' }}
+    >
       <Form
         form={form}
         layout="vertical"
@@ -59,19 +84,31 @@ const ProblemCreate = () => {
           </Select>
         </Form.Item>
         {source === 'leetcode' && !hasLeetCodeConfig && (
-          <div style={{ color: '#faad14', marginBottom: 16 }}>{t('problem.leetcodeConfigHelp')}</div>
+          <div style={{ color: '#faad14', marginBottom: 16 }}>
+            {t('problem.leetcodeConfigHelp')}
+          </div>
         )}
         {source === 'leetcode' ? (
           <Form.Item
             name="url"
             label={t('problem.leetcodeUrl')}
-            rules={[{ required: true, type: 'url', message: t('problem.leetcodeUrlRequired') }]}
+            rules={[
+              {
+                required: true,
+                type: 'url',
+                message: t('problem.leetcodeUrlRequired'),
+              },
+            ]}
           >
             <Input placeholder="https://leetcode.com/problems/two-sum/" />
           </Form.Item>
         ) : (
           <>
-            <Form.Item name="title" label={t('problem.title')} rules={[{ required: true }]}>
+            <Form.Item
+              name="title"
+              label={t('problem.title')}
+              rules={[{ required: true }]}
+            >
               <Input />
             </Form.Item>
             <Form.Item name="title_slug" label={t('problem.titleSlug')}>
@@ -97,7 +134,9 @@ const ProblemCreate = () => {
         )}
         <Form.Item>
           <Space>
-            <Button type="primary" htmlType="submit" loading={loading}>{t('common.create')}</Button>
+            <Button type="primary" htmlType="submit" loading={loading}>
+              {t('common.create')}
+            </Button>
             <Button onClick={() => navigate(-1)}>{t('common.cancel')}</Button>
           </Space>
         </Form.Item>

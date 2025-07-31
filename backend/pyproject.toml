@@ -1,0 +1,253 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "algoassistant"
+version = "1.0.0"
+description = "AlgoAssistant API - A comprehensive algorithm practice assistant"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "AlgoAssistant Team", email = "team@algoassistant.com"},
+]
+maintainers = [
+    {name = "AlgoAssistant Team", email = "team@algoassistant.com"},
+]
+keywords = ["algorithm", "leetcode", "practice", "api", "fastapi"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Framework :: FastAPI",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "sqlalchemy>=2.0.0",
+    "alembic>=1.12.0",
+    "python-jose[cryptography]>=3.3.0",
+    "PyJWT>=2.8.0",
+    "passlib[bcrypt]>=1.7.4",
+    "python-multipart>=0.0.6",
+    "requests>=2.31.0",
+    "email-validator>=2.1.0",
+    "pydantic-settings>=2.0.0",
+    "psycopg2-binary>=2.9.0",
+    "python-dotenv>=1.0.0",
+    "google-auth>=2.23.0",
+    "google-auth-oauthlib>=1.1.0",
+    "python-dateutil>=2.8.0",
+    "PyGithub>=1.59.0",
+    "celery>=5.3.0",
+    "redis>=5.0.0",
+    "google-genai>=0.3.0",
+    "beautifulsoup4>=4.12.0",
+    "notion-client>=2.2.0",
+    "markdownify>=0.11.0",
+    "Pillow>=10.0.0",
+]
+
+
+[project.urls]
+Homepage = "https://github.com/your-org/algoassistant"
+Documentation = "https://docs.algoassistant.com"
+Repository = "https://github.com/your-org/algoassistant.git"
+Issues = "https://github.com/your-org/algoassistant/issues"
+Changelog = "https://github.com/your-org/algoassistant/blob/main/CHANGELOG.md"
+
+[project.scripts]
+algoassistant = "app.main:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/app",
+    "/tests",
+    "/README.md",
+    "/LICENSE",
+]
+
+# Testing configuration
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--cov=app",
+    "--cov-report=term-missing:skip-covered",
+    "--cov-report=html",
+    "--cov-report=xml",
+    "--cov-fail-under=80",
+]
+testpaths = ["tests"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+# Coverage configuration
+[tool.coverage.run]
+source = ["app"]
+omit = [
+    "*/tests/*",
+    "*/venv/*",
+    "*/.venv/*",
+    "*/migrations/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+# Black code formatting
+[tool.black]
+line-length = 88
+target-version = ['py38', 'py39', 'py310', 'py311', 'py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+  | migrations
+)/
+'''
+
+# isort import sorting
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["app", "tests"]
+known_third_party = ["fastapi", "sqlalchemy", "pydantic"]
+
+# MyPy type checking
+[tool.mypy]
+python_version = "3.8"
+check_untyped_defs = true
+disallow_any_generics = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_return_any = true
+strict_equality = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = [
+    "celery.*",
+    "redis.*",
+    "notion_client.*",
+    "google.auth.*",
+    "github.*",
+    "markdownify.*",
+]
+ignore_missing_imports = true
+
+# Bandit security linting
+[tool.bandit]
+exclude_dirs = ["tests", "migrations"]
+skips = ["B101", "B601"]
+
+# Flake8 linting (configuration in setup.cfg since flake8 doesn't support pyproject.toml yet)
+
+# Tox testing
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+envlist = py38,py39,py310,py311,py312,lint,security
+isolated_build = true
+
+[testenv]
+deps =
+    .[test]
+commands =
+    pytest {posargs}
+
+[testenv:lint]
+deps =
+    .[dev]
+commands =
+    black --check --diff .
+    isort --check-only --diff .
+    flake8 .
+    mypy .
+
+[testenv:security]
+deps =
+    .[dev]
+commands =
+    bandit -r app/
+    safety check
+
+[testenv:format]
+deps =
+    .[dev]
+commands =
+    black .
+    isort .
+
+[testenv:cov]
+deps =
+    .[test]
+commands =
+    pytest --cov=app --cov-report=html --cov-report=xml
+"""
+
+[dependency-groups]
+test = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "httpx>=0.25.0",
+    "pytest-cov>=4.1.0",
+    "factory-boy>=3.3.0",
+    "coverage>=7.3.0",
+]
+dev = [
+    # Code quality tools
+    "flake8>=6.1.0",
+    "black>=23.11.0",
+    "isort>=5.12.0",
+    "mypy>=1.7.0",
+    # Security tools
+    "bandit>=1.7.5",
+    "safety>=2.3.5",
+    # Development tools
+    "tox>=4.11.0",
+    "pre-commit>=3.5.0",
+]

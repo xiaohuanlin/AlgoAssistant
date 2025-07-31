@@ -12,9 +12,12 @@ class GeminiSyncService {
       const syncData = {
         type: 'gemini_sync',
         record_ids: recordIds,
-        ...options
+        ...options,
       };
-      const response = await api.post(API_ENDPOINTS.SYNC_TASKS.CREATE, syncData);
+      const response = await api.post(
+        API_ENDPOINTS.SYNC_TASKS.CREATE,
+        syncData,
+      );
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -42,7 +45,7 @@ class GeminiSyncService {
   async getTaskList() {
     try {
       const response = await api.get(API_ENDPOINTS.SYNC_TASKS.LIST, {
-        params: { type: 'gemini_sync' }
+        params: { type: 'gemini_sync' },
       });
       return handleApiSuccess(response);
     } catch (error) {
@@ -58,7 +61,7 @@ class GeminiSyncService {
   async stopTask(taskId) {
     try {
       const response = await api.put(API_ENDPOINTS.SYNC_TASKS.DETAIL(taskId), {
-        status: 'stopped'
+        status: 'stopped',
       });
       return handleApiSuccess(response);
     } catch (error) {
@@ -74,7 +77,7 @@ class GeminiSyncService {
   async resumeTask(taskId) {
     try {
       const response = await api.put(API_ENDPOINTS.SYNC_TASKS.DETAIL(taskId), {
-        status: 'running'
+        status: 'running',
       });
       return handleApiSuccess(response);
     } catch (error) {
@@ -89,7 +92,10 @@ class GeminiSyncService {
    */
   async testGeminiConnection(config) {
     try {
-      const response = await api.post(API_ENDPOINTS.INTEGRATIONS.GEMINI_TEST, config);
+      const response = await api.post(
+        API_ENDPOINTS.INTEGRATIONS.GEMINI_TEST,
+        config,
+      );
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));

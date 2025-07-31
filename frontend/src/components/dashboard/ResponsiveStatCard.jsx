@@ -11,7 +11,7 @@ const ResponsiveStatCard = ({
   color = '#1890ff',
   trend = null,
   loading = false,
-  className = ''
+  className = '',
 }) => {
   const { isMobile, isTablet } = useResponsive();
 
@@ -47,8 +47,14 @@ const ResponsiveStatCard = ({
   const renderMobileLayout = () => (
     <div className="stat-content-mobile">
       <div className="stat-header-mobile">
-        {prefix && <span className="stat-icon-mobile" style={{ color }}>{prefix}</span>}
-        <span className="stat-title-mobile" style={getTitleStyle()}>{title}</span>
+        {prefix && (
+          <span className="stat-icon-mobile" style={{ color }}>
+            {prefix}
+          </span>
+        )}
+        <span className="stat-title-mobile" style={getTitleStyle()}>
+          {title}
+        </span>
       </div>
       <div className="stat-main-mobile">
         <div className="stat-value-mobile" style={getValueStyle()}>

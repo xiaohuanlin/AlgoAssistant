@@ -18,7 +18,7 @@ const NotionSyncAction = ({ record, onSync, disabled = false }) => {
     setLoading(true);
     try {
       await notionService.syncRecords({
-        record_ids: [record.id]
+        record_ids: [record.id],
       });
 
       message.success(t('notion.syncStarted'));
@@ -26,7 +26,6 @@ const NotionSyncAction = ({ record, onSync, disabled = false }) => {
         onSync();
       }
     } catch (error) {
-      console.error('Notion sync error:', error);
       message.error(t('notion.syncError') + ': ' + error.message);
     } finally {
       setLoading(false);

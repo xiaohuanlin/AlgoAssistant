@@ -25,8 +25,6 @@ const LoginPage = () => {
       message.success(t('auth.loginSuccess'));
       navigate('/');
     } catch (error) {
-      console.error('Login error:', error);
-
       // Handle specific error messages
       const errorMessage = error.message || t('auth.loginFailed');
 

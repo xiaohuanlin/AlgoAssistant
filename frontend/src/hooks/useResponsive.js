@@ -35,7 +35,7 @@ export const useResponsive = () => {
   // Touch target sizes
   const getTouchTargetSize = () => ({
     minHeight: isMobile ? 44 : 32,
-    minWidth: isMobile ? 44 : 32
+    minWidth: isMobile ? 44 : 32,
   });
 
   // Container padding
@@ -54,21 +54,21 @@ export const useResponsive = () => {
     chartHeight: getChartHeight(),
     cardGutter: getCardGutter(),
     touchTargetSize: getTouchTargetSize(),
-    containerPadding: getContainerPadding()
+    containerPadding: getContainerPadding(),
   };
 };
 
 export const useViewportSize = () => {
   const [viewport, setViewport] = useState({
     width: window.innerWidth,
-    height: window.innerHeight
+    height: window.innerHeight,
   });
 
   useEffect(() => {
     const handleResize = () => {
       setViewport({
         width: window.innerWidth,
-        height: window.innerHeight
+        height: window.innerHeight,
       });
     };
 
@@ -87,15 +87,18 @@ export const useIntersectionObserver = (options = {}) => {
   useEffect(() => {
     if (!targetRef) return;
 
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) {
-        setIsVisible(true);
-        observer.disconnect();
-      }
-    }, {
-      threshold: 0.1,
-      ...options
-    });
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      {
+        threshold: 0.1,
+        ...options,
+      },
+    );
 
     observer.observe(targetRef);
 

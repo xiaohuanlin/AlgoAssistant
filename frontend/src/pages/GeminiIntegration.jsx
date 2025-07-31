@@ -1,5 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { Card, Typography, Form, Input, Button, Alert, message, Spin } from 'antd';
+import React, { useEffect, useState, useCallback } from 'react';
+import {
+  Card,
+  Typography,
+  Form,
+  Input,
+  Button,
+  Alert,
+  message,
+  Spin,
+} from 'antd';
 import { RobotOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import configService from '../services/configService';
@@ -13,11 +22,7 @@ const GeminiIntegration = () => {
   const [status, setStatus] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    loadGeminiConfig();
-  }, []);
-
-  const loadGeminiConfig = async () => {
+  const loadGeminiConfig = useCallback(async () => {
     setLoading(true);
     try {
       const config = await configService.getGeminiConfig();
@@ -32,13 +37,19 @@ const GeminiIntegration = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [form]);
+
+  useEffect(() => {
+    loadGeminiConfig();
+  }, [loadGeminiConfig]);
 
   const handleSave = async (values) => {
     setSaving(true);
     try {
       await configService.updateGeminiConfig(values);
-      message.success(t('settings.geminiIntegration') + ' ' + t('common.saved'));
+      message.success(
+        t('settings.geminiIntegration') + ' ' + t('common.saved'),
+      );
       setStatus('configured');
     } catch (error) {
       message.error(t('common.saveFailed'));
@@ -50,10 +61,16 @@ const GeminiIntegration = () => {
   return (
     <div style={{ maxWidth: 500, margin: '0 auto', padding: 24 }}>
       <Card>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
-          <RobotOutlined style={{ fontSize: 32, color: '#1890ff', marginRight: 12 }} />
+        <div
+          style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}
+        >
+          <RobotOutlined
+            style={{ fontSize: 32, color: '#1890ff', marginRight: 12 }}
+          />
           <div>
-            <Title level={3} style={{ margin: 0 }}>{t('settings.geminiIntegration')}</Title>
+            <Title level={3} style={{ margin: 0 }}>
+              {t('settings.geminiIntegration')}
+            </Title>
             <Text type="secondary">{t('settings.geminiDescription')}</Text>
           </div>
         </div>
@@ -66,14 +83,20 @@ const GeminiIntegration = () => {
                 type="success"
                 showIcon
                 icon={<CheckCircleOutlined />}
-                message={t('settings.geminiIntegration') + ' ' + t('common.configured')}
+                message={
+                  t('settings.geminiIntegration') + ' ' + t('common.configured')
+                }
                 style={{ marginBottom: 16 }}
               />
             ) : (
               <Alert
                 type="warning"
                 showIcon
-                message={t('settings.geminiIntegration') + ' ' + t('common.notConfigured')}
+                message={
+                  t('settings.geminiIntegration') +
+                  ' ' +
+                  t('common.notConfigured')
+                }
                 style={{ marginBottom: 16 }}
               />
             )}
@@ -86,9 +109,17 @@ const GeminiIntegration = () => {
               <Form.Item
                 label="Gemini API Key"
                 name="api_key"
-                rules={[{ required: true, message: 'Please input your Gemini API Key!' }]}
+                rules={[
+                  {
+                    required: true,
+                    message: 'Please input your Gemini API Key!',
+                  },
+                ]}
               >
-                <Input.Password placeholder="sk-..." autoComplete="new-password" />
+                <Input.Password
+                  placeholder="sk-..."
+                  autoComplete="new-password"
+                />
               </Form.Item>
               <Form.Item>
                 <Button type="primary" htmlType="submit" loading={saving} block>

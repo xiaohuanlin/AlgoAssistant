@@ -5,10 +5,12 @@ import { useGoogleLogin } from '@react-oauth/google';
 import { useTranslation } from 'react-i18next';
 import authService from '../../services/authService';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 
 const GoogleLogin = ({ onSuccess, onError }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { initializeAuth } = useAuth();
 
   const login = useGoogleLogin({
     onSuccess: async (response) => {
@@ -16,14 +18,17 @@ const GoogleLogin = ({ onSuccess, onError }) => {
         // Login with backend using access token
         const result = await authService.googleLogin(response.access_token);
 
+        // Update AuthContext state after successful login
+        await initializeAuth();
+
         if (onSuccess) {
           onSuccess(result);
         } else {
+          message.success(t('auth.googleLoginSuccess'));
           navigate('/');
         }
       } catch (error) {
-        console.error('Google login error:', error);
-        message.error(t('auth.googleLoginFailed'));
+        message.error(t('auth.googleLoginFailed') + ': ' + error.message);
         if (onError) {
           onError(error);
         }

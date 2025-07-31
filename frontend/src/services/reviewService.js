@@ -53,7 +53,10 @@ class ReviewService {
    */
   async markAsWrong(recordId, reviewData) {
     try {
-      const response = await api.post(API_ENDPOINTS.REVIEW.MARK_WRONG(recordId), reviewData);
+      const response = await api.post(
+        API_ENDPOINTS.REVIEW.MARK_WRONG(recordId),
+        reviewData,
+      );
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -108,7 +111,9 @@ class ReviewService {
    */
   async markAsReviewed(reviewId) {
     try {
-      const response = await api.post(API_ENDPOINTS.REVIEW.MARK_REVIEWED(reviewId));
+      const response = await api.post(
+        API_ENDPOINTS.REVIEW.MARK_REVIEWED(reviewId),
+      );
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -122,7 +127,10 @@ class ReviewService {
    */
   async batchMarkReviewed(ids) {
     try {
-      const response = await api.post(API_ENDPOINTS.REVIEW.BATCH_MARK_REVIEWED, { ids });
+      const response = await api.post(
+        API_ENDPOINTS.REVIEW.BATCH_MARK_REVIEWED,
+        { ids },
+      );
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -136,7 +144,9 @@ class ReviewService {
    */
   async batchDelete(ids) {
     try {
-      const response = await api.post(API_ENDPOINTS.REVIEW.BATCH_DELETE, { ids });
+      const response = await api.post(API_ENDPOINTS.REVIEW.BATCH_DELETE, {
+        ids,
+      });
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -180,7 +190,7 @@ class ReviewService {
     try {
       const response = await api.post(API_ENDPOINTS.REVIEW.BATCH_UPDATE, {
         ids: [reviewId],
-        update: reviewData
+        update: reviewData,
       });
       return handleApiSuccess(response)[0];
     } catch (error) {
@@ -200,14 +210,19 @@ class ReviewService {
       ]);
       const totalReviews = reviews.length;
       const dueCount = dueReviews.length;
-      const completedCount = reviews.filter(review => review.review_count > 0).length;
+      const completedCount = reviews.filter(
+        (review) => review.review_count > 0,
+      ).length;
       const pendingCount = totalReviews - completedCount;
       return {
         total: totalReviews,
         due: dueCount,
         completed: completedCount,
         pending: pendingCount,
-        completionRate: totalReviews > 0 ? Math.round((completedCount / totalReviews) * 100) : 0,
+        completionRate:
+          totalReviews > 0
+            ? Math.round((completedCount / totalReviews) * 100)
+            : 0,
       };
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -221,7 +236,9 @@ class ReviewService {
    */
   async getStats(days = 7) {
     try {
-      const response = await api.get(API_ENDPOINTS.REVIEW.STATS, { params: { days } });
+      const response = await api.get(API_ENDPOINTS.REVIEW.STATS, {
+        params: { days },
+      });
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));

@@ -23,15 +23,16 @@ import {
   PauseCircleOutlined,
   PlayCircleOutlined,
   CloudSyncOutlined,
-  BarChartOutlined
+  BarChartOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
+import { formatLocalTime } from '../utils';
 import { DataTable, StatusIndicator } from '../components/common';
 import ResponsiveStatCard from '../components/dashboard/ResponsiveStatCard';
 import {
   GradientPageHeader,
   ModernCard,
-  GRADIENT_THEMES
+  GRADIENT_THEMES,
 } from '../components/ui/ModernDesignSystem';
 
 import syncTaskService from '../services/syncTaskService';
@@ -67,98 +68,139 @@ const SyncTasks = () => {
   const [leetcodeProfileLoading, setLeetCodeProfileLoading] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [batchLoading, setBatchLoading] = useState(false);
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
   const [form] = Form.useForm();
   const isInitialLoad = useRef(true);
 
   // Use the new table filters hook
-  const {
-    filters,
-    clearAllFilters,
-    createAutoFilterHandler
-  } = useTableFilters((apiFilters) => {
-    setPagination(prev => ({ ...prev, current: 1 }));
-    loadTasks(apiFilters); // Always fetch stats when filters change
-  });
+  const { filters, clearAllFilters, createAutoFilterHandler } = useTableFilters(
+    (apiFilters) => {
+      setPagination((prev) => ({ ...prev, current: 1 }));
+      loadTasks(apiFilters); // Always fetch stats when filters change
+    },
+  );
 
-
-  const loadTasks = useCallback(async (apiFilters = {}) => {
-    setLoading(true);
-    try {
-      // Process filters to ensure proper data types
-      const processedFilters = {};
-      Object.keys(apiFilters).forEach(key => {
-        const value = apiFilters[key];
-        if (value !== undefined && value !== null && (value !== '' || typeof value === 'boolean')) {
-          if (key === 'id' && value !== '') {
-            // Convert id to integer for API compatibility
-            const parsedId = parseInt(value, 10);
-            if (!isNaN(parsedId)) {
-              processedFilters[key] = parsedId;
+  const loadTasks = useCallback(
+    async (apiFilters = {}) => {
+      setLoading(true);
+      try {
+        // Process filters to ensure proper data types
+        const processedFilters = {};
+        Object.keys(apiFilters).forEach((key) => {
+          const value = apiFilters[key];
+          if (
+            value !== undefined &&
+            value !== null &&
+            (value !== '' || typeof value === 'boolean')
+          ) {
+            if (key === 'id' && value !== '') {
+              // Convert id to integer for API compatibility
+              const parsedId = parseInt(value, 10);
+              if (!isNaN(parsedId)) {
+                processedFilters[key] = parsedId;
+              }
+            } else {
+              processedFilters[key] = value;
             }
-          } else {
-            processedFilters[key] = value;
           }
+        });
+
+        const requests = [
+          syncTaskService.getTasks({
+            ...processedFilters,
+            limit: pagination.pageSize,
+            offset: (pagination.current - 1) * pagination.pageSize,
+          }),
+          syncTaskService.getTaskStats(processedFilters),
+        ];
+
+        const results = await Promise.all(requests);
+        const tasksData = results[0];
+        const statsData = results[1];
+
+        setTasks(tasksData.items || tasksData);
+        setPagination((prev) => ({
+          ...prev,
+          total:
+            tasksData.total ||
+            (tasksData.items ? tasksData.items.length : tasksData.length),
+        }));
+        setStats(statsData);
+
+        // Clear selection when filters change
+        if (Object.keys(apiFilters).length > 0) {
+          setSelectedRowKeys([]);
         }
-      });
-
-      const requests = [
-        syncTaskService.getTasks({
-          ...processedFilters,
-          limit: pagination.pageSize,
-          offset: (pagination.current - 1) * pagination.pageSize
-        }),
-        syncTaskService.getTaskStats(processedFilters)
-      ];
-
-      const results = await Promise.all(requests);
-      const tasksData = results[0];
-      const statsData = results[1];
-
-      setTasks(tasksData.items || tasksData);
-      setPagination(prev => ({ 
-        ...prev, 
-        total: tasksData.total || (tasksData.items ? tasksData.items.length : tasksData.length) 
-      }));
-      setStats(statsData);
-      
-      // Clear selection when filters change
-      if (Object.keys(apiFilters).length > 0) {
-        setSelectedRowKeys([]);
+      } catch (error) {
+        message.error(
+          t('syncTasks.loadTasksFailed', 'Failed to load tasks') +
+            ': ' +
+            error.message,
+        );
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Load sync tasks error:', error);
-      message.error(t('syncTasks.loadTasksFailed', 'Failed to load tasks') + ': ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [pagination.current, pagination.pageSize, t]);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [pagination.current, pagination.pageSize, t],
+  );
 
-
-  const loadSelectableRecords = useCallback(async (type) => {
-    setRecordsLoading(true);
-    try {
-      let records = [];
-      if (type === 'leetcode_detail_sync') {
-        records = await recordsService.getRecords({ oj_sync_status: ['pending', 'failed'], limit: 1000 });
-        records = records.filter(r => r.oj_sync_status === 'pending' || r.oj_sync_status === 'failed');
-      } else if (type === 'github_sync') {
-        records = await recordsService.getRecords({ github_sync_status: ['pending', 'failed'], limit: 1000 });
-        records = records.filter(r => r.github_sync_status === 'pending' || r.github_sync_status === 'failed');
-      } else if (type === 'gemini_sync') {
-        records = await recordsService.getRecords({ ai_sync_status: ['pending', 'failed'], limit: 1000 });
-        records = records.filter(r => r.ai_sync_status === 'pending' || r.ai_sync_status === 'failed');
-      } else {
-        records = [];
+  const loadSelectableRecords = useCallback(
+    async (type) => {
+      setRecordsLoading(true);
+      try {
+        let records = [];
+        if (type === 'leetcode_detail_sync') {
+          records = await recordsService.getRecords({
+            oj_sync_status: ['pending', 'failed'],
+            limit: 1000,
+          });
+          records = records.filter(
+            (r) =>
+              r.oj_sync_status === 'pending' || r.oj_sync_status === 'failed',
+          );
+        } else if (type === 'github_sync') {
+          records = await recordsService.getRecords({
+            github_sync_status: ['pending', 'failed'],
+            limit: 1000,
+          });
+          records = records.filter(
+            (r) =>
+              r.github_sync_status === 'pending' ||
+              r.github_sync_status === 'failed',
+          );
+        } else if (type === 'gemini_sync') {
+          records = await recordsService.getRecords({
+            ai_sync_status: ['pending', 'failed'],
+            limit: 1000,
+          });
+          records = records.filter(
+            (r) =>
+              r.ai_sync_status === 'pending' || r.ai_sync_status === 'failed',
+          );
+        } else {
+          records = [];
+        }
+        setUnsyncedRecords(records);
+      } catch (error) {
+        message.error(
+          t(
+            'syncTasks.loadUnsyncedRecordsFailed',
+            'Failed to load unsynced records',
+          ) +
+            ': ' +
+            error.message,
+        );
+      } finally {
+        setRecordsLoading(false);
       }
-      setUnsyncedRecords(records);
-    } catch (error) {
-      message.error(t('syncTasks.loadUnsyncedRecordsFailed', 'Failed to load unsynced records') + ': ' + error.message);
-    } finally {
-      setRecordsLoading(false);
-    }
-  }, [t]);
-
+    },
+    [t],
+  );
 
   useEffect(() => {
     if (isInitialLoad.current) {
@@ -184,8 +226,9 @@ const SyncTasks = () => {
             const res = await leetcodeService.getLeetCodeProfile();
             setLeetCodeProfile(res);
           } catch (error) {
-            console.error('Error loading LeetCode profile:', error);
-            message.error(t('leetcode.profileError', 'Failed to load LeetCode profile'));
+            message.error(
+              t('leetcode.profileError', 'Failed to load LeetCode profile'),
+            );
           } finally {
             setLeetCodeProfileLoading(false);
           }
@@ -201,7 +244,12 @@ const SyncTasks = () => {
     // Check configuration using ConfigContext
     if (value === 'leetcode_batch_sync' || value === 'leetcode_detail_sync') {
       if (!hasLeetCodeConfig()) {
-        message.warning(t('leetcode.configRequiredDesc', 'LeetCode configuration is required'));
+        message.warning(
+          t(
+            'leetcode.configRequiredDesc',
+            'LeetCode configuration is required',
+          ),
+        );
         setSelectedTaskType(null);
         form.setFieldsValue({ type: null });
         return;
@@ -210,7 +258,9 @@ const SyncTasks = () => {
 
     if (value === 'github_sync') {
       if (!hasGitConfig()) {
-        message.warning(t('git.configRequired', 'Git configuration is required'));
+        message.warning(
+          t('git.configRequired', 'Git configuration is required'),
+        );
         setSelectedTaskType(null);
         form.setFieldsValue({ type: null });
         return;
@@ -219,7 +269,12 @@ const SyncTasks = () => {
 
     if (value === 'gemini_sync') {
       if (!hasGeminiConfig()) {
-        message.warning(t('syncTasks.geminiConfigRequiredDesc', 'Gemini configuration is required'));
+        message.warning(
+          t(
+            'syncTasks.geminiConfigRequiredDesc',
+            'Gemini configuration is required',
+          ),
+        );
         setSelectedTaskType(null);
         form.setFieldsValue({ type: null });
         return;
@@ -227,7 +282,11 @@ const SyncTasks = () => {
     }
 
     // Load records if needed
-    if (value === 'leetcode_detail_sync' || value === 'github_sync' || value === 'gemini_sync') {
+    if (
+      value === 'leetcode_detail_sync' ||
+      value === 'github_sync' ||
+      value === 'gemini_sync'
+    ) {
       loadSelectableRecords(value);
     } else {
       setUnsyncedRecords([]);
@@ -237,12 +296,23 @@ const SyncTasks = () => {
   const handleCreateTask = async (values) => {
     try {
       // For leetcode_batch_sync, use maximum submissions count
-      if (values.type === 'leetcode_batch_sync' && leetcodeProfile?.total_submissions) {
+      if (
+        values.type === 'leetcode_batch_sync' &&
+        leetcodeProfile?.total_submissions
+      ) {
         values.total_records = leetcodeProfile.total_submissions;
       }
       if (values.type === 'leetcode_detail_sync') {
-        if (!Array.isArray(values.record_ids) || values.record_ids.length === 0) {
-          message.warning(t('syncTasks.selectRecordsPlaceholder', 'Please select records to sync'));
+        if (
+          !Array.isArray(values.record_ids) ||
+          values.record_ids.length === 0
+        ) {
+          message.warning(
+            t(
+              'syncTasks.selectRecordsPlaceholder',
+              'Please select records to sync',
+            ),
+          );
           return;
         }
       }
@@ -252,7 +322,11 @@ const SyncTasks = () => {
       form.resetFields();
       loadTasks({}); // Refresh after creating task
     } catch (error) {
-      message.error(t('syncTasks.createTaskFailed', 'Failed to create task') + ': ' + error.message);
+      message.error(
+        t('syncTasks.createTaskFailed', 'Failed to create task') +
+          ': ' +
+          error.message,
+      );
     }
   };
 
@@ -262,20 +336,30 @@ const SyncTasks = () => {
       message.success(t('syncTasks.taskDeleted', 'Task deleted successfully'));
       loadTasks({}); // Refresh after deleting task
     } catch (error) {
-      message.error(t('syncTasks.deleteTaskFailed', 'Failed to delete task') + ': ' + error.message);
+      message.error(
+        t('syncTasks.deleteTaskFailed', 'Failed to delete task') +
+          ': ' +
+          error.message,
+      );
     }
   };
 
   const handleBatchDelete = async () => {
     if (selectedRowKeys.length === 0) {
-      message.warning(t('syncTasks.selectTasksFirst', 'Please select tasks first'));
+      message.warning(
+        t('syncTasks.selectTasksFirst', 'Please select tasks first'),
+      );
       return;
     }
 
     setBatchLoading(true);
     try {
-      await Promise.all(selectedRowKeys.map(id => syncTaskService.deleteTask(id)));
-      message.success(t('syncTasks.batchDeleteSuccess', 'Batch delete successful'));
+      await Promise.all(
+        selectedRowKeys.map((id) => syncTaskService.deleteTask(id)),
+      );
+      message.success(
+        t('syncTasks.batchDeleteSuccess', 'Batch delete successful'),
+      );
       setSelectedRowKeys([]);
       loadTasks({}); // Refresh after batch delete
     } catch (error) {
@@ -295,7 +379,11 @@ const SyncTasks = () => {
       message.success(t('syncTasks.taskRetried', 'Task retried successfully'));
       loadTasks({}); // Refresh after retry
     } catch (error) {
-      message.error(t('syncTasks.retryTaskFailed', 'Failed to retry task') + ': ' + error.message);
+      message.error(
+        t('syncTasks.retryTaskFailed', 'Failed to retry task') +
+          ': ' +
+          error.message,
+      );
     }
   };
 
@@ -305,7 +393,11 @@ const SyncTasks = () => {
       message.success(t('syncTasks.taskPaused', 'Task paused successfully'));
       loadTasks({}); // Refresh after pause
     } catch (error) {
-      message.error(t('syncTasks.pauseTaskFailed', 'Failed to pause task') + ': ' + error.message);
+      message.error(
+        t('syncTasks.pauseTaskFailed', 'Failed to pause task') +
+          ': ' +
+          error.message,
+      );
     }
   };
 
@@ -315,7 +407,11 @@ const SyncTasks = () => {
       message.success(t('syncTasks.taskResumed', 'Task resumed successfully'));
       loadTasks({}); // Refresh after resume
     } catch (error) {
-      message.error(t('syncTasks.resumeTaskFailed', 'Failed to resume task') + ': ' + error.message);
+      message.error(
+        t('syncTasks.resumeTaskFailed', 'Failed to resume task') +
+          ': ' +
+          error.message,
+      );
     }
   };
 
@@ -344,9 +440,7 @@ const SyncTasks = () => {
       key: 'type',
       width: 150,
       render: (type) => (
-        <Tag color="blue">
-          {syncTaskService.getTypeText(type, t)}
-        </Tag>
+        <Tag color="blue">{syncTaskService.getTypeText(type, t)}</Tag>
       ),
     },
     {
@@ -355,11 +449,7 @@ const SyncTasks = () => {
       key: 'status',
       width: 120,
       render: (status) => (
-        <StatusIndicator
-          status={status}
-          type="task"
-          size="small"
-        />
+        <StatusIndicator status={status} type="task" size="small" />
       ),
     },
     {
@@ -404,7 +494,9 @@ const SyncTasks = () => {
       render: (recordIds) => (
         <Tooltip title={recordIds?.join(', ') || t('syncTasks.allRecords')}>
           <span>
-            {recordIds ? `${recordIds.length} ${t('syncTasks.records')}` : t('syncTasks.all')}
+            {recordIds
+              ? `${recordIds.length} ${t('syncTasks.records')}`
+              : t('syncTasks.all')}
           </span>
         </Tooltip>
       ),
@@ -415,8 +507,8 @@ const SyncTasks = () => {
       key: 'created_at',
       width: 160,
       render: (date) => (
-        <span style={{ fontSize: '12px' }}>
-          {new Date(date).toLocaleString()}
+        <span style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
+          {formatLocalTime(date)}
         </span>
       ),
     },
@@ -480,7 +572,6 @@ const SyncTasks = () => {
     },
   ];
 
-
   // Filter configuration
   const filterConfig = [
     {
@@ -489,7 +580,7 @@ const SyncTasks = () => {
       type: 'input',
       placeholder: t('syncTasks.filter.idPlaceholder'),
       value: filters.id,
-      onChange: createAutoFilterHandler('id', 500)
+      onChange: createAutoFilterHandler('id', 500),
     },
     {
       key: 'type',
@@ -500,12 +591,18 @@ const SyncTasks = () => {
       onChange: createAutoFilterHandler('type'),
       options: [
         { label: t('syncTasks.taskTypes.github_sync'), value: 'github_sync' },
-        { label: t('syncTasks.taskTypes.leetcode_batch_sync'), value: 'leetcode_batch_sync' },
-        { label: t('syncTasks.taskTypes.leetcode_detail_sync'), value: 'leetcode_detail_sync' },
+        {
+          label: t('syncTasks.taskTypes.leetcode_batch_sync'),
+          value: 'leetcode_batch_sync',
+        },
+        {
+          label: t('syncTasks.taskTypes.leetcode_detail_sync'),
+          value: 'leetcode_detail_sync',
+        },
         { label: t('syncTasks.taskTypes.notion_sync'), value: 'notion_sync' },
         { label: t('syncTasks.taskTypes.ai_analysis'), value: 'ai_analysis' },
-        { label: t('syncTasks.taskTypes.gemini_sync'), value: 'gemini_sync' }
-      ]
+        { label: t('syncTasks.taskTypes.gemini_sync'), value: 'gemini_sync' },
+      ],
     },
     {
       key: 'status',
@@ -519,16 +616,16 @@ const SyncTasks = () => {
         { label: t('syncTasks.status.running'), value: 'running' },
         { label: t('syncTasks.status.completed'), value: 'completed' },
         { label: t('syncTasks.status.failed'), value: 'failed' },
-        { label: t('syncTasks.status.paused'), value: 'paused' }
-      ]
+        { label: t('syncTasks.status.paused'), value: 'paused' },
+      ],
     },
     {
       key: 'created_at_range',
       label: t('syncTasks.filter.createdAt'),
       type: 'dateRange',
       value: filters.created_at_range,
-      onChange: createAutoFilterHandler('created_at_range')
-    }
+      onChange: createAutoFilterHandler('created_at_range'),
+    },
   ];
 
   // Actions configuration
@@ -537,7 +634,7 @@ const SyncTasks = () => {
       text: t('syncTasks.createTask', 'Create Task'),
       type: 'primary',
       icon: <PlusOutlined />,
-      onClick: () => setModalVisible(true)
+      onClick: () => setModalVisible(true),
     },
     {
       text: `${t('syncTasks.batchDelete', 'Batch Delete')} (${selectedRowKeys.length})`,
@@ -545,29 +642,40 @@ const SyncTasks = () => {
       onClick: handleBatchDelete,
       loading: batchLoading,
       disabled: selectedRowKeys.length === 0,
-      danger: true
-    }
+      danger: true,
+    },
   ];
 
   return (
-    <div style={{
-      maxWidth: 1200,
-      margin: '0 auto',
-      padding: isMobile ? '16px' : '24px'
-    }}>
+    <div
+      style={{
+        maxWidth: 1200,
+        margin: '0 auto',
+        padding: isMobile ? '16px' : '24px',
+      }}
+    >
       {/* Modern Page Header */}
       <GradientPageHeader
-        icon={<CloudSyncOutlined style={{
-          fontSize: isMobile ? '24px' : '36px',
-          color: 'white'
-        }} />}
+        icon={
+          <CloudSyncOutlined
+            style={{
+              fontSize: isMobile ? '24px' : '36px',
+              color: 'white',
+            }}
+          />
+        }
         title={t('syncTasks.title', 'Sync Tasks')}
-        subtitle={(
+        subtitle={
           <>
-            <BarChartOutlined style={{ fontSize: isMobile ? '16px' : '20px' }} />
-            {t('syncTasks.manageSyncTasks', 'Manage your synchronization tasks')}
+            <BarChartOutlined
+              style={{ fontSize: isMobile ? '16px' : '20px' }}
+            />
+            {t(
+              'syncTasks.manageSyncTasks',
+              'Manage your synchronization tasks',
+            )}
           </>
-        )}
+        }
         isMobile={isMobile}
         gradient={GRADIENT_THEMES.cyan}
       />
@@ -634,12 +742,12 @@ const SyncTasks = () => {
           pagination={{
             ...pagination,
             onChange: (page, pageSize) => {
-              setPagination(prev => ({ ...prev, current: page, pageSize }));
+              setPagination((prev) => ({ ...prev, current: page, pageSize }));
               // Trigger data reload after pagination changes
               setTimeout(() => {
                 loadTasks({});
               }, 0);
-            }
+            },
           }}
           filters={filterConfig}
           selectedRowKeys={selectedRowKeys}
@@ -662,28 +770,42 @@ const SyncTasks = () => {
         }}
         width={500}
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleCreateTask}
-        >
+        <Form form={form} layout="vertical" onFinish={handleCreateTask}>
           <Form.Item
             label={t('syncTasks.taskType')}
             name="type"
-            rules={[{ required: true, message: t('syncTasks.selectTaskTypeRequired') }]}
+            rules={[
+              {
+                required: true,
+                message: t('syncTasks.selectTaskTypeRequired'),
+              },
+            ]}
           >
-            <Select placeholder={t('syncTasks.selectTaskType')} onChange={handleTaskTypeChange}>
+            <Select
+              placeholder={t('syncTasks.selectTaskType')}
+              onChange={handleTaskTypeChange}
+            >
               <Option value="github_sync" disabled={!hasGitConfig}>
-                {t('syncTasks.taskTypes.github_sync')} {!hasGitConfig && `(${t('git.configRequired')})`}
+                {t('syncTasks.taskTypes.github_sync')}{' '}
+                {!hasGitConfig && `(${t('git.configRequired')})`}
               </Option>
               <Option value="leetcode_batch_sync" disabled={!hasLeetCodeConfig}>
-                {t('syncTasks.taskTypes.leetcode_batch_sync')} {!hasLeetCodeConfig && `(${t('leetcode.configRequired')})`}
+                {t('syncTasks.taskTypes.leetcode_batch_sync')}{' '}
+                {!hasLeetCodeConfig && `(${t('leetcode.configRequired')})`}
               </Option>
-              <Option value="leetcode_detail_sync" disabled={!hasLeetCodeConfig}>
-                {t('syncTasks.taskTypes.leetcode_detail_sync')} {!hasLeetCodeConfig && `(${t('leetcode.configRequired')})`}
+              <Option
+                value="leetcode_detail_sync"
+                disabled={!hasLeetCodeConfig}
+              >
+                {t('syncTasks.taskTypes.leetcode_detail_sync')}{' '}
+                {!hasLeetCodeConfig && `(${t('leetcode.configRequired')})`}
               </Option>
-              <Option value="notion_sync">{t('syncTasks.taskTypes.notion_sync')}</Option>
-              <Option value="ai_analysis">{t('syncTasks.taskTypes.ai_analysis')}</Option>
+              <Option value="notion_sync">
+                {t('syncTasks.taskTypes.notion_sync')}
+              </Option>
+              <Option value="ai_analysis">
+                {t('syncTasks.taskTypes.ai_analysis')}
+              </Option>
             </Select>
           </Form.Item>
 
@@ -693,17 +815,22 @@ const SyncTasks = () => {
               description={
                 leetcodeProfileLoading
                   ? t('syncTasks.loadingLeetCodeProfile')
-                  : leetcodeProfile && leetcodeProfile.total_submissions !== undefined
-                  ? t('syncTasks.leetcodeTotalSubmissions', { total: leetcodeProfile.total_submissions })
-                  : t('syncTasks.leetcodeTotalSubmissionsUnknown')
+                  : leetcodeProfile &&
+                      leetcodeProfile.total_submissions !== undefined
+                    ? t('syncTasks.leetcodeTotalSubmissions', {
+                        total: leetcodeProfile.total_submissions,
+                      })
+                    : t('syncTasks.leetcodeTotalSubmissionsUnknown')
               }
               type="info"
               showIcon
-              style={{ marginBottom:16}}
+              style={{ marginBottom: 16 }}
             />
           )}
 
-          {(selectedTaskType === 'leetcode_detail_sync' || selectedTaskType === 'github_sync' || selectedTaskType === 'gemini_sync') && (
+          {(selectedTaskType === 'leetcode_detail_sync' ||
+            selectedTaskType === 'github_sync' ||
+            selectedTaskType === 'gemini_sync') && (
             <Form.Item
               label={t('syncTasks.recordIdsList')}
               name="record_ids"
@@ -717,9 +844,12 @@ const SyncTasks = () => {
                 optionFilterProp="children"
                 showSearch
               >
-                {unsyncedRecords.map(record => (
+                {unsyncedRecords.map((record) => (
                   <Option key={record.id} value={record.id}>
-                    {record.problem_title ? `${record.problem_title} (#${record.id})` : `#${record.id}`} ({record.oj_type} - {record.language})
+                    {record.problem_title
+                      ? `${record.problem_title} (#${record.id})`
+                      : `#${record.id}`}{' '}
+                    ({record.oj_type} - {record.language})
                   </Option>
                 ))}
               </Select>

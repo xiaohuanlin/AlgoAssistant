@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class GitHubSyncStatus(str, Enum):
@@ -63,7 +63,7 @@ class GitHubSyncRequest(BaseModel):
 
     record_ids: Optional[List[int]] = Field(
         None,
-        max_items=1000,
+        max_length=1000,
         description="Specific record IDs to sync to GitHub. If not provided, all pending records will be synced. Maximum 1000 records per request.",
     )
     sync_all_pending: bool = Field(
@@ -140,8 +140,7 @@ class GitHubSyncTaskOut(BaseModel):
         description="Last task update timestamp in ISO 8601 format (UTC timezone). Updated during task execution.",
     )
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class GitHubConnectionTestOut(BaseModel):

@@ -68,17 +68,13 @@ const GitSyncIntegration = ({ recordIds, onSyncComplete }) => {
           <p>{t('git.configRequired')}</p>
         </div>
 
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSaveConfig}
-        >
+        <Form form={form} layout="vertical" onFinish={handleSaveConfig}>
           <Form.Item
             label={t('git.repoUrl')}
             name="repo_url"
             rules={[
               { required: true, message: t('git.repoUrlRequired') },
-              { type: 'url', message: t('git.repoUrlRequired') }
+              { type: 'url', message: t('git.repoUrlRequired') },
             ]}
           >
             <Input
@@ -112,7 +108,13 @@ const GitSyncIntegration = ({ recordIds, onSyncComplete }) => {
                 <div>{t('git.tokenHelp')}</div>
                 <div style={{ marginTop: '8px' }}>
                   <strong>{t('git.howToGetToken')}</strong>
-                  <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                  <div
+                    style={{
+                      fontSize: '12px',
+                      color: '#666',
+                      marginTop: '4px',
+                    }}
+                  >
                     <div>{t('git.tokenStep1')}</div>
                     <div>{t('git.tokenStep2')}</div>
                     <div>{t('git.tokenStep3')}</div>

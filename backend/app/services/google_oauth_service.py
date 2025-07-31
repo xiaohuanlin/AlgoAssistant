@@ -1,4 +1,5 @@
 import base64
+import logging
 from typing import Dict, Optional
 
 from cryptography.fernet import Fernet
@@ -7,6 +8,8 @@ from google.oauth2 import id_token
 from google_auth_oauthlib.flow import Flow
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class GoogleOAuthService:
@@ -77,7 +80,7 @@ class GoogleOAuthService:
                 "user_info": id_info,
             }
         except Exception as e:
-            print(f"Error exchanging code for token: {e}")
+            logger.error(f"Error exchanging code for token: {e}")
             return None
 
     def verify_id_token(self, id_token_str: str) -> Optional[Dict]:
@@ -88,7 +91,7 @@ class GoogleOAuthService:
             )
             return id_info
         except Exception as e:
-            print(f"Error verifying ID token: {e}")
+            logger.error(f"Error verifying ID token: {e}")
             return None
 
     def get_user_info_from_access_token(self, access_token: str) -> Optional[Dict]:
@@ -100,13 +103,13 @@ class GoogleOAuthService:
 
             import requests as http_requests
 
-            response = http_requests.get(url, headers=headers)
+            response = http_requests.get(url, headers=headers, timeout=30)
             response.raise_for_status()
 
             user_info = response.json()
             return user_info
         except Exception as e:
-            print(f"Error getting user info from access token: {e}")
+            logger.error(f"Error getting user info from access token: {e}")
             return None
 
     def encrypt_token(self, token: str) -> str:

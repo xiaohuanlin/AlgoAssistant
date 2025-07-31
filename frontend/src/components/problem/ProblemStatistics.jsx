@@ -6,9 +6,10 @@ import {
   ClockCircleOutlined,
   BookOutlined,
   CalendarOutlined,
-  TrophyOutlined
+  TrophyOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
+import { formatLocalTime } from '../../utils';
 import ResponsiveStatCard from '../dashboard/ResponsiveStatCard';
 import problemService from '../../services/problemService';
 
@@ -22,7 +23,7 @@ const ProblemStatistics = ({ problemId }) => {
     bestTime: null,
     bestMemory: null,
     totalReviews: 0,
-    lastAttemptDate: null
+    lastAttemptDate: null,
   });
 
   const fetchStatistics = async () => {
@@ -38,10 +39,9 @@ const ProblemStatistics = ({ problemId }) => {
         bestTime: data.best_time || null,
         bestMemory: data.best_memory || null,
         totalReviews: data.total_reviews || 0,
-        lastAttemptDate: data.last_attempt_date || null
+        lastAttemptDate: data.last_attempt_date || null,
       });
     } catch (error) {
-      console.error('Failed to fetch problem statistics:', error);
       message.error(t('problem.statisticsLoadError') + ': ' + error.message);
     } finally {
       setLoading(false);
@@ -79,7 +79,7 @@ const ProblemStatistics = ({ problemId }) => {
     if (diffDays === 0) return t('problem.today');
     if (diffDays === 1) return t('problem.yesterday');
     if (diffDays < 7) return t('problem.daysAgo', { days: diffDays });
-    return date.toLocaleDateString();
+    return formatLocalTime(date, 'YYYY-MM-DD');
   };
 
   if (loading) {
@@ -108,7 +108,13 @@ const ProblemStatistics = ({ problemId }) => {
             value={formatSuccessRate(statistics.successRate)}
             suffix="%"
             prefix={<CheckCircleOutlined />}
-            color={statistics.successRate >= 0.7 ? "#52c41a" : statistics.successRate >= 0.4 ? "#faad14" : "#f5222d"}
+            color={
+              statistics.successRate >= 0.7
+                ? '#52c41a'
+                : statistics.successRate >= 0.4
+                  ? '#faad14'
+                  : '#f5222d'
+            }
             loading={loading}
           />
         </Col>

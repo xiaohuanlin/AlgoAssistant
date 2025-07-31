@@ -1,3 +1,8 @@
 from .settings import settings
+from .sqlite_config import SQLiteConnectionManager, configure_sqlite_for_concurrency
 
-# 未来可扩展更多静态配置模块
+# Initialize SQLite optimizations
+configure_sqlite_for_concurrency()
+
+# Export all configuration components
+__all__ = ["settings", "SQLiteConnectionManager", "configure_sqlite_for_concurrency"]

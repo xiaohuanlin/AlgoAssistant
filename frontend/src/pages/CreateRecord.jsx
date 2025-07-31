@@ -1,5 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { Form, Input, Button, Select, DatePicker, message, Spin, Switch } from 'antd';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import {
+  Form,
+  Input,
+  Button,
+  Select,
+  DatePicker,
+  message,
+  Spin,
+  Switch,
+} from 'antd';
 import { useNavigate } from 'react-router-dom';
 import problemService from '../services/problemService';
 import recordsService from '../services/recordsService';
@@ -11,11 +20,24 @@ import StatusIndicator from '../components/common/StatusIndicator';
 const { Option } = Select;
 
 const languageOptions = [
-  'python', 'java', 'cpp', 'c', 'javascript', 'typescript', 'go', 'rust', 'other'
+  'python',
+  'java',
+  'cpp',
+  'c',
+  'javascript',
+  'typescript',
+  'go',
+  'rust',
+  'other',
 ];
 const ojTypeOptions = ['leetcode', 'other'];
 const executionResultOptions = [
-  'Accepted', 'Wrong Answer', 'Time Limit Exceeded', 'Runtime Error', 'Compile Error', 'Other'
+  'Accepted',
+  'Wrong Answer',
+  'Time Limit Exceeded',
+  'Runtime Error',
+  'Compile Error',
+  'Other',
 ]; // Keep values as-is for API compatibility, StatusIndicator will handle translation
 
 const CreateRecord = ({ problemId, onSuccess }) => {
@@ -31,102 +53,134 @@ const CreateRecord = ({ problemId, onSuccess }) => {
   const [topicTagOptions, setTopicTagOptions] = useState([]);
 
   // Common topic tags
-  const commonTags = [
-    'Array', 'String', 'Hash Table', 'Dynamic Programming', 'Math',
-    'Two Pointers', 'Greedy', 'Sorting', 'Binary Search', 'Tree',
-    'Depth-First Search', 'Breadth-First Search', 'Graph', 'Stack', 'Queue',
-    'Linked List', 'Binary Tree', 'Recursion', 'Backtracking', 'Sliding Window'
-  ];
+  const commonTags = useMemo(
+    () => [
+      'Array',
+      'String',
+      'Hash Table',
+      'Dynamic Programming',
+      'Math',
+      'Two Pointers',
+      'Greedy',
+      'Sorting',
+      'Binary Search',
+      'Tree',
+      'Depth-First Search',
+      'Breadth-First Search',
+      'Graph',
+      'Stack',
+      'Queue',
+      'Linked List',
+      'Binary Tree',
+      'Recursion',
+      'Backtracking',
+      'Sliding Window',
+    ],
+    [],
+  );
 
-  const handleProblemSearch = async (value) => {
-    setFetching(true);
-    try {
-      let searchResults = [];
+  const handleProblemSearch = useCallback(
+    async (value) => {
+      setFetching(true);
+      try {
+        let searchResults = [];
 
-      if (value) {
-        // Check if input is a number (ID search)
-        const isNumeric = /^\d+$/.test(value.trim());
+        if (value) {
+          // Check if input is a number (ID search)
+          const isNumeric = /^\d+$/.test(value.trim());
 
-        if (isNumeric) {
-          // Search by ID
-          try {
-            const problemId = parseInt(value.trim());
-            const singleProblem = await problemService.getProblem(problemId);
-            if (singleProblem) {
-              searchResults = [singleProblem];
+          if (isNumeric) {
+            // Search by ID
+            try {
+              const problemId = parseInt(value.trim());
+              const singleProblem = await problemService.getProblem(problemId);
+              if (singleProblem) {
+                searchResults = [singleProblem];
+              }
+            } catch (error) {
+              // If ID search fails, fall back to title search
+              const response = await problemService.getProblems({
+                title: value,
+                limit: 50,
+                sort_by: 'created_at',
+                sort_order: 'desc',
+              });
+              searchResults = Array.isArray(response)
+                ? response
+                : response.items || [];
             }
-          } catch (error) {
-            // If ID search fails, fall back to title search
+          } else {
+            // Search by title
             const response = await problemService.getProblems({
               title: value,
               limit: 50,
               sort_by: 'created_at',
-              sort_order: 'desc'
+              sort_order: 'desc',
             });
-            searchResults = Array.isArray(response) ? response : response.items || [];
+            searchResults = Array.isArray(response)
+              ? response
+              : response.items || [];
           }
         } else {
-          // Search by title
+          // Load problems with records (user's problems) when no search value
           const response = await problemService.getProblems({
-            title: value,
             limit: 50,
+            records_only: true,
             sort_by: 'created_at',
-            sort_order: 'desc'
+            sort_order: 'desc',
           });
-          searchResults = Array.isArray(response) ? response : response.items || [];
-        }
-      } else {
-        // Load problems with records (user's problems) when no search value
-        const response = await problemService.getProblems({
-          limit: 50,
-          records_only: true,
-          sort_by: 'created_at',
-          sort_order: 'desc'
-        });
-        searchResults = Array.isArray(response) ? response : response.items || [];
+          searchResults = Array.isArray(response)
+            ? response
+            : response.items || [];
 
-        // If no problems found with records_only, try again without the filter
-        if (searchResults.length === 0) {
-          const fallbackResponse = await problemService.getProblems({
-            limit: 50,
-            sort_by: 'created_at',
-            sort_order: 'desc'
-          });
-          searchResults = Array.isArray(fallbackResponse) ? fallbackResponse : fallbackResponse.items || [];
+          // If no problems found with records_only, try again without the filter
+          if (searchResults.length === 0) {
+            const fallbackResponse = await problemService.getProblems({
+              limit: 50,
+              sort_by: 'created_at',
+              sort_order: 'desc',
+            });
+            searchResults = Array.isArray(fallbackResponse)
+              ? fallbackResponse
+              : fallbackResponse.items || [];
+          }
         }
+
+        setProblemOptions(
+          searchResults.map((p) => ({
+            value: p.id,
+            label: `#${p.id} ${p.title}${p.difficulty ? ` (${p.difficulty})` : ''}${p.source ? ` [${p.source}]` : ''}`,
+          })),
+        );
+      } catch (e) {
+        message.error(
+          t('records.loadProblemsError') || 'Failed to load problems',
+        );
+        setProblemOptions([]);
+      } finally {
+        setFetching(false);
       }
-
-      setProblemOptions(
-        searchResults.map((p) => ({
-          value: p.id,
-          label: `#${p.id} ${p.title}${p.difficulty ? ` (${p.difficulty})` : ''}${p.source ? ` [${p.source}]` : ''}`,
-        }))
-      );
-    } catch (e) {
-      message.error(t('records.loadProblemsError') || 'Failed to load problems');
-      setProblemOptions([]);
-    } finally {
-      setFetching(false);
-    }
-  };
+    },
+    [t],
+  );
 
   // Load topic tags from database
-  const loadTopicTags = async () => {
+  const loadTopicTags = useCallback(async () => {
     try {
       const response = await recordsService.getTags();
-      const dbTags = response.map(tag => tag.name);
+      const dbTags = response.map((tag) => tag.name);
 
       // Combine common tags with database tags, remove duplicates
       const allTags = [...new Set([...commonTags, ...dbTags])];
-      const tagOptions = allTags.map(tag => ({ label: tag, value: tag }));
+      const tagOptions = allTags.map((tag) => ({ label: tag, value: tag }));
 
       setTopicTagOptions(tagOptions);
     } catch (error) {
       // If failed to load from database, just use common tags
-      const tagOptions = commonTags.map(tag => ({ label: tag, value: tag }));
+      const tagOptions = commonTags.map((tag) => ({ label: tag, value: tag }));
       setTopicTagOptions(tagOptions);
     }
-  };
+  }, [commonTags]);
 
   useEffect(() => {
     if (problemId) {
@@ -140,7 +194,7 @@ const CreateRecord = ({ problemId, onSuccess }) => {
 
     // Load topic tags
     loadTopicTags();
-  }, [problemId, form]);
+  }, [problemId, form, handleProblemSearch, loadTopicTags]);
 
   const getMonacoLang = (language) => {
     if (!language) return 'plaintext';
@@ -161,7 +215,9 @@ const CreateRecord = ({ problemId, onSuccess }) => {
       const payload = {
         ...values,
         code: codeValue,
-        submit_time: values.submit_time ? values.submit_time.toISOString() : undefined,
+        submit_time: values.submit_time
+          ? values.submit_time.toISOString()
+          : undefined,
       };
       await recordsService.createRecord(payload);
       message.success(t('records.createSuccess'));
@@ -195,24 +251,48 @@ const CreateRecord = ({ problemId, onSuccess }) => {
           <Form.Item
             name="problem_id"
             label={t('records.problem')}
-            rules={[{ required: true, message: t('records.problemIdRequired') }]}
-            extra={t('records.problemSelectionHint') || 'Select from your problems or search by title'}
+            rules={[
+              { required: true, message: t('records.problemIdRequired') },
+            ]}
+            extra={
+              t('records.problemSelectionHint') ||
+              'Select from your problems or search by title'
+            }
           >
             <Select
               showSearch
               allowClear
-              placeholder={t('records.problemSearchPlaceholder') || 'Search by problem title or enter problem ID'}
+              placeholder={
+                t('records.problemSearchPlaceholder') ||
+                'Search by problem title or enter problem ID'
+              }
               filterOption={false}
               onSearch={handleProblemSearch}
               options={problemOptions}
-              notFoundContent={fetching ? <Spin size="small" /> : (problemOptions.length === 0 ? t('records.noProblemsFound') || 'No problems found. Try searching by title or ID.' : null)}
+              notFoundContent={
+                fetching ? (
+                  <Spin size="small" />
+                ) : problemOptions.length === 0 ? (
+                  t('records.noProblemsFound') ||
+                  'No problems found. Try searching by title or ID.'
+                ) : null
+              }
               disabled={!!problemId}
               dropdownRender={(menu) => (
                 <>
                   {menu}
                   {!fetching && problemOptions.length === 0 && (
-                    <div style={{ padding: '8px', borderTop: '1px solid #f0f0f0', color: '#666', fontSize: '12px' }}>
-                      💡 {t('records.problemSearchHint') || 'You can search by problem title or enter a problem ID directly (e.g., "1", "two sum")'}
+                    <div
+                      style={{
+                        padding: '8px',
+                        borderTop: '1px solid #f0f0f0',
+                        color: '#666',
+                        fontSize: '12px',
+                      }}
+                    >
+                      💡{' '}
+                      {t('records.problemSearchHint') ||
+                        'You can search by problem title or enter a problem ID directly (e.g., "1", "two sum")'}
                     </div>
                   )}
                 </>
@@ -259,25 +339,51 @@ const CreateRecord = ({ problemId, onSuccess }) => {
               showSearch
               placeholder={t('records.languagePlaceholder')}
               value={languageValue}
-              onChange={v => setLanguageValue(v)}
+              onChange={(v) => setLanguageValue(v)}
             >
               {languageOptions.map((lang) => (
-                <Option key={lang} value={lang}>{lang}</Option>
+                <Option key={lang} value={lang}>
+                  {lang}
+                </Option>
               ))}
             </Select>
           </Form.Item>
           <Form.Item name="code" label={t('records.code')}>
-            <div style={{ position: 'relative', borderRadius: 6, overflow: 'hidden', marginBottom: 8, minHeight: 320, width: '100%' }}>
-              <div style={{ position: 'absolute', top: 8, right: 12, zIndex: 2, display: 'flex', alignItems: 'center' }}>
-                <span style={{ marginRight: 6, color: '#aaa', fontSize: 13 }}>{t('records.codeCompletion') || 'Completion'}</span>
-                <Switch size="small" checked={completionEnabled} onChange={setCompletionEnabled} />
+            <div
+              style={{
+                position: 'relative',
+                borderRadius: 6,
+                overflow: 'hidden',
+                marginBottom: 8,
+                minHeight: 320,
+                width: '100%',
+              }}
+            >
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 8,
+                  right: 12,
+                  zIndex: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
+                <span style={{ marginRight: 6, color: '#aaa', fontSize: 13 }}>
+                  {t('records.codeCompletion') || 'Completion'}
+                </span>
+                <Switch
+                  size="small"
+                  checked={completionEnabled}
+                  onChange={setCompletionEnabled}
+                />
               </div>
               <MonacoEditor
                 height="320px"
                 defaultLanguage={getMonacoLang(languageValue)}
                 language={getMonacoLang(languageValue)}
                 value={codeValue}
-                onChange={v => setCodeValue(v || '')}
+                onChange={(v) => setCodeValue(v || '')}
                 theme="vs-dark"
                 options={{
                   fontSize: 16,
@@ -299,7 +405,8 @@ const CreateRecord = ({ problemId, onSuccess }) => {
                   tabSize: 4,
                   insertSpaces: true,
                   automaticLayout: true,
-                  fontFamily: 'Menlo, Monaco, Consolas, "Courier New", monospace',
+                  fontFamily:
+                    'Menlo, Monaco, Consolas, "Courier New", monospace',
                   selectionHighlight: true,
                   selectionClipboard: true,
                   smoothScrolling: true,
@@ -330,22 +437,44 @@ const CreateRecord = ({ problemId, onSuccess }) => {
           <Form.Item
             name="submit_time"
             label={t('records.submitTime')}
-            rules={[{ required: true, message: t('records.submitTimePlaceholder') }]}
+            rules={[
+              { required: true, message: t('records.submitTimePlaceholder') },
+            ]}
             initialValue={dayjs()}
           >
             <DatePicker showTime style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="runtime" label={t('records.runtime')}>
-            <Input placeholder={t('records.runtimePlaceholder', 'e.g., 100ms')} />
+            <Input
+              placeholder={t('records.runtimePlaceholder', 'e.g., 100ms')}
+            />
           </Form.Item>
           <Form.Item name="memory" label={t('records.memory')}>
             <Input placeholder={t('records.memoryPlaceholder', 'e.g., 50MB')} />
           </Form.Item>
-          <Form.Item name="runtime_percentile" label={t('records.runtimePercentile')}>
-            <Input type="number" min={0} max={100} step={0.01} placeholder={t('records.runtimePercentile')} />
+          <Form.Item
+            name="runtime_percentile"
+            label={t('records.runtimePercentile')}
+          >
+            <Input
+              type="number"
+              min={0}
+              max={100}
+              step={0.01}
+              placeholder={t('records.runtimePercentile')}
+            />
           </Form.Item>
-          <Form.Item name="memory_percentile" label={t('records.memoryPercentile')}>
-            <Input type="number" min={0} max={100} step={0.01} placeholder={t('records.memoryPercentile')} />
+          <Form.Item
+            name="memory_percentile"
+            label={t('records.memoryPercentile')}
+          >
+            <Input
+              type="number"
+              min={0}
+              max={100}
+              step={0.01}
+              placeholder={t('records.memoryPercentile')}
+            />
           </Form.Item>
           <Form.Item name="total_correct" label={t('records.totalCorrect')}>
             <Input type="number" min={0} />
@@ -356,7 +485,10 @@ const CreateRecord = ({ problemId, onSuccess }) => {
           <Form.Item name="topic_tags" label={t('records.topicTags')}>
             <Select
               mode="tags"
-              placeholder={t('records.topicTagsPlaceholder', 'Select or add topic tags')}
+              placeholder={t(
+                'records.topicTagsPlaceholder',
+                'Select or add topic tags',
+              )}
               options={topicTagOptions}
               showSearch
               filterOption={(input, option) =>

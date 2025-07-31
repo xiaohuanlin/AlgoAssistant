@@ -22,18 +22,26 @@ class RecordsService {
   async getRecords(filters = {}) {
     try {
       // Multi-value params to support
-      const multiParams = ['status', 'oj_sync_status', 'github_sync_status', 'ai_sync_status', 'notion_sync_status'];
+      const multiParams = [
+        'status',
+        'oj_sync_status',
+        'github_sync_status',
+        'ai_sync_status',
+        'notion_sync_status',
+      ];
       const params = { ...filters };
       // Convert array params to repeated query params
       const searchParams = new URLSearchParams();
       Object.entries(params).forEach(([key, value]) => {
         if (multiParams.includes(key) && Array.isArray(value)) {
-          value.forEach(v => searchParams.append(key, v));
+          value.forEach((v) => searchParams.append(key, v));
         } else if (value !== undefined && value !== null) {
           searchParams.append(key, value);
         }
       });
-      const response = await api.get(API_ENDPOINTS.RECORDS.LIST + '?' + searchParams.toString());
+      const response = await api.get(
+        API_ENDPOINTS.RECORDS.LIST + '?' + searchParams.toString(),
+      );
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -76,7 +84,10 @@ class RecordsService {
    */
   async updateRecord(recordId, recordData) {
     try {
-      const response = await api.put(API_ENDPOINTS.RECORDS.UPDATE(recordId), recordData);
+      const response = await api.put(
+        API_ENDPOINTS.RECORDS.UPDATE(recordId),
+        recordData,
+      );
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -131,9 +142,12 @@ class RecordsService {
    */
   async assignTags(recordId, tagNames) {
     try {
-      const response = await api.post(API_ENDPOINTS.RECORDS.ASSIGN_TAGS(recordId), {
-        tag_names: tagNames
-      });
+      const response = await api.post(
+        API_ENDPOINTS.RECORDS.ASSIGN_TAGS(recordId),
+        {
+          tag_names: tagNames,
+        },
+      );
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -148,9 +162,12 @@ class RecordsService {
    */
   async updateTagWiki(tagId, wiki) {
     try {
-      const response = await api.put(API_ENDPOINTS.RECORDS.UPDATE_TAG_WIKI(tagId), {
-        wiki
-      });
+      const response = await api.put(
+        API_ENDPOINTS.RECORDS.UPDATE_TAG_WIKI(tagId),
+        {
+          wiki,
+        },
+      );
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -164,7 +181,7 @@ class RecordsService {
    */
   async getRecordsByIds(recordIds) {
     try {
-      const promises = recordIds.map(id => this.getRecord(id));
+      const promises = recordIds.map((id) => this.getRecord(id));
       return await Promise.all(promises);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -181,7 +198,7 @@ class RecordsService {
     try {
       const searchFilters = {
         ...filters,
-        problem_title: query
+        problem_title: query,
       };
       return await this.getRecords(searchFilters);
     } catch (error) {
@@ -196,7 +213,7 @@ class RecordsService {
    */
   getExecutionStatusTextKey(status) {
     const statusKeyMap = {
-      'Accepted': 'records.statusAccepted',
+      Accepted: 'records.statusAccepted',
       'Wrong Answer': 'records.statusWrongAnswer',
       'Time Limit Exceeded': 'records.statusTimeLimitExceeded',
       'Memory Limit Exceeded': 'records.statusMemoryLimitExceeded',
@@ -214,7 +231,7 @@ class RecordsService {
    */
   getExecutionStatusColor(status) {
     const colorMap = {
-      'Accepted': 'success',
+      Accepted: 'success',
       'Wrong Answer': 'error',
       'Time Limit Exceeded': 'warning',
       'Memory Limit Exceeded': 'warning',
@@ -232,13 +249,13 @@ class RecordsService {
    */
   getLanguageColor(language) {
     const colorMap = {
-      'python': 'green',
-      'java': 'orange',
-      'cpp': 'blue',
-      'javascript': 'yellow',
-      'typescript': 'cyan',
-      'go': 'purple',
-      'rust': 'red',
+      python: 'green',
+      java: 'orange',
+      cpp: 'blue',
+      javascript: 'yellow',
+      typescript: 'cyan',
+      go: 'purple',
+      rust: 'red',
     };
     return colorMap[language.toLowerCase()] || 'default';
   }
@@ -250,9 +267,9 @@ class RecordsService {
    */
   getOJTypeColor(ojType) {
     const colorMap = {
-      'leetcode': 'orange',
-      'nowcoder': 'blue',
-      'other': 'default',
+      leetcode: 'orange',
+      nowcoder: 'blue',
+      other: 'default',
     };
     return colorMap[ojType] || 'default';
   }
@@ -264,9 +281,9 @@ class RecordsService {
    */
   getDifficultyColor(difficulty) {
     const colorMap = {
-      'Easy': 'green',
-      'Medium': 'orange',
-      'Hard': 'red',
+      Easy: 'green',
+      Medium: 'orange',
+      Hard: 'red',
     };
     return colorMap[difficulty] || 'default';
   }

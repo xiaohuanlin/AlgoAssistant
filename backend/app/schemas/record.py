@@ -111,8 +111,7 @@ class RecordCreate(BaseModel):
         None, description="The path of the solution in the git repository"
     )
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RecordListOut(BaseModel):
@@ -309,8 +308,7 @@ class TagOut(TagBase):
         ..., description="Last tag update timestamp in ISO 8601 format (UTC timezone)."
     )
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SyncTaskCreate(BaseModel):
@@ -406,18 +404,19 @@ class SyncTaskOut(BaseModel):
         description="Last task update timestamp in ISO 8601 format (UTC timezone). Updated during task execution.",
     )
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SyncTaskListOut(BaseModel):
     """Response schema for sync task list with pagination."""
+
     total: int
     items: List[SyncTaskOut]
 
 
 class SyncTaskStatsOut(BaseModel):
     """Response schema for sync task statistics."""
+
     total: int = Field(..., description="Total number of sync tasks")
     pending: int = Field(..., description="Number of pending tasks")
     running: int = Field(..., description="Number of running tasks")
@@ -486,8 +485,8 @@ class TagAssignRequest(BaseModel):
 
     tag_names: List[str] = Field(
         ...,
-        min_items=1,
-        max_items=20,
+        min_length=1,
+        max_length=20,
         description="List of tag names to assign to the record. Must contain at least one tag, maximum 20 tags.",
     )
 
@@ -538,5 +537,4 @@ class RecordManualCreate(BaseModel):
     )
     topic_tags: Optional[List[str]] = Field(None, description="The tags of the problem")
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)

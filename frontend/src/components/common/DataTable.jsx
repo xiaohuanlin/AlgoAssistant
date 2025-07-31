@@ -1,6 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Space, Button, Input, Select, DatePicker, Row, Col, Typography, Alert } from 'antd';
-import { SearchOutlined, FilterOutlined, ReloadOutlined } from '@ant-design/icons';
+import {
+  Table,
+  Card,
+  Space,
+  Button,
+  Input,
+  Select,
+  DatePicker,
+  Row,
+  Col,
+  Typography,
+  Alert,
+} from 'antd';
+import {
+  SearchOutlined,
+  FilterOutlined,
+  ReloadOutlined,
+} from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import useDebounce from '../../hooks/useDebounce';
 
@@ -27,21 +43,21 @@ const DataTable = ({
   className = '',
   size = 'middle',
   rowKey = 'id',
-  showFilterButtons = true
+  showFilterButtons = true,
 }) => {
   const { t } = useTranslation();
   const [inputValues, setInputValues] = useState({});
   const [searchInputValue, setSearchInputValue] = useState('');
-  
+
   // Create debounced values for search
   const debouncedSearchValue = useDebounce(searchInputValue, 500);
-  
+
   // Create debounced values for all input values at once
   const debouncedInputValues = useDebounce(inputValues, 500);
 
   // Handle debounced input changes
   useEffect(() => {
-    filters.forEach(filter => {
+    filters.forEach((filter) => {
       if (filter.type === 'input' && filter.onChange) {
         const debouncedValue = debouncedInputValues[filter.key] || '';
         if (debouncedValue !== (filter.value || '')) {
@@ -53,13 +69,17 @@ const DataTable = ({
 
   // Handle debounced search changes
   useEffect(() => {
-    if (searchConfig && searchConfig.onChange && debouncedSearchValue !== (searchConfig.value || '')) {
+    if (
+      searchConfig &&
+      searchConfig.onChange &&
+      debouncedSearchValue !== (searchConfig.value || '')
+    ) {
       searchConfig.onChange(debouncedSearchValue);
     }
-  }, [debouncedSearchValue]);
+  }, [debouncedSearchValue, searchConfig]);
 
   const handleInputChange = (key, value) => {
-    setInputValues(prev => ({ ...prev, [key]: value }));
+    setInputValues((prev) => ({ ...prev, [key]: value }));
     // Only set the input value, let the debounced useEffect handle the onChange call
   };
 
@@ -72,14 +92,23 @@ const DataTable = ({
           {filters.map((filter, index) => (
             <Col key={filter.key || index} xs={24} sm={12} md={8} lg={6}>
               <div>
-                <Text type="secondary" style={{ fontSize: 12, marginBottom: 4, display: 'block' }}>
+                <Text
+                  type="secondary"
+                  style={{ fontSize: 12, marginBottom: 4, display: 'block' }}
+                >
                   {filter.label}
                 </Text>
                 {filter.type === 'input' && (
                   <Input
                     placeholder={filter.placeholder}
-                    value={inputValues[filter.key] !== undefined ? inputValues[filter.key] : (filter.value || '')}
-                    onChange={(e) => handleInputChange(filter.key, e.target.value)}
+                    value={
+                      inputValues[filter.key] !== undefined
+                        ? inputValues[filter.key]
+                        : filter.value || ''
+                    }
+                    onChange={(e) =>
+                      handleInputChange(filter.key, e.target.value)
+                    }
                     allowClear
                     onClear={() => handleInputChange(filter.key, '')}
                   />
@@ -111,6 +140,7 @@ const DataTable = ({
                     onChange={filter.onChange}
                     style={{ width: '100%' }}
                     size="middle"
+                    placeholder={filter.placeholder}
                   />
                 )}
               </div>
@@ -124,16 +154,18 @@ const DataTable = ({
                     // Clear input values in DataTable component
                     setInputValues({});
                     setSearchInputValue('');
-                    
+
                     if (onClearFilters) {
                       onClearFilters();
                     } else {
                       // Fallback to individual filter clearing
-                      filters.forEach(filter => {
+                      filters.forEach((filter) => {
                         if (filter.onClear) {
                           filter.onClear();
                         } else if (filter.onChange) {
-                          filter.onChange(filter.type === 'select' ? undefined : '');
+                          filter.onChange(
+                            filter.type === 'select' ? undefined : '',
+                          );
                         }
                       });
                       if (onFilterChange) {
@@ -162,12 +194,12 @@ const DataTable = ({
                       // Clear input values in DataTable component
                       setInputValues({});
                       setSearchInputValue('');
-                      
+
                       if (onClearFilters) {
                         onClearFilters();
                       } else {
                         // Fallback to individual filter clearing
-                        filters.forEach(filter => {
+                        filters.forEach((filter) => {
                           if (filter.onClear) {
                             filter.onClear();
                           } else if (filter.onChange) {
@@ -192,19 +224,25 @@ const DataTable = ({
     const isMobile = window.innerWidth <= 768;
 
     return (
-      <div style={{
-        display: 'flex',
-        flexDirection: isMobile ? 'column' : 'row',
-        justifyContent: 'space-between',
-        alignItems: isMobile ? 'stretch' : 'center',
-        marginBottom: 16,
-        gap: isMobile ? 12 : 0
-      }}>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          justifyContent: 'space-between',
+          alignItems: isMobile ? 'stretch' : 'center',
+          marginBottom: 16,
+          gap: isMobile ? 12 : 0,
+        }}
+      >
         <div>
-          <Text strong style={{ fontSize: isMobile ? 16 : 18 }}>{title}</Text>
+          <Text strong style={{ fontSize: isMobile ? 16 : 18 }}>
+            {title}
+          </Text>
           {subtitle && (
             <div>
-              <Text type="secondary" style={{ fontSize: isMobile ? 12 : 14 }}>{subtitle}</Text>
+              <Text type="secondary" style={{ fontSize: isMobile ? 12 : 14 }}>
+                {subtitle}
+              </Text>
             </div>
           )}
         </div>
@@ -212,17 +250,24 @@ const DataTable = ({
           wrap
           style={{
             justifyContent: isMobile ? 'space-between' : 'flex-end',
-            width: isMobile ? '100%' : 'auto'
+            width: isMobile ? '100%' : 'auto',
           }}
         >
           {searchConfig && (
             <Input
               placeholder={searchConfig.placeholder}
               prefix={<SearchOutlined />}
-              value={searchInputValue !== '' ? searchInputValue : (searchConfig.value || '')}
+              value={
+                searchInputValue !== ''
+                  ? searchInputValue
+                  : searchConfig.value || ''
+              }
               onChange={(e) => setSearchInputValue(e.target.value)}
               onPressEnter={searchConfig.onSearch}
-              style={{ width: isMobile ? '100%' : 200, minWidth: isMobile ? 200 : 200 }}
+              style={{
+                width: isMobile ? '100%' : 200,
+                minWidth: isMobile ? 200 : 200,
+              }}
               allowClear
               onClear={() => setSearchInputValue('')}
             />
@@ -256,11 +301,13 @@ const DataTable = ({
     );
   };
 
-  const rowSelection = onSelectionChange ? {
-    selectedRowKeys,
-    onChange: onSelectionChange,
-    preserveSelectedRowKeys: true
-  } : null;
+  const rowSelection = onSelectionChange
+    ? {
+        selectedRowKeys,
+        onChange: onSelectionChange,
+        preserveSelectedRowKeys: true,
+      }
+    : null;
 
   return (
     <div className={`data-table ${className}`} style={{ padding: '0 8px' }}>
@@ -280,7 +327,7 @@ const DataTable = ({
         style={{
           borderRadius: '12px',
           boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
-          border: '1px solid #f0f0f0'
+          border: '1px solid #f0f0f0',
         }}
         styles={{ body: { padding: '12px' } }}
       >
@@ -292,13 +339,15 @@ const DataTable = ({
             showSizeChanger: true,
             showQuickJumper: window.innerWidth > 768,
             showTotal: (total, range) =>
-              window.innerWidth > 768 ? t('review.pagination.showing', {
-                start: range[0],
-                end: range[1],
-                total
-              }) : `${range[0]}-${range[1]} / ${total}`,
+              window.innerWidth > 768
+                ? t('review.pagination.showing', {
+                    start: range[0],
+                    end: range[1],
+                    total,
+                  })
+                : `${range[0]}-${range[1]} / ${total}`,
             simple: window.innerWidth <= 768,
-            ...pagination
+            ...pagination,
           }}
           rowSelection={rowSelection}
           rowKey={rowKey}

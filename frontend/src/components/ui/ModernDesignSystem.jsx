@@ -6,59 +6,53 @@ const { Title, Text } = Typography;
 
 /**
  * Modern Design System Components
- * 基于复习计划详情页面的现代化设计风格提取的可复用组件
+ * Reusable components extracted from modern design style based on review plan detail page
  */
 
-// 1. 渐变页面头部组件
-export const GradientPageHeader = ({ 
-  icon, 
-  title, 
-  subtitle, 
+// 1. Gradient Page Header Component
+export const GradientPageHeader = ({
+  icon,
+  title,
+  subtitle,
   isMobile = false,
-  gradient = 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%)'
+  gradient = 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%)',
 }) => {
   return (
-    <div className={`gradient-page-header ${isMobile ? 'mobile' : ''}`} style={{ background: gradient }}>
-      {/* 背景装饰 */}
+    <div
+      className={`gradient-page-header ${isMobile ? 'mobile' : ''}`}
+      style={{ background: gradient }}
+    >
+      {/* Background Decoration */}
       <div className="gradient-decoration gradient-decoration-1" />
       <div className="gradient-decoration gradient-decoration-2" />
-      
+
       <div className="gradient-header-content">
-        {/* 图标容器 */}
-        <div className="gradient-icon-container">
-          {icon}
-        </div>
-        
-        {/* 标题 */}
-        <Title 
-          level={isMobile ? 3 : 1} 
-          className="gradient-header-title"
-        >
+        {/* Icon Container */}
+        <div className="gradient-icon-container">{icon}</div>
+
+        {/* Title */}
+        <Title level={isMobile ? 3 : 1} className="gradient-header-title">
           {title}
         </Title>
-        
-        {/* 副标题 */}
-        {subtitle && (
-          <div className="gradient-header-subtitle">
-            {subtitle}
-          </div>
-        )}
+
+        {/* Subtitle */}
+        {subtitle && <div className="gradient-header-subtitle">{subtitle}</div>}
       </div>
     </div>
   );
 };
 
-// 2. 现代化图标容器组件
-export const ModernIconContainer = ({ 
-  icon, 
-  size = 'medium', 
+// 2. Modern Icon Container Component
+export const ModernIconContainer = ({
+  icon,
+  size = 'medium',
   gradient = 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-  isMobile = false 
+  isMobile = false,
 }) => {
   const sizeClass = isMobile ? `${size}-mobile` : size;
-  
+
   return (
-    <div 
+    <div
       className={`modern-icon-container ${sizeClass}`}
       style={{ background: gradient }}
     >
@@ -67,28 +61,26 @@ export const ModernIconContainer = ({
   );
 };
 
-// 3. 现代化卡片组件
-export const ModernCard = ({ 
-  title, 
-  icon, 
-  iconGradient = 'linear-gradient(135deg, #6366f1, #8b5cf6)', 
-  children, 
+// 3. Modern Card Component
+export const ModernCard = ({
+  title,
+  icon,
+  iconGradient = 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+  children,
   isMobile = false,
-  ...props 
+  ...props
 }) => {
   return (
     <Card
       title={
         <div className={`modern-card-title ${isMobile ? 'mobile' : ''}`}>
-          <ModernIconContainer 
-            icon={icon} 
-            gradient={iconGradient} 
+          <ModernIconContainer
+            icon={icon}
+            gradient={iconGradient}
             size="small"
             isMobile={isMobile}
           />
-          <span className="modern-card-title-text">
-            {title}
-          </span>
+          <span className="modern-card-title-text">{title}</span>
         </div>
       }
       className={`modern-card ${isMobile ? 'mobile' : ''}`}
@@ -99,21 +91,21 @@ export const ModernCard = ({
   );
 };
 
-// 4. 现代化信息项组件
-export const ModernInfoItem = ({ 
-  icon, 
-  label, 
-  value, 
+// 4. Modern Info Item Component
+export const ModernInfoItem = ({
+  icon,
+  label,
+  value,
   iconGradient = 'linear-gradient(135deg, #10b981, #059669)',
   isMobile = false,
-  valueComponent = null
+  valueComponent = null,
 }) => {
   return (
     <div className={`modern-info-item ${isMobile ? 'mobile' : ''}`}>
       <div className="modern-info-header">
-        <ModernIconContainer 
-          icon={icon} 
-          gradient={iconGradient} 
+        <ModernIconContainer
+          icon={icon}
+          gradient={iconGradient}
           size="small"
           isMobile={isMobile}
         />
@@ -122,25 +114,21 @@ export const ModernInfoItem = ({
         </Text>
       </div>
       <div className="modern-info-content">
-        {valueComponent || (
-          <div className="modern-info-value">
-            {value}
-          </div>
-        )}
+        {valueComponent || <div className="modern-info-value">{value}</div>}
       </div>
     </div>
   );
 };
 
-// 5. 渐变按钮组件
-export const GradientButton = ({ 
-  children, 
+// 5. Gradient Button Component
+export const GradientButton = ({
+  children,
   gradient = 'linear-gradient(135deg, #10b981, #059669)',
   isMobile = false,
-  ...props 
+  ...props
 }) => {
   return (
-    <button 
+    <button
       className={`gradient-button ${isMobile ? 'mobile' : ''}`}
       style={{ background: gradient }}
       {...props}
@@ -150,20 +138,18 @@ export const GradientButton = ({
   );
 };
 
-// 6. 现代化标签组件
-export const ModernTag = ({ 
-  children, 
-  type = 'default', 
-  isMobile = false 
-}) => {
+// 6. Modern Tag Component
+export const ModernTag = ({ children, type = 'default', isMobile = false }) => {
   return (
-    <span className={`modern-tag modern-tag-${type} ${isMobile ? 'mobile' : ''}`}>
+    <span
+      className={`modern-tag modern-tag-${type} ${isMobile ? 'mobile' : ''}`}
+    >
       {children}
     </span>
   );
 };
 
-// 预定义的渐变色彩方案
+// Predefined gradient color schemes
 export const GRADIENT_THEMES = {
   primary: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
   success: 'linear-gradient(135deg, #10b981, #059669)',
@@ -174,15 +160,17 @@ export const GRADIENT_THEMES = {
   pink: 'linear-gradient(135deg, #ec4899, #be185d)',
   cyan: 'linear-gradient(135deg, #06b6d4, #0891b2)',
   slate: 'linear-gradient(135deg, #64748b, #475569)',
-  pageHeader: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%)'
+  pageHeader: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%)',
 };
 
-export default {
+const ModernDesignSystem = {
   GradientPageHeader,
   ModernIconContainer,
   ModernCard,
   ModernInfoItem,
   GradientButton,
   ModernTag,
-  GRADIENT_THEMES
+  GRADIENT_THEMES,
 };
+
+export default ModernDesignSystem;

@@ -13,7 +13,10 @@ class AuthService {
   async register(userData) {
     try {
       const response = await api.post(API_ENDPOINTS.USERS.REGISTER, userData);
-      return handleApiSuccess(response);
+      const result = handleApiSuccess(response);
+      // Store token and user info after successful registration
+      this.setAuthData(result.access_token, result.user);
+      return result;
     } catch (error) {
       throw new Error(handleApiError(error));
     }
@@ -46,7 +49,7 @@ class AuthService {
   async googleLogin(accessToken) {
     try {
       const response = await api.post(API_ENDPOINTS.GOOGLE.LOGIN, {
-        access_token: accessToken
+        access_token: accessToken,
       });
       const result = handleApiSuccess(response);
       // Store token and user info
@@ -113,7 +116,38 @@ class AuthService {
    */
   async changePassword(passwordData) {
     try {
-      const response = await api.post('/api/users/change-password', passwordData);
+      const response = await api.post(
+        '/api/users/change-password',
+        passwordData,
+      );
+      return handleApiSuccess(response);
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
+
+  /**
+   * Set password for OAuth users
+   * @param {Object} passwordData - Password data
+   * @param {string} passwordData.new_password - New password
+   * @returns {Promise<Object>} Set result
+   */
+  async setPassword(passwordData) {
+    try {
+      const response = await api.post('/api/users/set-password', passwordData);
+      return handleApiSuccess(response);
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
+
+  /**
+   * Get user authentication type
+   * @returns {Promise<Object>} Auth type info
+   */
+  async getUserAuthType() {
+    try {
+      const response = await api.get('/api/users/auth-type');
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));

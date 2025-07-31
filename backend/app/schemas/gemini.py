@@ -2,11 +2,13 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class GeminiConfig(BaseModel):
     """Gemini AI service configuration for code analysis using GooglesGemini model."""
+
+    model_config = ConfigDict(protected_namespaces=())
 
     api_key: Optional[str] = Field(
         None,
@@ -84,7 +86,7 @@ class AIAnalysisResult(BaseModel):
     # Detailed analysis
     step_analysis: List[str] = Field(
         ...,
-        max_items=20,
+        max_length=20,
         description="Step-by-step analysis of the solution approach.",
     )
 
@@ -97,13 +99,13 @@ class AIAnalysisResult(BaseModel):
     # Improvement suggestions
     improvement_suggestions: List[str] = Field(
         default=[],
-        max_items=10,
+        max_length=10,
         description="List of suggestions for improving the solution.",
     )
     # Related problems
     related_problems: List[str] = Field(
         default=[],
-        max_items=10,
+        max_length=10,
         description="List of related problem numbers for further practice.",
     )
     # Performance insights
@@ -116,13 +118,13 @@ class AIAnalysisResult(BaseModel):
     # Code patterns
     code_patterns: List[str] = Field(
         default=[],
-        max_items=10,
+        max_length=10,
         description="Identified code patterns and techniques used in the solution.",
     )
     # Learning points
     learning_points: List[str] = Field(
         default=[],
-        max_items=10,
+        max_length=10,
         description="Key learning points from this solution.",
     )
 
@@ -159,6 +161,8 @@ class AIAnalysisStatsResponse(BaseModel):
 
 
 class GeminiAIAnalysisSchema(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+
     summary: str = Field(..., description="Brief overview of the solution's approach")
     solution_types: List[str] = Field(
         ..., description="Types of the solution, e.g., DFS, DP, Greedy, etc."

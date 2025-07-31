@@ -27,17 +27,34 @@ class NotificationService:
         results = {}
 
         try:
+            # Limit notifications to first 10 reviews to avoid email overload
+            limited_reviews = reviews[:10]
+
             reviews_data = []
-            for review in reviews:
+            for review in limited_reviews:
                 problem = review.problem
                 reviews_data.append(
                     {
-                        "problem_title": problem.title
-                        if problem
-                        else "Unknown Problem",
-                        "wrong_reason": review.wrong_reason,
-                        "review_plan": review.review_plan,
+                        "problem_title": (
+                            problem.title if problem else "Unknown Problem"
+                        ),
+                        "wrong_reason": review.wrong_reason or "Not specified",
+                        "review_plan": review.review_plan or "Not specified",
                         "review_id": review.id,
+                        "execution_result": "Wrong Answer",  # Default since this is a review
+                        "language": "N/A",  # Not available in review model
+                    }
+                )
+
+            # Add summary info if there are more reviews
+            total_reviews = len(reviews)
+            if total_reviews > 10:
+                reviews_data.append(
+                    {
+                        "problem_title": f"... and {total_reviews - 10} more problems",
+                        "wrong_reason": "Additional problems need review",
+                        "review_plan": "Check your review dashboard for all pending items",
+                        "review_id": 0,  # Special ID for summary item
                     }
                 )
 

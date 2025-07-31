@@ -209,12 +209,12 @@ class RedisRateLimiter:
                 "user_id": user_id,
                 "operation": operation,
                 "current_requests": current_requests,
-                "oldest_request_time": int(oldest_request[0][1])
-                if oldest_request
-                else None,
-                "newest_request_time": int(newest_request[0][1])
-                if newest_request
-                else None,
+                "oldest_request_time": (
+                    int(oldest_request[0][1]) if oldest_request else None
+                ),
+                "newest_request_time": (
+                    int(newest_request[0][1]) if newest_request else None
+                ),
                 "key_expires_in": self.redis_client.ttl(key),
             }
 

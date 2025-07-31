@@ -1,22 +1,28 @@
 import React, { useState } from 'react';
 import { Form, Input, Button, Card, message } from 'antd';
-import { UserOutlined, LockOutlined, MailOutlined, SmileOutlined } from '@ant-design/icons';
+import {
+  UserOutlined,
+  LockOutlined,
+  MailOutlined,
+  SmileOutlined,
+} from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
-import authService from '../services/authService';
+import { useAuth } from '../contexts/AuthContext';
 import '../styles/Login.css';
 
 const Register = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { register } = useAuth();
   const [loading, setLoading] = useState(false);
 
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      await authService.register(values);
+      await register(values);
       message.success(t('auth.registerSuccess'));
-      navigate('/login');
+      navigate('/');
     } catch (error) {
       message.error(error.message || t('auth.registerFailed'));
     } finally {
@@ -39,33 +45,28 @@ const Register = () => {
               { required: true, message: t('auth.usernameRequired') },
               { min: 3, message: t('auth.usernameMinLength') },
               { max: 32, message: t('auth.usernameMaxLength') },
-              { pattern: /^[a-zA-Z0-9_]+$/, message: t('auth.usernamePattern') }
+              {
+                pattern: /^[a-zA-Z0-9_]+$/,
+                message: t('auth.usernamePattern'),
+              },
             ]}
           >
-            <Input
-              prefix={<UserOutlined />}
-              placeholder={t('auth.username')}
-            />
+            <Input prefix={<UserOutlined />} placeholder={t('auth.username')} />
           </Form.Item>
 
           <Form.Item
             name="email"
             rules={[
               { required: true, message: t('auth.emailRequired') },
-              { type: 'email', message: t('auth.emailInvalid') }
+              { type: 'email', message: t('auth.emailInvalid') },
             ]}
           >
-            <Input
-              prefix={<MailOutlined />}
-              placeholder={t('auth.email')}
-            />
+            <Input prefix={<MailOutlined />} placeholder={t('auth.email')} />
           </Form.Item>
 
           <Form.Item
             name="nickname"
-            rules={[
-              { max: 64, message: t('auth.nicknameMaxLength') }
-            ]}
+            rules={[{ max: 64, message: t('auth.nicknameMaxLength') }]}
           >
             <Input
               prefix={<SmileOutlined />}
@@ -78,7 +79,10 @@ const Register = () => {
             rules={[
               { required: true, message: t('auth.passwordRequired') },
               { min: 6, message: t('auth.passwordMinLength') },
-              { pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, message: t('auth.passwordPattern') }
+              {
+                pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+                message: t('auth.passwordPattern'),
+              },
             ]}
           >
             <Input.Password
@@ -130,4 +134,4 @@ const Register = () => {
   );
 };
 
-export default Register; 
+export default Register;

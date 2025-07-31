@@ -15,7 +15,7 @@ const ConfigCard = ({
   testLoading = false,
   children,
   actions = [],
-  className = ''
+  className = '',
 }) => {
   const { t } = useTranslation();
 
@@ -23,20 +23,20 @@ const ConfigCard = ({
     const configs = {
       configured: {
         color: 'success',
-        text: t('common.configured')
+        text: t('common.configured'),
       },
       not_configured: {
         color: 'default',
-        text: t('common.notConfigured')
+        text: t('common.notConfigured'),
       },
       error: {
         color: 'error',
-        text: t('common.error')
+        text: t('common.error'),
       },
       testing: {
         color: 'processing',
-        text: t('common.testing')
-      }
+        text: t('common.testing'),
+      },
     };
     return configs[status] || configs.not_configured;
   };
@@ -56,20 +56,15 @@ const ConfigCard = ({
           loading={loading}
         >
           {status === 'configured' ? t('common.update') : t('common.configure')}
-        </Button>
+        </Button>,
       );
     }
 
     if (onTest && status === 'configured') {
       defaultActions.push(
-        <Button
-          key="test"
-          size="small"
-          onClick={onTest}
-          loading={testLoading}
-        >
+        <Button key="test" size="small" onClick={onTest} loading={testLoading}>
           {t('git.testConnection')}
-        </Button>
+        </Button>,
       );
     }
 
@@ -87,7 +82,9 @@ const ConfigCard = ({
         <div className="config-card-title">
           <Space>
             {icon}
-            <Text strong style={{ fontSize: '16px' }}>{title}</Text>
+            <Text strong style={{ fontSize: '16px' }}>
+              {title}
+            </Text>
             <Tag color={statusConfig.color}>{statusConfig.text}</Tag>
           </Space>
         </div>
@@ -108,9 +105,7 @@ const ConfigCard = ({
       )}
 
       <div className="config-card-actions" style={{ marginTop: '12px' }}>
-        <Space size="small">
-          {renderActions()}
-        </Space>
+        <Space size="small">{renderActions()}</Space>
       </div>
     </Card>
   );

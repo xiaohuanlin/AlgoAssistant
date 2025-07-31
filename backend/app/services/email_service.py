@@ -161,6 +161,9 @@ class EmailService:
                 logger.error("SMTP password not configured")
                 return False
 
+            # Clean password of any non-ASCII characters (like non-breaking spaces)
+            password = "".join(char for char in password if ord(char) < 128)
+
             # Create message
             msg = MIMEMultipart("alternative")
             msg["Subject"] = subject
@@ -171,11 +174,18 @@ class EmailService:
             html_part = MIMEText(content, "html")
             msg.attach(html_part)
 
-            # Send email
-            with smtplib.SMTP(smtp_server, smtp_port) as server:
-                server.starttls()
-                server.login(from_email, password)
-                server.send_message(msg)
+            # Send email - handle both SSL (465) and TLS (587) ports
+            if smtp_port == 465:
+                # Use SSL connection for port 465
+                with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
+                    server.login(from_email, password)
+                    server.send_message(msg)
+            else:
+                # Use TLS connection for port 587 and others
+                with smtplib.SMTP(smtp_server, smtp_port) as server:
+                    server.starttls()
+                    server.login(from_email, password)
+                    server.send_message(msg)
 
             return True
 

@@ -1,13 +1,28 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Form, Input, Avatar, Upload, message, Divider, Typography, Space } from 'antd';
+import {
+  Form,
+  Input,
+  Avatar,
+  Upload,
+  message,
+  Divider,
+  Typography,
+  Space,
+} from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
+import { formatLocalTime } from '../utils';
 import authService from '../services/authService';
 import ConfigModal from './common/ConfigModal';
 
 const { Text, Title } = Typography;
 
-const AccountSettingsModal = ({ visible, onCancel, onSuccess, initialValues }) => {
+const AccountSettingsModal = ({
+  visible,
+  onCancel,
+  onSuccess,
+  initialValues,
+}) => {
   const { t } = useTranslation();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -40,11 +55,13 @@ const AccountSettingsModal = ({ visible, onCancel, onSuccess, initialValues }) =
     try {
       const updateData = {
         ...values,
-        avatar: avatarUrl
+        avatar: avatarUrl,
       };
 
       await authService.updateProfile(updateData);
-      message.success(t('accountSettings.updateSuccess') || 'Profile updated successfully');
+      message.success(
+        t('accountSettings.updateSuccess') || 'Profile updated successfully',
+      );
       onSuccess && onSuccess(updateData);
       onCancel();
     } catch (error) {
@@ -61,8 +78,9 @@ const AccountSettingsModal = ({ visible, onCancel, onSuccess, initialValues }) =
       return;
     }
     if (info.file.status === 'done') {
-      // 获取上传后的URL
-      const url = info.file.response?.url || URL.createObjectURL(info.file.originFileObj);
+      // Get uploaded URL
+      const url =
+        info.file.response?.url || URL.createObjectURL(info.file.originFileObj);
       setAvatarUrl(url);
       setLoading(false);
       message.success('Avatar uploaded successfully');
@@ -100,16 +118,21 @@ const AccountSettingsModal = ({ visible, onCancel, onSuccess, initialValues }) =
       onCancel={onCancel}
       title={t('accountSettings.title') || 'Account Settings'}
       icon={<UserOutlined />}
-      description={t('accountSettings.description') || 'Manage your account information and preferences'}
+      description={
+        t('accountSettings.description') ||
+        'Manage your account information and preferences'
+      }
       width={600}
       onSave={handleSave}
       loading={loading}
       form={form}
       okText={t('common.save')}
     >
-      {/* 头像上传区域 */}
+      {/* Avatar Upload Area */}
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
-        <Title level={5}>{t('accountSettings.avatar') || 'Profile Picture'}</Title>
+        <Title level={5}>
+          {t('accountSettings.avatar') || 'Profile Picture'}
+        </Title>
         <Space direction="vertical" align="center">
           <Avatar
             size={80}
@@ -121,11 +144,14 @@ const AccountSettingsModal = ({ visible, onCancel, onSuccess, initialValues }) =
             name="avatar"
             listType="picture"
             showUploadList={false}
-            action="/api/users/upload-avatar" // 后端上传接口
+            action="/api/users/upload-avatar" // Backend upload API
             beforeUpload={beforeUpload}
             onChange={handleAvatarChange}
           >
-            <Text type="secondary" style={{ cursor: 'pointer', textDecoration: 'underline' }}>
+            <Text
+              type="secondary"
+              style={{ cursor: 'pointer', textDecoration: 'underline' }}
+            >
               {t('accountSettings.changeAvatar') || 'Change Avatar'}
             </Text>
           </Upload>
@@ -134,14 +160,18 @@ const AccountSettingsModal = ({ visible, onCancel, onSuccess, initialValues }) =
 
       <Divider />
 
-      {/* 基本信息表单 */}
+      {/* Basic Information Form */}
       <Form.Item
         name="username"
         label={t('accountSettings.username') || 'Username'}
         rules={[
           { required: true, message: 'Please enter username!' },
           { min: 3, max: 32, message: 'Username must be 3-32 characters!' },
-          { pattern: /^[a-zA-Z0-9_]+$/, message: 'Username can only contain letters, numbers and underscore!' }
+          {
+            pattern: /^[a-zA-Z0-9_]+$/,
+            message:
+              'Username can only contain letters, numbers and underscore!',
+          },
         ]}
       >
         <Input placeholder="Enter your username" />
@@ -152,7 +182,7 @@ const AccountSettingsModal = ({ visible, onCancel, onSuccess, initialValues }) =
         label={t('accountSettings.email') || 'Email'}
         rules={[
           { required: true, message: 'Please enter email!' },
-          { type: 'email', message: 'Please enter a valid email!' }
+          { type: 'email', message: 'Please enter a valid email!' },
         ]}
       >
         <Input placeholder="Enter your email" />
@@ -161,14 +191,12 @@ const AccountSettingsModal = ({ visible, onCancel, onSuccess, initialValues }) =
       <Form.Item
         name="nickname"
         label={t('accountSettings.nickname') || 'Nickname'}
-        rules={[
-          { max: 50, message: 'Nickname cannot exceed 50 characters!' }
-        ]}
+        rules={[{ max: 50, message: 'Nickname cannot exceed 50 characters!' }]}
       >
         <Input placeholder="Enter your display name" />
       </Form.Item>
 
-      {/* 当前用户信息显示 */}
+      {/* Current User Information Display */}
       {currentUser && (
         <>
           <Divider />
@@ -177,11 +205,13 @@ const AccountSettingsModal = ({ visible, onCancel, onSuccess, initialValues }) =
               {t('accountSettings.accountInfo') || 'Account Information'}
             </Title>
             <Text type="secondary" style={{ fontSize: 12 }}>
-              {t('accountSettings.createdAt') || 'Created'}: {new Date(currentUser.created_at).toLocaleDateString()}
+              {t('accountSettings.createdAt') || 'Created'}:{' '}
+              {formatLocalTime(currentUser.created_at, 'YYYY-MM-DD')}
             </Text>
             <br />
             <Text type="secondary" style={{ fontSize: 12 }}>
-              {t('accountSettings.lastUpdated') || 'Last Updated'}: {new Date(currentUser.updated_at).toLocaleDateString()}
+              {t('accountSettings.lastUpdated') || 'Last Updated'}:{' '}
+              {formatLocalTime(currentUser.updated_at, 'YYYY-MM-DD')}
             </Text>
           </div>
         </>

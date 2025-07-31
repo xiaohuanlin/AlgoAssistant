@@ -31,7 +31,7 @@ export const GitSyncProvider = ({ children }) => {
       const configData = await gitSyncService.getGitConfig();
       setConfig(configData);
     } catch (error) {
-      console.error('Error loading Git config:', error);
+      // Ignore config load errors
     } finally {
       setLoading(false);
     }
@@ -39,52 +39,37 @@ export const GitSyncProvider = ({ children }) => {
 
   // Start sync
   const startSync = async (recordIds, options = {}) => {
-    setSyncState(prev => ({ ...prev, isRunning: true }));
+    setSyncState((prev) => ({ ...prev, isRunning: true }));
     try {
       const response = await gitSyncService.syncToGit(recordIds, options);
       return response;
     } catch (error) {
-      setSyncState(prev => ({ ...prev, isRunning: false }));
+      setSyncState((prev) => ({ ...prev, isRunning: false }));
       throw error;
     }
   };
 
   // Stop sync
   const stopSync = async (taskId) => {
-    try {
-      await gitSyncService.stopSync(taskId);
-      setSyncState(prev => ({ ...prev, isRunning: false }));
-    } catch (error) {
-      console.error('Stop sync failed:', error);
-      throw error;
-    }
+    await gitSyncService.stopSync(taskId);
+    setSyncState((prev) => ({ ...prev, isRunning: false }));
   };
 
   // Resume sync
   const resumeSync = async (taskId) => {
-    try {
-      await gitSyncService.resumeSync(taskId);
-      setSyncState(prev => ({ ...prev, isRunning: true }));
-    } catch (error) {
-      console.error('Resume sync failed:', error);
-      throw error;
-    }
+    await gitSyncService.resumeSync(taskId);
+    setSyncState((prev) => ({ ...prev, isRunning: true }));
   };
 
   // Retry failed records
   const retryFailedRecords = async (taskId) => {
-    try {
-      await gitSyncService.retryFailedRecords(taskId);
-      setSyncState(prev => ({ ...prev, isRunning: true }));
-    } catch (error) {
-      console.error('Retry failed records failed:', error);
-      throw error;
-    }
+    await gitSyncService.retryFailedRecords(taskId);
+    setSyncState((prev) => ({ ...prev, isRunning: true }));
   };
 
   // Update sync status
   const updateSyncStatus = (status) => {
-    setSyncState(prev => ({ ...prev, ...status }));
+    setSyncState((prev) => ({ ...prev, ...status }));
   };
 
   // Load config on mount only if user is authenticated
@@ -139,8 +124,6 @@ export const GitSyncProvider = ({ children }) => {
   };
 
   return (
-    <GitSyncContext.Provider value={value}>
-      {children}
-    </GitSyncContext.Provider>
+    <GitSyncContext.Provider value={value}>{children}</GitSyncContext.Provider>
   );
 };

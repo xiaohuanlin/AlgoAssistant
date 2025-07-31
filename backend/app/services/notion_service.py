@@ -1,10 +1,10 @@
 import re
 from typing import Dict, List, Tuple
 
+from bs4 import BeautifulSoup
 from markdownify import markdownify as md
 from notion_client import Client
 from notion_client.errors import APIResponseError
-from bs4 import BeautifulSoup
 
 from app.models import Record
 from app.schemas.notion import NotionConfig
@@ -111,20 +111,18 @@ class NotionService(BaseNoteService[NotionConfig]):
         """Create a Notion page from a record, strictly following Notion API property/children format."""
         try:
             markdown_description = md(record.problem.description or "")
-            markdown_description = re.sub(r"\n{3,}", "\n\n", markdown_description.strip())
+            markdown_description = re.sub(
+                r"\n{3,}", "\n\n", markdown_description.strip()
+            )
             problem_content_blocks = [
                 {
                     "object": "block",
                     "type": "paragraph",
                     "paragraph": {
-                        "rich_text": [
-                            {"type": "text", "text": {"content": chunk}}
-                        ]
+                        "rich_text": [{"type": "text", "text": {"content": chunk}}]
                     },
                 }
-                for i, chunk in enumerate(
-                    self._split_text(markdown_description, 2000)
-                )
+                for i, chunk in enumerate(self._split_text(markdown_description, 2000))
             ]
 
             code_blocks = [
@@ -258,7 +256,9 @@ class NotionService(BaseNoteService[NotionConfig]):
                                     "rich_text": [
                                         {
                                             "type": "text",
-                                            "text": {"content": "⭐ Code Quality Score"},
+                                            "text": {
+                                                "content": "⭐ Code Quality Score"
+                                            },
                                         }
                                     ]
                                 },

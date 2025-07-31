@@ -1,15 +1,22 @@
 import React, { useState } from 'react';
-import { Layout as AntLayout, Menu, Button, Avatar, Dropdown, Space } from 'antd';
-import { 
-  MenuFoldOutlined, 
-  MenuUnfoldOutlined, 
+import {
+  Layout as AntLayout,
+  Menu,
+  Button,
+  Avatar,
+  Dropdown,
+  Space,
+} from 'antd';
+import {
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
   DashboardOutlined,
   CodeOutlined,
   BookOutlined,
   SettingOutlined,
   UserOutlined,
   LogoutOutlined,
-  GithubOutlined
+  GithubOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -83,9 +90,9 @@ const Layout = ({ children }) => {
 
   return (
     <AntLayout className="app-layout">
-      <Sider 
-        trigger={null} 
-        collapsible 
+      <Sider
+        trigger={null}
+        collapsible
         collapsed={collapsed}
         className="app-sider"
       >
@@ -101,7 +108,7 @@ const Layout = ({ children }) => {
           className="app-menu"
         />
       </Sider>
-      
+
       <AntLayout>
         <Header className="app-header">
           <Button
@@ -110,20 +117,21 @@ const Layout = ({ children }) => {
             onClick={() => setCollapsed(!collapsed)}
             className="trigger-button"
           />
-          
+
           <div className="header-right">
             <Space>
               <LanguageSwitcher />
               <span className="welcome-text">
-                {t('app.welcome')}, {currentUser?.nickname || currentUser?.username}
+                {t('app.welcome')},{' '}
+                {currentUser?.nickname || currentUser?.username}
               </span>
               <Dropdown
                 menu={{ items: userMenuItems }}
                 placement="bottomRight"
                 arrow
               >
-                <Avatar 
-                  size="large" 
+                <Avatar
+                  size="large"
                   icon={<UserOutlined />}
                   className="user-avatar"
                 />
@@ -131,13 +139,11 @@ const Layout = ({ children }) => {
             </Space>
           </div>
         </Header>
-        
-        <Content className="app-content">
-          {children}
-        </Content>
+
+        <Content className="app-content">{children}</Content>
       </AntLayout>
     </AntLayout>
   );
 };
 
-export default Layout; 
+export default Layout;

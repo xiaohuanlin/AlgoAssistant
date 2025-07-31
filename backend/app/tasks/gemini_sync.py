@@ -83,12 +83,17 @@ def gemini_sync_task(task_id: int):
                 else:
                     record.ai_sync_status = SyncStatus.COMPLETED.value
                     record.ai_analysis = analysis_result
-                    
+
                     # Extract and backfill topic_tags from AI analysis
-                    if "topic_tags" in analysis_result and analysis_result["topic_tags"]:
+                    if (
+                        "topic_tags" in analysis_result
+                        and analysis_result["topic_tags"]
+                    ):
                         record.topic_tags = analysis_result["topic_tags"]
-                        logger.info(f"Backfilled {len(analysis_result['topic_tags'])} topic tags for record {record.id}: {analysis_result['topic_tags']}")
-                    
+                        logger.info(
+                            f"Backfilled {len(analysis_result['topic_tags'])} topic tags for record {record.id}: {analysis_result['topic_tags']}"
+                        )
+
                     sync_count += 1
                     logger.info(f"Successfully analyzed record {record.id}")
                 db.commit()

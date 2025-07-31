@@ -37,7 +37,7 @@ class GoogleService {
     try {
       const response = await api.post(API_ENDPOINTS.GOOGLE.CALLBACK, {
         code,
-        state
+        state,
       });
       return handleApiSuccess(response);
     } catch (error) {
@@ -85,7 +85,11 @@ class GoogleService {
       const url = `${authUrl}&state=${state}`;
 
       // Open new window for OAuth authorization
-      const popup = window.open(url, 'google_oauth', 'width=500,height=600,scrollbars=yes,resizable=yes');
+      const popup = window.open(
+        url,
+        'google_oauth',
+        'width=500,height=600,scrollbars=yes,resizable=yes',
+      );
 
       if (!popup) {
         reject(new Error('Popup blocked by browser'));
@@ -130,10 +134,13 @@ class GoogleService {
   sendSuccessToParent(result) {
     if (window.opener) {
       // Send success message to parent window
-      window.opener.postMessage({
-        type: 'GOOGLE_OAUTH_SUCCESS',
-        result
-      }, window.location.origin);
+      window.opener.postMessage(
+        {
+          type: 'GOOGLE_OAUTH_SUCCESS',
+          result,
+        },
+        window.location.origin,
+      );
     }
   }
 
@@ -144,10 +151,13 @@ class GoogleService {
   sendErrorToParent(error) {
     if (window.opener) {
       // Send error message to parent window
-      window.opener.postMessage({
-        type: 'GOOGLE_OAUTH_ERROR',
-        error
-      }, window.location.origin);
+      window.opener.postMessage(
+        {
+          type: 'GOOGLE_OAUTH_ERROR',
+          error,
+        },
+        window.location.origin,
+      );
     }
   }
 }

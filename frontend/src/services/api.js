@@ -20,7 +20,7 @@ api.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Response interceptor - handle errors
@@ -36,7 +36,7 @@ api.interceptors.response.use(
       window.location.href = '/login';
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 // API endpoints configuration - Completely match backend README
@@ -203,9 +203,9 @@ export const handleApiError = (error) => {
     if (status === 422 && data.detail) {
       // If detail is an array of validation errors (FastAPI style)
       if (Array.isArray(data.detail)) {
-        const errorMessages = data.detail.map(err => {
+        const errorMessages = data.detail.map((err) => {
           let fieldName = 'Unknown field';
-          let message = err.msg || err;
+          const message = err.msg || err;
 
           if (err.loc && err.loc.length > 0) {
             // Get the field name from the last element of loc array
@@ -213,10 +213,10 @@ export const handleApiError = (error) => {
 
             // Translate common field names
             const fieldTranslations = {
-              'username': 'Username',
-              'email': 'Email',
-              'password': 'Password',
-              'nickname': 'Nickname'
+              username: 'Username',
+              email: 'Email',
+              password: 'Password', // pragma: allowlist secret
+              nickname: 'Nickname',
             };
             fieldName = fieldTranslations[fieldName] || fieldName;
           }
@@ -254,7 +254,9 @@ export const handleApiError = (error) => {
       case 500:
         return data.detail || 'Server internal error, please try again later';
       default:
-        return data.detail || data.message || `Request failed with status ${status}`;
+        return (
+          data.detail || data.message || `Request failed with status ${status}`
+        );
     }
   } else if (error.request) {
     // Network error

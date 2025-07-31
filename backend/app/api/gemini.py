@@ -62,9 +62,11 @@ async def test_connection(
 
         return ConnectionTestResponse(
             status="success" if is_connected else "failed",
-            message="Successfully connected to Gemini API"
-            if is_connected
-            else "Failed to connect to Gemini API",
+            message=(
+                "Successfully connected to Gemini API"
+                if is_connected
+                else "Failed to connect to Gemini API"
+            ),
             model=gemini_config.model_name,
         )
     except ValueError as e:

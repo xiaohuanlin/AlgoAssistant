@@ -21,7 +21,7 @@ const ConfigModal = ({
   cancelText,
   form,
   helpSections = [],
-  className = ''
+  className = '',
 }) => {
   const { t } = useTranslation();
   const [testStatus, setTestStatus] = useState(null);
@@ -45,7 +45,7 @@ const ConfigModal = ({
       const values = await form.validateFields();
       await onSave(values);
     } catch (error) {
-      console.error('Form validation failed:', error);
+      // Form validation or save errors are handled by the parent component
     }
   };
 
@@ -55,16 +55,16 @@ const ConfigModal = ({
     const configs = {
       testing: {
         type: 'info',
-        message: 'Testing connection...'
+        message: 'Testing connection...',
       },
       success: {
         type: 'success',
-        message: t('git.connectionSuccess')
+        message: t('git.connectionSuccess'),
       },
       error: {
         type: 'error',
-        message: t('git.connectionFailed')
-      }
+        message: t('git.connectionFailed'),
+      },
     };
 
     const config = configs[testStatus];
@@ -124,16 +124,18 @@ const ConfigModal = ({
         <Button key="cancel" onClick={onCancel}>
           {cancelText || t('common.cancel')}
         </Button>,
-        ...(onTest ? [
-          <Button
-            key="test"
-            onClick={handleTest}
-            loading={testLoading || testStatus === 'testing'}
-            disabled={loading}
-          >
-            {t('git.testConnection')}
-          </Button>
-        ] : []),
+        ...(onTest
+          ? [
+              <Button
+                key="test"
+                onClick={handleTest}
+                loading={testLoading || testStatus === 'testing'}
+                disabled={loading}
+              >
+                {t('git.testConnection')}
+              </Button>,
+            ]
+          : []),
         <Button
           key="save"
           type="primary"
@@ -141,7 +143,7 @@ const ConfigModal = ({
           loading={loading}
         >
           {okText || t('common.save')}
-        </Button>
+        </Button>,
       ]}
     >
       {description && (
@@ -155,11 +157,7 @@ const ConfigModal = ({
 
       {renderTestResult()}
 
-      <Form
-        form={form}
-        layout="vertical"
-        requiredMark={false}
-      >
+      <Form form={form} layout="vertical" requiredMark={false}>
         {children}
       </Form>
 

@@ -10,7 +10,10 @@ class SyncTaskService {
    */
   async createTask(taskData) {
     try {
-      const response = await api.post(API_ENDPOINTS.SYNC_TASKS.CREATE, taskData);
+      const response = await api.post(
+        API_ENDPOINTS.SYNC_TASKS.CREATE,
+        taskData,
+      );
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -70,8 +73,8 @@ class SyncTaskService {
    */
   async getTaskStats(filters = {}) {
     try {
-      const response = await api.get(API_ENDPOINTS.SYNC_TASKS.STATS, { 
-        params: filters
+      const response = await api.get(API_ENDPOINTS.SYNC_TASKS.STATS, {
+        params: filters,
       });
       return handleApiSuccess(response);
     } catch (error) {
@@ -147,11 +150,11 @@ class SyncTaskService {
    */
   getStatusText(status, t) {
     const statusMap = {
-      'pending': t ? t('syncTasks.status.pending') : 'Pending',
-      'running': t ? t('syncTasks.status.running') : 'Running',
-      'completed': t ? t('syncTasks.status.completed') : 'Completed',
-      'failed': t ? t('syncTasks.status.failed') : 'Failed',
-      'paused': t ? t('syncTasks.status.paused') : 'Paused',
+      pending: t ? t('syncTasks.status.pending') : 'Pending',
+      running: t ? t('syncTasks.status.running') : 'Running',
+      completed: t ? t('syncTasks.status.completed') : 'Completed',
+      failed: t ? t('syncTasks.status.failed') : 'Failed',
+      paused: t ? t('syncTasks.status.paused') : 'Paused',
     };
     return statusMap[status] || status;
   }
@@ -163,11 +166,11 @@ class SyncTaskService {
    */
   getStatusColor(status) {
     const colorMap = {
-      'pending': 'default',
-      'running': 'processing',
-      'completed': 'success',
-      'failed': 'error',
-      'paused': 'warning',
+      pending: 'default',
+      running: 'processing',
+      completed: 'success',
+      failed: 'error',
+      paused: 'warning',
     };
     return colorMap[status] || 'default';
   }
@@ -180,12 +183,16 @@ class SyncTaskService {
    */
   getTypeText(type, t) {
     const typeMap = {
-      'github_sync': t ? t('syncTasks.taskTypes.github_sync') : 'GitHub Sync',
-      'leetcode_batch_sync': t ? t('syncTasks.taskTypes.leetcode_batch_sync') : 'LeetCode Batch Sync',
-      'leetcode_detail_sync': t ? t('syncTasks.taskTypes.leetcode_detail_sync') : 'LeetCode Detail Sync',
-      'notion_sync': t ? t('syncTasks.taskTypes.notion_sync') : 'Notion Sync',
-      'ai_analysis': t ? t('syncTasks.taskTypes.ai_analysis') : 'AI Analysis',
-      'gemini_sync': t ? t('syncTasks.taskTypes.gemini_sync') : 'Gemini Sync',
+      github_sync: t ? t('syncTasks.taskTypes.github_sync') : 'GitHub Sync',
+      leetcode_batch_sync: t
+        ? t('syncTasks.taskTypes.leetcode_batch_sync')
+        : 'LeetCode Batch Sync',
+      leetcode_detail_sync: t
+        ? t('syncTasks.taskTypes.leetcode_detail_sync')
+        : 'LeetCode Detail Sync',
+      notion_sync: t ? t('syncTasks.taskTypes.notion_sync') : 'Notion Sync',
+      ai_analysis: t ? t('syncTasks.taskTypes.ai_analysis') : 'AI Analysis',
+      gemini_sync: t ? t('syncTasks.taskTypes.gemini_sync') : 'Gemini Sync',
     };
     return typeMap[type] || type;
   }

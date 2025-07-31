@@ -17,7 +17,7 @@ import {
   PlusOutlined,
   EyeOutlined,
   HistoryOutlined,
-  BarChartOutlined
+  BarChartOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -29,7 +29,7 @@ import ResponsiveStatCard from '../components/dashboard/ResponsiveStatCard';
 import {
   GradientPageHeader,
   ModernCard,
-  GRADIENT_THEMES
+  GRADIENT_THEMES,
 } from '../components/ui/ModernDesignSystem';
 import GitSyncAction from '../components/GitSyncAction';
 import GeminiSyncAction from '../components/GeminiSyncAction';
@@ -43,18 +43,17 @@ const { Text, Link } = Typography;
 
 const getLanguageColor = (language) => {
   const colors = {
-    'python': 'blue',
-    'java': 'orange',
-    'cpp': 'purple',
-    'c': 'cyan',
-    'javascript': 'yellow',
-    'typescript': 'blue',
-    'go': 'green',
-    'rust': 'red'
+    python: 'blue',
+    java: 'orange',
+    cpp: 'purple',
+    c: 'cyan',
+    javascript: 'yellow',
+    typescript: 'blue',
+    go: 'green',
+    rust: 'red',
   };
   return colors[language?.toLowerCase()] || 'default';
 };
-
 
 const Records = () => {
   const { t } = useTranslation();
@@ -69,7 +68,7 @@ const Records = () => {
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
-    total: 0
+    total: 0,
   });
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
@@ -87,61 +86,65 @@ const Records = () => {
     handleFilter,
     clearAllFilters,
     createAutoFilterHandler,
-    createFilterClearHandler
+    createFilterClearHandler,
   } = useTableFilters((apiFilters) => {
-    setPagination(prev => ({ ...prev, current: 1 }));
+    setPagination((prev) => ({ ...prev, current: 1 }));
     loadRecords(apiFilters);
   });
 
   // Config context
-  const {
-    geminiConfig,
-    hasNotionConfig
-  } = useConfig();
+  const { geminiConfig, hasNotionConfig } = useConfig();
 
   // Load data
-  const loadRecords = useCallback(async (newFilters = {}) => {
-    setLoading(true);
-    try {
-      const queryFilters = { ...filters, ...newFilters };
-      // Filter out empty values to avoid sending empty strings to backend
-      const cleanFilters = {};
-      Object.keys(queryFilters).forEach(key => {
-        const value = queryFilters[key];
-        if (value !== undefined && value !== null && value !== '') {
-          if (key === 'dateRange' && Array.isArray(value) && value.length === 2) {
-            // Convert dateRange to start_time and end_time for API
-            cleanFilters.start_time = value[0].startOf('day').toISOString();
-            cleanFilters.end_time = value[1].endOf('day').toISOString();
-          } else {
-            cleanFilters[key] = value;
+  const loadRecords = useCallback(
+    async (newFilters = {}) => {
+      setLoading(true);
+      try {
+        const queryFilters = { ...filters, ...newFilters };
+        // Filter out empty values to avoid sending empty strings to backend
+        const cleanFilters = {};
+        Object.keys(queryFilters).forEach((key) => {
+          const value = queryFilters[key];
+          if (value !== undefined && value !== null && value !== '') {
+            if (
+              key === 'dateRange' &&
+              Array.isArray(value) &&
+              value.length === 2
+            ) {
+              // Convert dateRange to start_time and end_time for API
+              cleanFilters.start_time = value[0].startOf('day').toISOString();
+              cleanFilters.end_time = value[1].endOf('day').toISOString();
+            } else {
+              cleanFilters[key] = value;
+            }
           }
-        }
-      });
+        });
 
-      const [recordsData, statsData] = await Promise.all([
-        recordsService.getRecords({
-          ...cleanFilters,
-          limit: pagination.pageSize,
-          offset: (pagination.current - 1) * pagination.pageSize
-        }),
-        recordsService.getStats()
-      ]);
+        const [recordsData, statsData] = await Promise.all([
+          recordsService.getRecords({
+            ...cleanFilters,
+            limit: pagination.pageSize,
+            offset: (pagination.current - 1) * pagination.pageSize,
+          }),
+          recordsService.getStats(),
+        ]);
 
-      setRecords(recordsData.items || recordsData);
-      setStats(statsData);
-      setPagination(prev => ({
-        ...prev,
-        total: recordsData.total || recordsData.length,
-        current: recordsData.page || prev.current
-      }));
-    } catch (error) {
-      message.error(t('records.loadError'));
-      console.error('Load records error:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [filters, pagination.current, pagination.pageSize, t]);
+        setRecords(recordsData.items || recordsData);
+        setStats(statsData);
+        setPagination((prev) => ({
+          ...prev,
+          total: recordsData.total || recordsData.length,
+          current: recordsData.page || prev.current,
+        }));
+      } catch (error) {
+        message.error(t('records.loadError'));
+      } finally {
+        setLoading(false);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filters, pagination.current, pagination.pageSize, t],
+  );
 
   useEffect(() => {
     loadRecords();
@@ -151,8 +154,6 @@ const Records = () => {
   const handleViewRecord = (record) => {
     navigate(`/records/${record.id}`);
   };
-
-
 
   const handleSelectionChange = (selectedRowKeys) => {
     setSelectedRecords(selectedRowKeys);
@@ -169,15 +170,18 @@ const Records = () => {
       dataIndex: 'problem_number',
       key: 'problem_number',
       width: isMobile ? 60 : 80,
-      render: (problemNumber, record) => problemNumber ? (
-        <Button
-          type="link"
-          style={{ padding: 0, height: 'auto' }}
-          onClick={() => navigate(`/problem/${record.problem_number}`)}
-        >
-          <Text strong>{problemNumber}</Text>
-        </Button>
-      ) : <Text type="secondary">-</Text>
+      render: (problemNumber, record) =>
+        problemNumber ? (
+          <Button
+            type="link"
+            style={{ padding: 0, height: 'auto' }}
+            onClick={() => navigate(`/problem/${record.problem_number}`)}
+          >
+            <Text strong>{problemNumber}</Text>
+          </Button>
+        ) : (
+          <Text type="secondary">-</Text>
+        ),
     },
     {
       title: t('records.problem', 'Problem'),
@@ -190,28 +194,28 @@ const Records = () => {
             href={record.submission_url || '#'}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ 
+            style={{
               color: '#1890ff',
               display: 'block',
-              whiteSpace: 'nowrap'
+              whiteSpace: 'nowrap',
             }}
           >
-            <Text 
-              strong 
-              style={{ 
+            <Text
+              strong
+              style={{
                 fontSize: '14px',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 maxWidth: isMobile ? '180px' : '280px',
-                display: 'inline-block'
+                display: 'inline-block',
               }}
             >
               {record.problem_title || `#${record.id}`}
             </Text>
           </Link>
         </Tooltip>
-      )
+      ),
     },
     {
       title: t('records.status', 'Status'),
@@ -224,7 +228,7 @@ const Records = () => {
           type="execution"
           size="small"
         />
-      )
+      ),
     },
     {
       title: t('records.language', 'Language'),
@@ -232,10 +236,8 @@ const Records = () => {
       key: 'language',
       width: isMobile ? 80 : 100,
       render: (language) => (
-        <Tag color={getLanguageColor(language)}>
-          {language}
-        </Tag>
-      )
+        <Tag color={getLanguageColor(language)}>{language}</Tag>
+      ),
     },
     {
       title: t('records.ojType', 'OJ Type'),
@@ -243,14 +245,14 @@ const Records = () => {
       key: 'oj_type',
       width: isMobile ? 70 : 80,
       render: (ojType) => {
-        const displayName = ojType === 'leetcode' ? 'LeetCode' :
-                           ojType === 'other' ? t('common.other', 'Other') : ojType;
-        return (
-          <Tag color="blue">
-            {displayName}
-          </Tag>
-        );
-      }
+        const displayName =
+          ojType === 'leetcode'
+            ? 'LeetCode'
+            : ojType === 'other'
+              ? t('common.other', 'Other')
+              : ojType;
+        return <Tag color="blue">{displayName}</Tag>;
+      },
     },
     {
       title: t('records.githubSyncStatus', 'GitHub Sync'),
@@ -258,12 +260,8 @@ const Records = () => {
       key: 'github_sync_status',
       width: isMobile ? 100 : 120,
       render: (status) => (
-        <StatusIndicator
-          status={status}
-          type="sync"
-          size="small"
-        />
-      )
+        <StatusIndicator status={status} type="sync" size="small" />
+      ),
     },
     {
       title: t('records.aiAnalysisStatus', 'AI Analysis'),
@@ -271,12 +269,8 @@ const Records = () => {
       key: 'ai_sync_status',
       width: isMobile ? 100 : 120,
       render: (status) => (
-        <StatusIndicator
-          status={status}
-          type="sync"
-          size="small"
-        />
-      )
+        <StatusIndicator status={status} type="sync" size="small" />
+      ),
     },
     {
       title: t('records.submitTime', 'Submit Time'),
@@ -284,13 +278,19 @@ const Records = () => {
       key: 'submit_time',
       width: isMobile ? 120 : 150,
       render: (submitTime) => (
-        <Text style={{ 
-          fontSize: '12px',
-          whiteSpace: 'nowrap'
-        }}>
-          {submitTime ? dayjs(submitTime).format(isMobile ? 'MM-DD HH:mm' : 'YYYY-MM-DD HH:mm') : '-'}
+        <Text
+          style={{
+            fontSize: '12px',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {submitTime
+            ? dayjs(submitTime).format(
+                isMobile ? 'MM-DD HH:mm' : 'YYYY-MM-DD HH:mm',
+              )
+            : '-'}
         </Text>
-      )
+      ),
     },
     {
       title: t('records.actions', 'Actions'),
@@ -301,7 +301,13 @@ const Records = () => {
         const actionEnabled = isSyncActionEnabled(record);
         return (
           <Space>
-            <Tooltip title={actionEnabled ? t('records.view', 'View') : t('records.pleaseSyncOJFirst', 'Please sync OJ first')}>
+            <Tooltip
+              title={
+                actionEnabled
+                  ? t('records.view', 'View')
+                  : t('records.pleaseSyncOJFirst', 'Please sync OJ first')
+              }
+            >
               <Button
                 icon={<EyeOutlined />}
                 size="small"
@@ -314,7 +320,9 @@ const Records = () => {
             <GitSyncAction
               record={record}
               onSync={() => loadRecords()}
-              disabled={record.github_sync_status === 'completed' || !actionEnabled}
+              disabled={
+                record.github_sync_status === 'completed' || !actionEnabled
+              }
             />
             <GeminiSyncAction
               record={record}
@@ -329,7 +337,7 @@ const Records = () => {
             />
           </Space>
         );
-      }
+      },
     },
   ];
 
@@ -342,7 +350,7 @@ const Records = () => {
       placeholder: t('records.searchByTitle', 'Search by title'),
       value: filters.problem_title,
       onChange: createAutoFilterHandler('problem_title', 500),
-      onClear: createFilterClearHandler('problem_title')
+      onClear: createFilterClearHandler('problem_title'),
     },
     {
       key: 'problem_id',
@@ -351,7 +359,7 @@ const Records = () => {
       placeholder: t('records.searchByProblemId', 'Search by problem ID'),
       value: filters.problem_id,
       onChange: createAutoFilterHandler('problem_id', 500),
-      onClear: createFilterClearHandler('problem_id')
+      onClear: createFilterClearHandler('problem_id'),
     },
     {
       key: 'status',
@@ -363,11 +371,23 @@ const Records = () => {
       onClear: createFilterClearHandler('status'),
       options: [
         { label: t('records.statusAccepted', 'Accepted'), value: 'Accepted' },
-        { label: t('records.statusWrongAnswer', 'Wrong Answer'), value: 'Wrong Answer' },
-        { label: t('records.statusTimeLimitExceeded', 'Time Limit Exceeded'), value: 'Time Limit Exceeded' },
-        { label: t('records.statusRuntimeError', 'Runtime Error'), value: 'Runtime Error' },
-        { label: t('records.statusCompileError', 'Compile Error'), value: 'Compile Error' }
-      ]
+        {
+          label: t('records.statusWrongAnswer', 'Wrong Answer'),
+          value: 'Wrong Answer',
+        },
+        {
+          label: t('records.statusTimeLimitExceeded', 'Time Limit Exceeded'),
+          value: 'Time Limit Exceeded',
+        },
+        {
+          label: t('records.statusRuntimeError', 'Runtime Error'),
+          value: 'Runtime Error',
+        },
+        {
+          label: t('records.statusCompileError', 'Compile Error'),
+          value: 'Compile Error',
+        },
+      ],
     },
     {
       key: 'oj_type',
@@ -379,8 +399,8 @@ const Records = () => {
       onClear: createFilterClearHandler('oj_type'),
       options: [
         { label: 'LeetCode', value: 'leetcode' },
-        { label: t('common.other', 'Other'), value: 'other' }
-      ]
+        { label: t('common.other', 'Other'), value: 'other' },
+      ],
     },
     {
       key: 'language',
@@ -398,8 +418,8 @@ const Records = () => {
         { label: 'JavaScript', value: 'javascript' },
         { label: 'TypeScript', value: 'typescript' },
         { label: 'Go', value: 'go' },
-        { label: 'Rust', value: 'rust' }
-      ]
+        { label: 'Rust', value: 'rust' },
+      ],
     },
     {
       key: 'dateRange',
@@ -407,8 +427,8 @@ const Records = () => {
       type: 'dateRange',
       value: filters.dateRange,
       onChange: createAutoFilterHandler('dateRange'),
-      onClear: createFilterClearHandler('dateRange')
-    }
+      onClear: createFilterClearHandler('dateRange'),
+    },
   ];
 
   // Actions configuration
@@ -417,29 +437,40 @@ const Records = () => {
       text: t('common.create', 'Create'),
       type: 'primary',
       icon: <PlusOutlined />,
-      onClick: () => navigate('/records/create')
+      onClick: () => navigate('/records/create'),
     },
   ];
 
   return (
-    <div style={{
-      maxWidth: 1200,
-      margin: '0 auto',
-      padding: isMobile ? '16px' : '24px'
-    }}>
+    <div
+      style={{
+        maxWidth: 1200,
+        margin: '0 auto',
+        padding: isMobile ? '16px' : '24px',
+      }}
+    >
       {/* Modern Page Header */}
       <GradientPageHeader
-        icon={<HistoryOutlined style={{
-          fontSize: isMobile ? '24px' : '36px',
-          color: 'white'
-        }} />}
+        icon={
+          <HistoryOutlined
+            style={{
+              fontSize: isMobile ? '24px' : '36px',
+              color: 'white',
+            }}
+          />
+        }
         title={t('records.title', 'Records')}
-        subtitle={(
+        subtitle={
           <>
-            <BarChartOutlined style={{ fontSize: isMobile ? '16px' : '20px' }} />
-            {t('records.manageSubmissionRecords', 'Manage your submission records')}
+            <BarChartOutlined
+              style={{ fontSize: isMobile ? '16px' : '20px' }}
+            />
+            {t(
+              'records.manageSubmissionRecords',
+              'Manage your submission records',
+            )}
           </>
-        )}
+        }
         isMobile={isMobile}
         gradient={GRADIENT_THEMES.success}
       />
@@ -477,7 +508,13 @@ const Records = () => {
               value={stats.successRate || 0}
               suffix="%"
               prefix={<SyncOutlined />}
-              color={stats.successRate >= 70 ? "#52c41a" : stats.successRate >= 40 ? "#faad14" : "#f5222d"}
+              color={
+                stats.successRate >= 70
+                  ? '#52c41a'
+                  : stats.successRate >= 40
+                    ? '#faad14'
+                    : '#f5222d'
+              }
               loading={loading}
             />
           </Col>
@@ -507,8 +544,8 @@ const Records = () => {
           pagination={{
             ...pagination,
             onChange: (page, pageSize) => {
-              setPagination(prev => ({ ...prev, current: page, pageSize }));
-            }
+              setPagination((prev) => ({ ...prev, current: page, pageSize }));
+            },
           }}
           filters={filterConfig}
           selectedRowKeys={selectedRecords}
@@ -516,10 +553,18 @@ const Records = () => {
           onRefresh={() => loadRecords()}
           onFilterChange={() => {
             const currentValues = {};
-            filterConfig.forEach(filter => {
-              if (filter.value !== undefined && filter.value !== null && filter.value !== '') {
+            filterConfig.forEach((filter) => {
+              if (
+                filter.value !== undefined &&
+                filter.value !== null &&
+                filter.value !== ''
+              ) {
                 // Special handling for dateRange which is an array
-                if (filter.key === 'dateRange' && Array.isArray(filter.value) && filter.value.length === 2) {
+                if (
+                  filter.key === 'dateRange' &&
+                  Array.isArray(filter.value) &&
+                  filter.value.length === 2
+                ) {
                   currentValues[filter.key] = filter.value;
                 } else if (filter.key !== 'dateRange') {
                   currentValues[filter.key] = filter.value;

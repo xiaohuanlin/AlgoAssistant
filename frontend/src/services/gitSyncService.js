@@ -63,9 +63,12 @@ class GitSyncService {
       const syncData = {
         type: 'github_sync',
         record_ids: recordIds,
-        ...options
+        ...options,
       };
-      const response = await api.post(API_ENDPOINTS.SYNC_TASKS.CREATE, syncData);
+      const response = await api.post(
+        API_ENDPOINTS.SYNC_TASKS.CREATE,
+        syncData,
+      );
       return handleApiSuccess(response);
     } catch (error) {
       if (error.message.includes('Git configuration not found')) {
@@ -83,7 +86,9 @@ class GitSyncService {
   async stopSync(taskId) {
     try {
       // Assuming stop is handled by updating the task status
-      const response = await api.put(API_ENDPOINTS.SYNC_TASKS.DETAIL(taskId), { status: 'stopped' });
+      const response = await api.put(API_ENDPOINTS.SYNC_TASKS.DETAIL(taskId), {
+        status: 'stopped',
+      });
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -98,7 +103,9 @@ class GitSyncService {
   async resumeSync(taskId) {
     try {
       // Assuming resume is handled by updating the task status
-      const response = await api.put(API_ENDPOINTS.SYNC_TASKS.DETAIL(taskId), { status: 'running' });
+      const response = await api.put(API_ENDPOINTS.SYNC_TASKS.DETAIL(taskId), {
+        status: 'running',
+      });
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -113,7 +120,9 @@ class GitSyncService {
   async retryFailedRecords(taskId) {
     try {
       // Assuming retry is handled by updating the task status
-      const response = await api.put(API_ENDPOINTS.SYNC_TASKS.DETAIL(taskId), { status: 'retry' });
+      const response = await api.put(API_ENDPOINTS.SYNC_TASKS.DETAIL(taskId), {
+        status: 'retry',
+      });
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -155,7 +164,10 @@ class GitSyncService {
    */
   async createSyncTask(taskData) {
     try {
-      const response = await api.post(API_ENDPOINTS.SYNC_TASKS.CREATE, taskData);
+      const response = await api.post(
+        API_ENDPOINTS.SYNC_TASKS.CREATE,
+        taskData,
+      );
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -169,7 +181,9 @@ class GitSyncService {
    */
   async deleteSyncTask(taskId) {
     try {
-      const response = await api.delete(API_ENDPOINTS.SYNC_TASKS.DELETE(taskId));
+      const response = await api.delete(
+        API_ENDPOINTS.SYNC_TASKS.DELETE(taskId),
+      );
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -201,7 +215,7 @@ class GitSyncService {
           configured: false,
           message: 'GitHub not configured',
           action: 'configure',
-          actionText: 'Configure Git Repository'
+          actionText: 'Configure Git Repository',
         };
       }
       return {
@@ -209,14 +223,14 @@ class GitSyncService {
         message: 'GitHub configured',
         config: config,
         action: 'test',
-        actionText: 'Test connection'
+        actionText: 'Test connection',
       };
     } catch (error) {
       return {
         configured: false,
         message: 'Failed to check configuration',
         action: 'configure',
-        actionText: 'Configure Git Repository'
+        actionText: 'Configure Git Repository',
       };
     }
   }
@@ -228,11 +242,11 @@ class GitSyncService {
    */
   getTypeText(type) {
     const typeMap = {
-      'github_sync': 'GitHub Sync',
-      'leetcode_batch_sync': 'LeetCode Batch Sync',
-      'leetcode_detail_sync': 'LeetCode Detail Sync',
-      'notion_sync': 'Notion Sync',
-      'ai_analysis': 'AI Analysis'
+      github_sync: 'GitHub Sync',
+      leetcode_batch_sync: 'LeetCode Batch Sync',
+      leetcode_detail_sync: 'LeetCode Detail Sync',
+      notion_sync: 'Notion Sync',
+      ai_analysis: 'AI Analysis',
     };
     return typeMap[type] || type;
   }
@@ -244,11 +258,11 @@ class GitSyncService {
    */
   getStatusText(status) {
     const statusMap = {
-      'pending': 'Pending',
-      'running': 'Running',
-      'completed': 'Completed',
-      'failed': 'Failed',
-      'paused': 'Paused'
+      pending: 'Pending',
+      running: 'Running',
+      completed: 'Completed',
+      failed: 'Failed',
+      paused: 'Paused',
     };
     return statusMap[status] || status;
   }
@@ -260,11 +274,11 @@ class GitSyncService {
    */
   getStatusColor(status) {
     const colorMap = {
-      'pending': 'default',
-      'running': 'processing',
-      'completed': 'success',
-      'failed': 'error',
-      'paused': 'warning'
+      pending: 'default',
+      running: 'processing',
+      completed: 'success',
+      failed: 'error',
+      paused: 'warning',
     };
     return colorMap[status] || 'default';
   }

@@ -5,7 +5,12 @@ import { useTranslation } from 'react-i18next';
 import leetcodeService from '../services/leetcodeService';
 import ConfigModal from './common/ConfigModal';
 
-const LeetCodeIntegrationModal = ({ visible, onCancel, onSuccess, initialValues }) => {
+const LeetCodeIntegrationModal = ({
+  visible,
+  onCancel,
+  onSuccess,
+  initialValues,
+}) => {
   const { t } = useTranslation();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -26,7 +31,7 @@ const LeetCodeIntegrationModal = ({ visible, onCancel, onSuccess, initialValues 
     try {
       const configData = {
         session_cookie: values.sessionCookie,
-        username: values.username || ''
+        username: values.username || '',
       };
       await leetcodeService.updateLeetCodeConfig(configData);
       message.success(t('leetcode.configSaved'));
@@ -75,8 +80,8 @@ const LeetCodeIntegrationModal = ({ visible, onCancel, onSuccess, initialValues 
         t('leetcode.sessionCookieStep3'),
         t('leetcode.sessionCookieStep4'),
         t('leetcode.sessionCookieStep5'),
-      ]
-    }
+      ],
+    },
   ];
 
   return (
@@ -98,7 +103,9 @@ const LeetCodeIntegrationModal = ({ visible, onCancel, onSuccess, initialValues 
       <Form.Item
         name="sessionCookie"
         label={t('leetcode.sessionCookie')}
-        rules={[{ required: true, message: t('leetcode.sessionCookieRequired') }]}
+        rules={[
+          { required: true, message: t('leetcode.sessionCookieRequired') },
+        ]}
       >
         <Input.Password
           placeholder={t('leetcode.sessionCookiePlaceholder')}

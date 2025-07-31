@@ -223,10 +223,14 @@
 /* Animation for smooth expand/collapse on mobile */
 @media (max-width: 575px) {
   .collapsible-card.mobile .ant-card-body {
-    transition: padding 0.3s ease, max-height 0.3s ease;
+    transition:
+      padding 0.3s ease,
+      max-height 0.3s ease;
   }
 
   .collapsible-content {
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    transition:
+      opacity 0.3s ease,
+      transform 0.3s ease;
   }
 }

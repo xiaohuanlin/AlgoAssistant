@@ -24,9 +24,12 @@ class NotionService {
     try {
       const taskData = {
         type: 'notion_sync',
-        record_ids: syncData.record_ids
+        record_ids: syncData.record_ids,
       };
-      const response = await api.post(API_ENDPOINTS.SYNC_TASKS.CREATE, taskData);
+      const response = await api.post(
+        API_ENDPOINTS.SYNC_TASKS.CREATE,
+        taskData,
+      );
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));

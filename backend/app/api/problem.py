@@ -8,7 +8,6 @@ from app.schemas import (
     ProblemBankStatsOut,
     ProblemBatchCreate,
     ProblemCreate,
-    ProblemOut,
     ProblemSource,
     ProblemStatisticsOut,
     ProblemUpdate,

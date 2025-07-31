@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { Button, message, Tooltip } from 'antd';
-import { SyncOutlined, CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import {
+  SyncOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  ClockCircleOutlined,
+} from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useGitSync } from '../contexts/GitSyncContext';
 
@@ -65,7 +70,7 @@ const GitSyncAction = ({ record, onSync, disabled }) => {
           padding: '4px 8px',
           height: 'auto',
           lineHeight: '1.2',
-          color: '#999'
+          color: '#999',
         }}
       >
         {t('common.loading')}
@@ -86,7 +91,7 @@ const GitSyncAction = ({ record, onSync, disabled }) => {
             padding: '4px 8px',
             height: 'auto',
             lineHeight: '1.2',
-            color: '#999'
+            color: '#999',
           }}
         >
           {t('git.syncToGit')}
@@ -144,7 +149,7 @@ const GitSyncAction = ({ record, onSync, disabled }) => {
           padding: '4px 8px',
           height: 'auto',
           lineHeight: '1.2',
-          color: disabled ? '#999' : undefined
+          color: disabled ? '#999' : undefined,
         }}
       >
         {getSyncStatusText(record?.github_sync_status)}

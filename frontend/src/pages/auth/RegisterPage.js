@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { Form, Input, Button, Card, message, Typography, Divider } from 'antd';
-import { UserOutlined, LockOutlined, MailOutlined, GithubOutlined } from '@ant-design/icons';
+import {
+  UserOutlined,
+  LockOutlined,
+  MailOutlined,
+  GithubOutlined,
+} from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import authService from '../../services/authService';
@@ -27,8 +32,6 @@ const RegisterPage = () => {
       message.success(t('auth.registerSuccess'));
       navigate('/login');
     } catch (error) {
-      console.error('Registration error:', error);
-
       // Handle specific error messages
       const errorMessage = error.message || t('auth.registerFailed');
 
@@ -73,7 +76,10 @@ const RegisterPage = () => {
               rules={[
                 { required: true, message: t('auth.usernameRequired') },
                 { min: 3, max: 32, message: t('auth.usernameMaxLength') },
-                { pattern: /^[a-zA-Z0-9_]+$/, message: t('auth.usernamePattern') },
+                {
+                  pattern: /^[a-zA-Z0-9_]+$/,
+                  message: t('auth.usernamePattern'),
+                },
               ]}
             >
               <Input
@@ -99,9 +105,7 @@ const RegisterPage = () => {
 
             <Form.Item
               name="nickname"
-              rules={[
-                { max: 64, message: t('auth.nicknameMaxLength') },
-              ]}
+              rules={[{ max: 64, message: t('auth.nicknameMaxLength') }]}
             >
               <Input
                 prefix={<UserOutlined />}
@@ -117,7 +121,7 @@ const RegisterPage = () => {
                 { min: 6, message: t('auth.passwordMinLength') },
                 {
                   pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-                  message: t('auth.passwordPattern')
+                  message: t('auth.passwordPattern'),
                 },
               ]}
             >
@@ -138,7 +142,9 @@ const RegisterPage = () => {
                     if (!value || getFieldValue('password') === value) {
                       return Promise.resolve();
                     }
-                    return Promise.reject(new Error(t('auth.passwordMismatch')));
+                    return Promise.reject(
+                      new Error(t('auth.passwordMismatch')),
+                    );
                   },
                 }),
               ]}

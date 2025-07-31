@@ -1,12 +1,15 @@
-from sqlalchemy.types import TypeDecorator
-from sqlalchemy.dialects.postgresql import JSON
-from pydantic import BaseModel
 from typing import Type
+
+from pydantic import BaseModel
+from sqlalchemy.dialects.postgresql import JSON
+from sqlalchemy.types import TypeDecorator
+
 
 class PydanticJSON(TypeDecorator):
     """SQLAlchemy type decorator for automatically converting Pydantic models to/from JSON.
     This type decorator handles the conversion between Pydantic models and JSON fields in the database.
     """
+
     impl = JSON
 
     def __init__(self, model: Type[BaseModel], *args, **kwargs):
@@ -21,7 +24,9 @@ class PydanticJSON(TypeDecorator):
         elif isinstance(value, dict):
             return value
         else:
-            raise ValueError(f"Invalid type for PydanticJSON: {type(value)}. Expected BaseModel, dict, or None.")
+            raise ValueError(
+                f"Invalid type for PydanticJSON: {type(value)}. Expected BaseModel, dict, or None."
+            )
 
     def process_result_value(self, value, dialect):
         if value is None:
@@ -31,4 +36,6 @@ class PydanticJSON(TypeDecorator):
         elif isinstance(value, str):
             return self.model.model_validate_json(value)
         else:
-            raise ValueError(f"Invalid type for PydanticJSON result: {type(value)}. Expected dict or str.") 
+            raise ValueError(
+                f"Invalid type for PydanticJSON result: {type(value)}. Expected dict or str."
+            )

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Card, Row, Col, Tag, Typography, Spin, message, Space, Button } from 'antd';
+import { Card, Row, Col, Typography, Spin, message, Button } from 'antd';
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -14,7 +14,6 @@ import {
   CloudOutlined,
   RobotOutlined,
   EyeOutlined,
-  PlayCircleOutlined,
   HistoryOutlined,
   ThunderboltOutlined,
   DatabaseOutlined,
@@ -25,11 +24,11 @@ import {
   ProfileOutlined,
   GlobalOutlined,
   InteractionOutlined,
-  ProjectOutlined
+  ProjectOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import recordsService from '../services/recordsService';
-import dayjs from 'dayjs';
+import { formatLocalTime } from '../utils';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import {
@@ -37,10 +36,10 @@ import {
   ModernCard,
   ModernInfoItem,
   ModernTag,
-  GRADIENT_THEMES
+  GRADIENT_THEMES,
 } from '../components/ui/ModernDesignSystem';
 
-const { Title, Text, Link } = Typography;
+const { Text } = Typography;
 
 const getLanguageForHighlight = (language) => {
   const lower = language.toLowerCase();
@@ -59,7 +58,10 @@ const formatValue = (value, unit, t) => {
   if (!value || value === '-') return '-';
 
   // If value already contains unit, return as is
-  if (typeof value === 'string' && (value.includes('ms') || value.includes('MB') || value.includes('KB'))) {
+  if (
+    typeof value === 'string' &&
+    (value.includes('ms') || value.includes('MB') || value.includes('KB'))
+  ) {
     return value;
   }
 
@@ -69,40 +71,6 @@ const formatValue = (value, unit, t) => {
   }
 
   return value;
-};
-
-// Status color mapping
-const getStatusColor = (status) => {
-  const lowerStatus = status.toLowerCase();
-  switch (lowerStatus) {
-    case 'accepted':
-      return 'success';
-    case 'wrong answer':
-    case 'wrong_answer':
-      return 'error';
-    case 'time limit exceeded':
-    case 'time_limit_exceeded':
-      return 'warning';
-    case 'runtime error':
-    case 'runtime_error':
-      return 'error';
-    case 'memory limit exceeded':
-    case 'memory_limit_exceeded':
-      return 'warning';
-    case 'compile error':
-    case 'compile_error':
-      return 'error';
-    case 'pending':
-      return 'processing';
-    case 'syncing':
-      return 'processing';
-    case 'synced':
-      return 'success';
-    case 'failed':
-      return 'error';
-    default:
-      return 'default';
-  }
 };
 
 // Status icon mapping
@@ -142,13 +110,13 @@ const getStatusTheme = (status) => {
     case 'completed':
       return {
         gradient: GRADIENT_THEMES.success,
-        tagType: 'success'
+        tagType: 'success',
       };
     case 'pending':
     case 'syncing':
       return {
         gradient: GRADIENT_THEMES.warning,
-        tagType: 'warning'
+        tagType: 'warning',
       };
     case 'failed':
     case 'wrong answer':
@@ -159,18 +127,18 @@ const getStatusTheme = (status) => {
     case 'compile_error':
       return {
         gradient: GRADIENT_THEMES.error,
-        tagType: 'error'
+        tagType: 'error',
       };
     case 'paused':
     case 'retry':
       return {
         gradient: GRADIENT_THEMES.slate,
-        tagType: 'default'
+        tagType: 'default',
       };
     default:
       return {
         gradient: GRADIENT_THEMES.slate,
-        tagType: 'default'
+        tagType: 'default',
       };
   }
 };
@@ -278,28 +246,38 @@ const RecordDetail = () => {
     return <Spin spinning={true} style={{ width: '100%', marginTop: 100 }} />;
   }
   if (!record) {
-    return <Card style={{ margin: 32 }}><Text type="danger">{t('records.loadError')}</Text></Card>;
+    return (
+      <Card style={{ margin: 32 }}>
+        <Text type="danger">{t('records.loadError')}</Text>
+      </Card>
+    );
   }
 
   return (
-    <div style={{
-      maxWidth: 1200,
-      margin: '0 auto',
-      padding: isMobile ? '16px' : '24px'
-    }}>
+    <div
+      style={{
+        maxWidth: 1200,
+        margin: '0 auto',
+        padding: isMobile ? '16px' : '24px',
+      }}
+    >
       {/* Modern Page Header */}
       <GradientPageHeader
-        icon={<CodeOutlined style={{
-          fontSize: isMobile ? '24px' : '36px',
-          color: 'white'
-        }} />}
+        icon={
+          <CodeOutlined
+            style={{
+              fontSize: isMobile ? '24px' : '36px',
+              color: 'white',
+            }}
+          />
+        }
         title={`${record.problem_title || t('records.problemTitle')}`}
-        subtitle={(
+        subtitle={
           <>
             <HistoryOutlined style={{ fontSize: isMobile ? '16px' : '20px' }} />
             {t('records.viewRecord')} #{record.id}
           </>
-        )}
+        }
         isMobile={isMobile}
         gradient={GRADIENT_THEMES.success}
       />
@@ -325,13 +303,17 @@ const RecordDetail = () => {
                     record.problem_number ? (
                       <Button
                         type="link"
-                        style={{ 
-                          padding: 0, 
+                        style={{
+                          padding: 0,
                           height: 'auto',
-                          color: GRADIENT_THEMES.primary.split(',')[0].split('(')[1],
-                          fontWeight: 500
+                          color: GRADIENT_THEMES.primary
+                            .split(',')[0]
+                            .split('(')[1],
+                          fontWeight: 500,
                         }}
-                        onClick={() => window.location.href = `/problem/${record.problem_number}`}
+                        onClick={() =>
+                          (window.location.href = `/problem/${record.problem_number}`)
+                        }
                       >
                         <EyeOutlined style={{ marginRight: 6 }} />
                         {record.problem_title}
@@ -341,7 +323,7 @@ const RecordDetail = () => {
                     )
                   }
                 />
-                
+
                 <ModernInfoItem
                   icon={<GlobalOutlined />}
                   label={t('records.ojType')}
@@ -353,16 +335,19 @@ const RecordDetail = () => {
                     </ModernTag>
                   }
                 />
-                
+
                 <ModernInfoItem
                   icon={<ClockCircleOutlined />}
                   label={t('records.submitTime')}
-                  value={dayjs(record.submit_time).format('YYYY-MM-DD HH:mm:ss')}
+                  value={formatLocalTime(
+                    record.submit_time,
+                    'YYYY-MM-DD HH:mm',
+                  )}
                   iconGradient={GRADIENT_THEMES.purple}
                   isMobile={isMobile}
                 />
               </Col>
-              
+
               <Col xs={24} md={12}>
                 <ModernInfoItem
                   icon={<ProjectOutlined />}
@@ -372,21 +357,22 @@ const RecordDetail = () => {
                   valueComponent={
                     <Button
                       type="link"
-                      style={{ 
-                        padding: 0, 
+                      style={{
                         height: 'auto',
                         fontFamily: 'monospace',
                         background: '#f5f5f5',
                         padding: '4px 8px',
-                        borderRadius: '6px'
+                        borderRadius: '6px',
                       }}
-                      onClick={() => window.location.href = `/problem/${record.problem_number}`}
+                      onClick={() =>
+                        (window.location.href = `/problem/${record.problem_number}`)
+                      }
                     >
                       #{record.problem_number}
                     </Button>
                   }
                 />
-                
+
                 <ModernInfoItem
                   icon={<CodeOutlined />}
                   label={t('records.language')}
@@ -398,14 +384,16 @@ const RecordDetail = () => {
                     </ModernTag>
                   }
                 />
-                
+
                 <ModernInfoItem
                   icon={<CheckCircleOutlined />}
                   label={t('records.executionResult')}
-                  iconGradient={getStatusTheme(record.execution_result).gradient}
+                  iconGradient={
+                    getStatusTheme(record.execution_result).gradient
+                  }
                   isMobile={isMobile}
                   valueComponent={
-                    <ModernTag 
+                    <ModernTag
                       type={getStatusTheme(record.execution_result).tagType}
                       isMobile={isMobile}
                     >
@@ -436,15 +424,19 @@ const RecordDetail = () => {
                   iconGradient={GRADIENT_THEMES.warning}
                   isMobile={isMobile}
                 />
-                
+
                 <ModernInfoItem
                   icon={<InteractionOutlined />}
                   label={t('records.runtimePercentile')}
-                  value={record.runtime_percentile ? `${record.runtime_percentile}%` : '-'}
+                  value={
+                    record.runtime_percentile
+                      ? `${record.runtime_percentile}%`
+                      : '-'
+                  }
                   iconGradient={GRADIENT_THEMES.success}
                   isMobile={isMobile}
                 />
-                
+
                 <ModernInfoItem
                   icon={<CheckCircleOutlined />}
                   label={t('records.totalCorrect')}
@@ -453,7 +445,7 @@ const RecordDetail = () => {
                   isMobile={isMobile}
                 />
               </Col>
-              
+
               <Col xs={24} md={12}>
                 <ModernInfoItem
                   icon={<DatabaseOutlined />}
@@ -462,15 +454,19 @@ const RecordDetail = () => {
                   iconGradient={GRADIENT_THEMES.info}
                   isMobile={isMobile}
                 />
-                
+
                 <ModernInfoItem
                   icon={<InteractionOutlined />}
                   label={t('records.memoryPercentile')}
-                  value={record.memory_percentile ? `${record.memory_percentile}%` : '-'}
+                  value={
+                    record.memory_percentile
+                      ? `${record.memory_percentile}%`
+                      : '-'
+                  }
                   iconGradient={GRADIENT_THEMES.cyan}
                   isMobile={isMobile}
                 />
-                
+
                 <ModernInfoItem
                   icon={<BugOutlined />}
                   label={t('records.totalTestcases')}
@@ -489,12 +485,14 @@ const RecordDetail = () => {
             iconGradient={GRADIENT_THEMES.purple}
             isMobile={isMobile}
           >
-            <div style={{
-              background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)',
-              padding: '4px',
-              borderRadius: '12px',
-              border: '1px solid #e2e8f0'
-            }}>
+            <div
+              style={{
+                background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)',
+                padding: '4px',
+                borderRadius: '12px',
+                border: '1px solid #e2e8f0',
+              }}
+            >
               <SyntaxHighlighter
                 language={getLanguageForHighlight(record.language)}
                 style={tomorrow}
@@ -502,7 +500,7 @@ const RecordDetail = () => {
                   margin: 0,
                   borderRadius: 8,
                   fontSize: isMobile ? '12px' : '14px',
-                  lineHeight: '1.5'
+                  lineHeight: '1.5',
                 }}
               >
                 {record.code || t('records.noCodeAvailable')}
@@ -518,42 +516,69 @@ const RecordDetail = () => {
             isMobile={isMobile}
           >
             {record.ai_analysis ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 12 : 16 }}>
-                <div style={{
-                  background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
-                  padding: '12px 16px',
-                  borderRadius: '10px',
-                  border: '1px solid #f59e0b20'
-                }}>
-                  <Text strong style={{ color: '#92400e' }}>{t('records.aiSummary', 'Summary')}: </Text>
-                  <Text style={{ color: '#451a03' }}>{record.ai_analysis.summary}</Text>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: isMobile ? 12 : 16,
+                }}
+              >
+                <div
+                  style={{
+                    background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
+                    padding: '12px 16px',
+                    borderRadius: '10px',
+                    border: '1px solid #f59e0b20',
+                  }}
+                >
+                  <Text strong style={{ color: '#92400e' }}>
+                    {t('records.aiSummary', 'Summary')}:{' '}
+                  </Text>
+                  <Text style={{ color: '#451a03' }}>
+                    {record.ai_analysis.summary}
+                  </Text>
                 </div>
-                
+
                 <Row gutter={[12, 12]}>
                   <Col xs={24} sm={12}>
-                    <Text strong>{t('records.aiTimeComplexity', 'Time')}: </Text>
+                    <Text strong>
+                      {t('records.aiTimeComplexity', 'Time')}:{' '}
+                    </Text>
                     <ModernTag type="warning" isMobile={isMobile}>
                       {record.ai_analysis.time_complexity}
                     </ModernTag>
                   </Col>
                   <Col xs={24} sm={12}>
-                    <Text strong>{t('records.aiSpaceComplexity', 'Space')}: </Text>
+                    <Text strong>
+                      {t('records.aiSpaceComplexity', 'Space')}:{' '}
+                    </Text>
                     <ModernTag type="info" isMobile={isMobile}>
                       {record.ai_analysis.space_complexity}
                     </ModernTag>
                   </Col>
                 </Row>
-                
+
                 <div>
-                  <Text strong>{t('records.aiAlgorithmType', 'Algorithm')}: </Text>
+                  <Text strong>
+                    {t('records.aiAlgorithmType', 'Algorithm')}:{' '}
+                  </Text>
                   <ModernTag type="default" isMobile={isMobile}>
                     {record.ai_analysis.algorithm_type}
                   </ModernTag>
                 </div>
-                
+
                 <div>
-                  <Text strong>{t('records.aiSolutionTypes', 'Solution Types')}: </Text>
-                  <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  <Text strong>
+                    {t('records.aiSolutionTypes', 'Solution Types')}:{' '}
+                  </Text>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: 6,
+                    }}
+                  >
                     {record.ai_analysis.solution_types?.map((type, idx) => (
                       <ModernTag key={idx} type="info" isMobile={isMobile}>
                         {type}
@@ -561,35 +586,56 @@ const RecordDetail = () => {
                     )) || '-'}
                   </div>
                 </div>
-                
-                {record.ai_analysis.step_analysis && record.ai_analysis.step_analysis.length > 0 && (
-                  <div>
-                    <Text strong>{t('records.aiStepAnalysis', 'Step Analysis')}:</Text>
-                    <div style={{
-                      marginTop: 8,
-                      background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)',
+
+                {record.ai_analysis.step_analysis &&
+                  record.ai_analysis.step_analysis.length > 0 && (
+                    <div>
+                      <Text strong>
+                        {t('records.aiStepAnalysis', 'Step Analysis')}:
+                      </Text>
+                      <div
+                        style={{
+                          marginTop: 8,
+                          background:
+                            'linear-gradient(135deg, #f0f9ff, #e0f2fe)',
+                          padding: '12px',
+                          borderRadius: '8px',
+                          border: '1px solid #bae6fd',
+                        }}
+                      >
+                        <ol
+                          style={{
+                            margin: 0,
+                            paddingLeft: 20,
+                            color: '#0369a1',
+                          }}
+                        >
+                          {record.ai_analysis.step_analysis.map((step, idx) => (
+                            <li key={idx} style={{ marginBottom: 4 }}>
+                              {step}
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    </div>
+                  )}
+
+                {record.ai_analysis.improvement_suggestions && (
+                  <div
+                    style={{
+                      background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
                       padding: '12px',
                       borderRadius: '8px',
-                      border: '1px solid #bae6fd'
-                    }}>
-                      <ol style={{ margin: 0, paddingLeft: 20, color: '#0369a1' }}>
-                        {record.ai_analysis.step_analysis.map((step, idx) => (
-                          <li key={idx} style={{ marginBottom: 4 }}>{step}</li>
-                        ))}
-                      </ol>
-                    </div>
-                  </div>
-                )}
-                
-                {record.ai_analysis.improvement_suggestions && (
-                  <div style={{
-                    background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
-                    padding: '12px',
-                    borderRadius: '8px',
-                    border: '1px solid #bbf7d0'
-                  }}>
-                    <Text strong style={{ color: '#166534' }}>{t('records.aiImprovementSuggestions', 'Improvements')}: </Text>
-                    <Text style={{ color: '#15803d' }}>{record.ai_analysis.improvement_suggestions}</Text>
+                      border: '1px solid #bbf7d0',
+                    }}
+                  >
+                    <Text strong style={{ color: '#166534' }}>
+                      {t('records.aiImprovementSuggestions', 'Improvements')}
+                      :{' '}
+                    </Text>
+                    <Text style={{ color: '#15803d' }}>
+                      {record.ai_analysis.improvement_suggestions}
+                    </Text>
                   </div>
                 )}
               </div>
@@ -597,7 +643,6 @@ const RecordDetail = () => {
               <Text type="secondary">{t('records.noAIAnalysis')}</Text>
             )}
           </ModernCard>
-
         </Col>
 
         {/* Right column - Sync status and other information */}
@@ -609,14 +654,20 @@ const RecordDetail = () => {
             iconGradient={GRADIENT_THEMES.warning}
             isMobile={isMobile}
           >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 12 : 16 }}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: isMobile ? 12 : 16,
+              }}
+            >
               <ModernInfoItem
                 icon={<ApiOutlined />}
                 label={t('records.ojSyncStatus')}
                 iconGradient={getStatusTheme(record.oj_sync_status).gradient}
                 isMobile={isMobile}
                 valueComponent={
-                  <ModernTag 
+                  <ModernTag
                     type={getStatusTheme(record.oj_sync_status).tagType}
                     isMobile={isMobile}
                   >
@@ -627,14 +678,16 @@ const RecordDetail = () => {
                   </ModernTag>
                 }
               />
-              
+
               <ModernInfoItem
                 icon={<GithubOutlined />}
                 label={t('records.githubSyncStatus')}
-                iconGradient={getStatusTheme(record.github_sync_status).gradient}
+                iconGradient={
+                  getStatusTheme(record.github_sync_status).gradient
+                }
                 isMobile={isMobile}
                 valueComponent={
-                  <ModernTag 
+                  <ModernTag
                     type={getStatusTheme(record.github_sync_status).tagType}
                     isMobile={isMobile}
                   >
@@ -645,14 +698,14 @@ const RecordDetail = () => {
                   </ModernTag>
                 }
               />
-              
+
               <ModernInfoItem
                 icon={<RobotOutlined />}
                 label={t('records.aiSyncStatus')}
                 iconGradient={getStatusTheme(record.ai_sync_status).gradient}
                 isMobile={isMobile}
                 valueComponent={
-                  <ModernTag 
+                  <ModernTag
                     type={getStatusTheme(record.ai_sync_status).tagType}
                     isMobile={isMobile}
                   >
@@ -663,14 +716,16 @@ const RecordDetail = () => {
                   </ModernTag>
                 }
               />
-              
+
               <ModernInfoItem
                 icon={<FileTextOutlined />}
                 label={t('records.notionSyncStatus')}
-                iconGradient={getStatusTheme(record.notion_sync_status).gradient}
+                iconGradient={
+                  getStatusTheme(record.notion_sync_status).gradient
+                }
                 isMobile={isMobile}
                 valueComponent={
-                  <ModernTag 
+                  <ModernTag
                     type={getStatusTheme(record.notion_sync_status).tagType}
                     isMobile={isMobile}
                   >
@@ -691,7 +746,13 @@ const RecordDetail = () => {
             iconGradient={GRADIENT_THEMES.cyan}
             isMobile={isMobile}
           >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? 12 : 16 }}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: isMobile ? 12 : 16,
+              }}
+            >
               <ModernInfoItem
                 icon={<LinkOutlined />}
                 label={t('records.submissionUrl')}
@@ -699,9 +760,9 @@ const RecordDetail = () => {
                 isMobile={isMobile}
                 valueComponent={
                   isValidUrl(record.submission_url) ? (
-                    <a 
-                      href={record.submission_url} 
-                      target="_blank" 
+                    <a
+                      href={record.submission_url}
+                      target="_blank"
                       rel="noopener noreferrer"
                       style={{
                         color: '#ec4899',
@@ -709,7 +770,7 @@ const RecordDetail = () => {
                         textDecoration: 'none',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '6px'
+                        gap: '6px',
                       }}
                     >
                       <EyeOutlined />
@@ -720,7 +781,7 @@ const RecordDetail = () => {
                   )
                 }
               />
-              
+
               <ModernInfoItem
                 icon={<CloudOutlined />}
                 label={t('records.gitFilePath')}
@@ -728,9 +789,9 @@ const RecordDetail = () => {
                 isMobile={isMobile}
                 valueComponent={
                   isValidUrl(record.git_file_path) ? (
-                    <a 
-                      href={record.git_file_path} 
-                      target="_blank" 
+                    <a
+                      href={record.git_file_path}
+                      target="_blank"
                       rel="noopener noreferrer"
                       style={{
                         color: '#64748b',
@@ -738,7 +799,7 @@ const RecordDetail = () => {
                         textDecoration: 'none',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '6px'
+                        gap: '6px',
                       }}
                     >
                       <EyeOutlined />
@@ -749,7 +810,7 @@ const RecordDetail = () => {
                   )
                 }
               />
-              
+
               <ModernInfoItem
                 icon={<FileTextOutlined />}
                 label={t('records.notionUrl')}
@@ -757,9 +818,9 @@ const RecordDetail = () => {
                 isMobile={isMobile}
                 valueComponent={
                   isValidUrl(record.notion_url) ? (
-                    <a 
-                      href={record.notion_url} 
-                      target="_blank" 
+                    <a
+                      href={record.notion_url}
+                      target="_blank"
                       rel="noopener noreferrer"
                       style={{
                         color: '#3b82f6',
@@ -767,7 +828,7 @@ const RecordDetail = () => {
                         textDecoration: 'none',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '6px'
+                        gap: '6px',
                       }}
                     >
                       <EyeOutlined />
@@ -789,7 +850,13 @@ const RecordDetail = () => {
               iconGradient={GRADIENT_THEMES.primary}
               isMobile={isMobile}
             >
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: isMobile ? 6 : 8 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: isMobile ? 6 : 8,
+                }}
+              >
                 {record.topic_tags.map((tag, index) => (
                   <ModernTag key={index} type="info" isMobile={isMobile}>
                     {tag}

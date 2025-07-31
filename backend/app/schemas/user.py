@@ -251,5 +251,4 @@ class UserConfigOut(BaseModel):
         description="Last configuration update timestamp in ISO 8601 format (UTC timezone).",
     )
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

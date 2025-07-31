@@ -1,2 +1,3 @@
-# Import models to make them available when importing from app
-from . import models
+"""AlgoAssistant application package."""
+
+from . import models  # noqa: F401

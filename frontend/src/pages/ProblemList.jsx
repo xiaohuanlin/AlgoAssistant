@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { message, Tag, Space, Row, Col } from 'antd';
-import { 
-  PlusOutlined, 
-  ProfileOutlined, 
+import { message, Tag, Space } from 'antd';
+import {
+  PlusOutlined,
+  ProfileOutlined,
   BarChartOutlined,
-  EyeOutlined 
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
+import { formatLocalTime } from '../utils';
 import problemService from '../services/problemService';
 import { useNavigate } from 'react-router-dom';
 import DataTable from '../components/common/DataTable';
@@ -16,16 +16,19 @@ import useTableFilters from '../hooks/useTableFilters';
 import {
   GradientPageHeader,
   ModernCard,
-  GRADIENT_THEMES
+  GRADIENT_THEMES,
 } from '../components/ui/ModernDesignSystem';
-
 
 const ProblemList = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [problems, setProblems] = useState([]);
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   useEffect(() => {
@@ -35,35 +38,39 @@ const ProblemList = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-  
+
   // Use the new table filters hook
   const {
     filters,
     clearAllFilters,
     createAutoFilterHandler,
-    createFilterClearHandler
+    createFilterClearHandler,
   } = useTableFilters((apiFilters) => {
-    setPagination(prev => ({ ...prev, current: 1 }));
+    setPagination((prev) => ({ ...prev, current: 1 }));
     fetchProblems(apiFilters);
   });
 
-  const fetchProblems = useCallback(async (filterParams = {}) => {
-    setLoading(true);
-    try {
-      const params = {
-        skip: (pagination.current - 1) * pagination.pageSize,
-        limit: pagination.pageSize,
-        ...filterParams,
-      };
-      const data = await problemService.getProblems(params);
-      setProblems(data.items);
-      setPagination(prev => ({ ...prev, total: data.total }));
-    } catch (error) {
-      message.error(t('problem.loadError') + ': ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [pagination.current, pagination.pageSize, t]);
+  const fetchProblems = useCallback(
+    async (filterParams = {}) => {
+      setLoading(true);
+      try {
+        const params = {
+          skip: (pagination.current - 1) * pagination.pageSize,
+          limit: pagination.pageSize,
+          ...filterParams,
+        };
+        const data = await problemService.getProblems(params);
+        setProblems(data.items);
+        setPagination((prev) => ({ ...prev, total: data.total }));
+      } catch (error) {
+        message.error(t('problem.loadError') + ': ' + error.message);
+      } finally {
+        setLoading(false);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [pagination.current, pagination.pageSize, t],
+  );
 
   useEffect(() => {
     fetchProblems();
@@ -76,8 +83,12 @@ const ProblemList = () => {
   const handleRefresh = () => {
     // Refresh data with current filters
     const currentApiFilters = {};
-    Object.keys(filters).forEach(key => {
-      if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+    Object.keys(filters).forEach((key) => {
+      if (
+        filters[key] !== undefined &&
+        filters[key] !== null &&
+        filters[key] !== ''
+      ) {
         currentApiFilters[key] = filters[key];
       }
     });
@@ -100,7 +111,11 @@ const ProblemList = () => {
       dataIndex: 'title',
       key: 'title',
       render: (text, record) => (
-        <ActionButton type="link" variant="link" onClick={() => handleViewDetail(record)}>
+        <ActionButton
+          type="link"
+          variant="link"
+          onClick={() => handleViewDetail(record)}
+        >
           {text}
         </ActionButton>
       ),
@@ -109,25 +124,45 @@ const ProblemList = () => {
       title: t('problem.source'),
       dataIndex: 'source',
       key: 'source',
-      render: (source) => <Tag color={sourceColor[source] || 'default'} style={{ fontWeight: 500 }}>{source}</Tag>,
+      render: (source) => (
+        <Tag
+          color={sourceColor[source] || 'default'}
+          style={{ fontWeight: 500 }}
+        >
+          {source}
+        </Tag>
+      ),
     },
     {
       title: t('problem.difficulty'),
       dataIndex: 'difficulty',
       key: 'difficulty',
-      render: (difficulty) => <Tag color={difficultyColor[difficulty] || 'default'} style={{ fontWeight: 500 }}>{difficulty}</Tag>,
+      render: (difficulty) => (
+        <Tag
+          color={difficultyColor[difficulty] || 'default'}
+          style={{ fontWeight: 500 }}
+        >
+          {difficulty}
+        </Tag>
+      ),
     },
     {
       title: t('problem.tags'),
       dataIndex: 'tags',
       key: 'tags',
-      render: (tags) => tags && tags.length > 0 ? tags.map(tag => <Tag key={tag}>{tag}</Tag>) : '-',
+      render: (tags) =>
+        tags && tags.length > 0
+          ? tags.map((tag) => <Tag key={tag}>{tag}</Tag>)
+          : '-',
     },
     {
       title: t('problem.createdAt'),
       dataIndex: 'created_at',
       key: 'created_at',
-      render: (date) => date ? new Date(date).toLocaleString() : '-',
+      width: 180,
+      render: (date) => (
+        <span style={{ whiteSpace: 'nowrap' }}>{formatLocalTime(date)}</span>
+      ),
     },
     {
       title: t('problem.actions'),
@@ -148,7 +183,7 @@ const ProblemList = () => {
       placeholder: t('problem.searchPlaceholder'),
       value: filters.title,
       onChange: createAutoFilterHandler('title', 500),
-      onClear: createFilterClearHandler('title')
+      onClear: createFilterClearHandler('title'),
     },
     {
       key: 'source',
@@ -202,24 +237,32 @@ const ProblemList = () => {
   ];
 
   return (
-    <div style={{
-      maxWidth: 1200,
-      margin: '0 auto',
-      padding: isMobile ? '16px' : '24px'
-    }}>
+    <div
+      style={{
+        maxWidth: 1200,
+        margin: '0 auto',
+        padding: isMobile ? '16px' : '24px',
+      }}
+    >
       {/* Modern Page Header */}
       <GradientPageHeader
-        icon={<ProfileOutlined style={{
-          fontSize: isMobile ? '24px' : '36px',
-          color: 'white'
-        }} />}
+        icon={
+          <ProfileOutlined
+            style={{
+              fontSize: isMobile ? '24px' : '36px',
+              color: 'white',
+            }}
+          />
+        }
         title={t('problem.listTitle', 'Problem Bank')}
-        subtitle={(
+        subtitle={
           <>
-            <BarChartOutlined style={{ fontSize: isMobile ? '16px' : '20px' }} />
+            <BarChartOutlined
+              style={{ fontSize: isMobile ? '16px' : '20px' }}
+            />
             {t('problem.subtitle', 'Manage your coding problems')}
           </>
-        )}
+        }
         isMobile={isMobile}
         gradient={GRADIENT_THEMES.primary}
       />
@@ -251,7 +294,7 @@ const ProblemList = () => {
             pageSize: pagination.pageSize,
             total: pagination.total,
             onChange: (current, pageSize) => {
-              setPagination(prev => ({ ...prev, current, pageSize }));
+              setPagination((prev) => ({ ...prev, current, pageSize }));
             },
           }}
           filters={dataTableFilters}

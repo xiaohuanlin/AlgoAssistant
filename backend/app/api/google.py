@@ -146,7 +146,7 @@ def google_login(request: schemas.GoogleLoginRequest, db: Session = Depends(get_
             username=email.split("@")[0],  # Use email prefix as username
             email=email,
             nickname=user_info.get("name", email.split("@")[0]),
-            password="google_oauth_user",  # Placeholder password
+            password="google_oauth_user",  # pragma: allowlist secret
         )
         user = user_service.create_user(user_data)
 

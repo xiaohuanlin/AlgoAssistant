@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from 'react';
 import configService from '../services/configService';
 
 const ConfigContext = createContext();
@@ -24,7 +30,6 @@ export const ConfigProvider = ({ children }) => {
       setConfigs(allConfigs);
     } catch (err) {
       setError(err.message);
-      console.error('Error loading configs:', err);
     } finally {
       setLoading(false);
     }
@@ -104,8 +109,6 @@ export const ConfigProvider = ({ children }) => {
   };
 
   return (
-    <ConfigContext.Provider value={value}>
-      {children}
-    </ConfigContext.Provider>
+    <ConfigContext.Provider value={value}>{children}</ConfigContext.Provider>
   );
 };

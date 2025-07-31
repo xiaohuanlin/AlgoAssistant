@@ -32,6 +32,83 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/api/records", tags=["records"])
 
 
+class RecordQueryBuilder:
+    """Helper class to build record queries with filters."""
+
+    def __init__(self, db: Session, user_id: int):
+        self.db = db
+        self.base_query = db.query(models.Record).filter(
+            models.Record.user_id == user_id
+        )
+
+    def apply_filters(self, **filters) -> "RecordQueryBuilder":
+        """Apply all filters to the query."""
+        filter_methods = {
+            "tag": self._apply_single_tag_filter,
+            "tags": self._apply_multiple_tags_filter,
+            "github_sync_status": lambda v: self._apply_list_filter(
+                "github_sync_status", v
+            ),
+            "oj_sync_status": lambda v: self._apply_list_filter("oj_sync_status", v),
+            "ai_sync_status": lambda v: self._apply_list_filter("ai_sync_status", v),
+            "status": lambda v: self._apply_list_filter("execution_result", v),
+            "oj_type": lambda v: self._apply_single_filter("oj_type", v),
+            "language": lambda v: self._apply_single_filter("language", v),
+            "problem_title": self._apply_problem_title_filter,
+            "problem_id": lambda v: self._apply_single_filter("problem_id", v),
+            "start_time": lambda v: self._apply_time_filter(">=", v),
+            "end_time": lambda v: self._apply_time_filter("<=", v),
+        }
+
+        for key, value in filters.items():
+            if value and key in filter_methods:
+                filter_methods[key](value)
+
+        return self
+
+    def _apply_single_tag_filter(self, tag: str):
+        self.base_query = self.base_query.join(models.Record.tags).filter(
+            models.Tag.name == tag
+        )
+
+    def _apply_multiple_tags_filter(self, tags: str):
+        tag_names = [t.strip() for t in tags.split(",") if t.strip()]
+        self.base_query = self.base_query.join(models.Record.tags).filter(
+            models.Tag.name.in_(tag_names)
+        )
+
+    def _apply_list_filter(self, field: str, values: list):
+        self.base_query = self.base_query.filter(
+            getattr(models.Record, field).in_(values)
+        )
+
+    def _apply_single_filter(self, field: str, value):
+        self.base_query = self.base_query.filter(getattr(models.Record, field) == value)
+
+    def _apply_problem_title_filter(self, title: str):
+        self.base_query = self.base_query.join(models.Problem).filter(
+            models.Problem.title.ilike(f"%{title}%")
+        )
+
+    def _apply_time_filter(self, operator: str, time_str: str):
+        try:
+            time_formatted = time_str.replace("Z", "+00:00")
+            dt = datetime.fromisoformat(time_formatted)
+            if operator == ">=":
+                self.base_query = self.base_query.filter(
+                    models.Record.submit_time >= dt
+                )
+            elif operator == "<=":
+                self.base_query = self.base_query.filter(
+                    models.Record.submit_time <= dt
+                )
+        except ValueError:
+            logger.warning(f"Invalid time format: {time_str}")
+
+    def get_query(self):
+        return self.base_query
+
+
 @router.post("/", response_model=RecordDetailOut)
 def create_record(
     record: RecordManualCreate,
@@ -39,7 +116,7 @@ def create_record(
     current_user=Depends(get_current_user),
 ):
     """Create a new problem record. Only allowed fields can be set by user, sync-related fields are auto-generated."""
-    user_fields = record.dict()
+    user_fields = record.model_dump()
     user_fields["oj_sync_status"] = SyncStatus.COMPLETED
     user_fields["github_sync_status"] = SyncStatus.PENDING
     user_fields["ai_sync_status"] = SyncStatus.PENDING
@@ -97,73 +174,28 @@ def list_records(
 ):
     """List problem records with filtering and pagination."""
     service = RecordService(db)
-    base_query = db.query(models.Record).filter(
-        models.Record.user_id == current_user.id
+
+    # Build query with filters
+    query_builder = RecordQueryBuilder(db, current_user.id)
+    query_builder.apply_filters(
+        tag=tag,
+        tags=tags,
+        status=status,
+        oj_type=oj_type,
+        oj_sync_status=oj_sync_status,
+        github_sync_status=github_sync_status,
+        ai_sync_status=ai_sync_status,
+        language=language,
+        problem_title=problem_title,
+        problem_id=problem_id,
+        start_time=start_time,
+        end_time=end_time,
     )
 
-    # Tag filtering
-    if tag:
-        base_query = base_query.join(models.Record.tags).filter(models.Tag.name == tag)
-    elif tags:
-        tag_names = [t.strip() for t in tags.split(",") if t.strip()]
-        base_query = base_query.join(models.Record.tags).filter(
-            models.Tag.name.in_(tag_names)
-        )
-
-    # Status filtering
-    if github_sync_status:
-        base_query = base_query.filter(
-            models.Record.github_sync_status.in_(github_sync_status)
-        )
-    if oj_sync_status:
-        base_query = base_query.filter(models.Record.oj_sync_status.in_(oj_sync_status))
-    if ai_sync_status:
-        base_query = base_query.filter(models.Record.ai_sync_status.in_(ai_sync_status))
-    if status:
-        base_query = base_query.filter(models.Record.execution_result.in_(status))
-    if oj_type:
-        base_query = base_query.filter(models.Record.oj_type == oj_type)
-    if language:
-        base_query = base_query.filter(models.Record.language == language)
-    if problem_title:
-        base_query = base_query.join(models.Problem).filter(
-            models.Problem.title.ilike(f"%{problem_title}%")
-        )
-    if problem_id:
-        base_query = base_query.filter(models.Record.problem_id == problem_id)
-
-    # Time filtering
-    if start_time:
-        try:
-            # Handle Z suffix for UTC timezone (fromisoformat doesn't support Z)
-            start_time_formatted = start_time.replace('Z', '+00:00')
-            start_dt = datetime.fromisoformat(start_time_formatted)
-            logger.info(f"Filtering with start_time: {start_time} -> {start_dt}")
-            base_query = base_query.filter(models.Record.submit_time >= start_dt)
-        except ValueError:
-            logger.warning(f"Invalid start_time format: {start_time}")
-    if end_time:
-        try:
-            # Handle Z suffix for UTC timezone (fromisoformat doesn't support Z)
-            end_time_formatted = end_time.replace('Z', '+00:00')
-            end_dt = datetime.fromisoformat(end_time_formatted)
-            logger.info(f"Filtering with end_time: {end_time} -> {end_dt}")
-            base_query = base_query.filter(models.Record.submit_time <= end_dt)
-        except ValueError:
-            logger.warning(f"Invalid end_time format: {end_time}")
-
-    # Get total count before applying pagination
+    base_query = query_builder.get_query()
     total_records = base_query.count()
-    
-    # Debug: log some submit_time values from database
-    if start_time or end_time:
-        sample_records = db.query(models.Record.submit_time).filter(
-            models.Record.user_id == current_user.id
-        ).limit(5).all()
-        logger.info(f"Sample submit_time values from DB: {[r.submit_time for r in sample_records]}")
-        logger.info(f"Total records matching time filter: {total_records}")
 
-    # Sorting
+    # Apply sorting
     valid_sort_fields = [
         "submit_time",
         "created_at",
@@ -180,11 +212,9 @@ def list_records(
     else:
         base_query = base_query.order_by(sort_column.desc().nullslast())
 
-    # Pagination
-    paginated_query = base_query.offset(offset).limit(limit)
-    records = paginated_query.all()
+    # Apply pagination and get results
+    records = base_query.offset(offset).limit(limit).all()
 
-    # Calculate pagination info
     page = (offset // limit) + 1
     total_pages = (total_records + limit - 1) // limit
 
@@ -275,8 +305,13 @@ def update_record(
     db_record = service.get_record(id)
     if not db_record or db_record.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Record not found")
-    for field, value in record.dict(exclude_unset=True).items():
-        setattr(db_record, field, value)
+
+    # Update fields using dict comprehension and setattr
+    update_data = record.dict(exclude_unset=True)
+    for field, value in update_data.items():
+        if hasattr(db_record, field):
+            setattr(db_record, field, value)
+
     db.commit()
     db.refresh(db_record)
     return service.to_record_detail_out(db_record)

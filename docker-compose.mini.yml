@@ -1,0 +1,147 @@
+version: '3.8'
+
+services:
+  # SQLite replaces PostgreSQL (saves ~200MB memory)
+  # Uses file database, no separate container needed
+
+  # Lightweight Redis configuration
+  redis:
+    image: redis:7-alpine
+    container_name: algo_assistant_redis_mini
+    command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru --save ""
+    volumes:
+      - redis_mini_data:/data
+    networks:
+      - algo_network_mini
+    # No exposed ports, internal access only
+    restart: unless-stopped
+
+  # Backend service - merge all functionality into one container
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.mini
+    container_name: algo_assistant_backend_mini
+    environment:
+      - PYTHONPATH=/app
+      - DATABASE_URL=sqlite:////app/data/algo_assistant.db
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - ENVIRONMENT=production
+      # Limit Python memory usage
+      - PYTHONHASHSEED=random
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "8000:8000"
+    volumes:
+      - app_data:/app/data
+      - app_logs:/app/logs
+    depends_on:
+      - redis
+    networks:
+      - algo_network_mini
+    restart: unless-stopped
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 400M
+        reservations:
+          memory: 200M
+
+  # Celery Worker - lightweight background tasks
+  celery:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.mini
+    container_name: algo_assistant_celery_mini
+    command: celery -A app.celery_app.celery_app worker --loglevel=WARNING --concurrency=1 -Q leetcode_sync_queue,git_sync_queue,gemini_sync_queue,notion_sync_queue,notification_queue
+    environment:
+      - PYTHONPATH=/app
+      - DATABASE_URL=sqlite:////app/data/algo_assistant.db
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - ENVIRONMENT=production
+      - PYTHONHASHSEED=random
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - app_data:/app/data
+      - app_logs:/app/logs
+    depends_on:
+      - redis
+      - backend
+    networks:
+      - algo_network_mini
+    restart: unless-stopped
+    # Resource limits - minimal for background tasks
+    deploy:
+      resources:
+        limits:
+          memory: 200M
+        reservations:
+          memory: 100M
+
+  # Celery Beat - scheduled tasks (notifications, etc.)
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.mini
+    container_name: algo_assistant_celery_beat_mini
+    command: celery -A app.celery_app.celery_app beat --loglevel=WARNING --pidfile=/app/celerybeat.pid --schedule=/app/celerybeat-schedule
+    environment:
+      - PYTHONPATH=/app
+      - DATABASE_URL=sqlite:////app/data/algo_assistant.db
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - ENVIRONMENT=production
+      - PYTHONHASHSEED=random
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - app_data:/app/data
+      - app_logs:/app/logs
+    depends_on:
+      - redis
+      - backend
+    networks:
+      - algo_network_mini
+    restart: unless-stopped
+    # Resource limits - minimal for scheduler
+    deploy:
+      resources:
+        limits:
+          memory: 100M
+        reservations:
+          memory: 50M
+
+  # Frontend - static file service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.mini
+    container_name: algo_assistant_frontend_mini
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - algo_network_mini
+    restart: unless-stopped
+    # Resource limits - increased for build process
+    deploy:
+      resources:
+        limits:
+          memory: 512M  # Increased for React build
+        reservations:
+          memory: 256M
+
+volumes:
+  redis_mini_data:
+  app_data:
+  app_logs:
+
+networks:
+  algo_network_mini:
+    driver: bridge

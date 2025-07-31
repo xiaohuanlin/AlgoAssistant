@@ -52,11 +52,13 @@ const GitConfigForm = ({ onSave, initialValues, onTestConnection }) => {
       form={form}
       layout="vertical"
       onFinish={handleSubmit}
-      initialValues={initialValues || {
-        branch: 'main',
-        base_path: 'solutions/leetcode/',
-        commit_template: 'feat: solve {problem_title} - {date}'
-      }}
+      initialValues={
+        initialValues || {
+          branch: 'main',
+          base_path: 'solutions/leetcode/',
+          commit_template: 'feat: solve {problem_title} - {date}',
+        }
+      }
     >
       <Form.Item
         name="repo_url"
@@ -86,10 +88,7 @@ const GitConfigForm = ({ onSave, initialValues, onTestConnection }) => {
         label={t('git.filePath')}
         rules={[{ required: true, message: t('git.filePathRequired') }]}
       >
-        <Input
-          placeholder="solutions/leetcode/"
-          size="large"
-        />
+        <Input placeholder="solutions/leetcode/" size="large" />
       </Form.Item>
 
       <Form.Item
@@ -97,10 +96,7 @@ const GitConfigForm = ({ onSave, initialValues, onTestConnection }) => {
         label={t('git.commitTemplate')}
         extra={t('git.commitTemplateHelp')}
       >
-        <TextArea
-          placeholder="feat: solve {problem_title} - {date}"
-          rows={3}
-        />
+        <TextArea placeholder="feat: solve {problem_title} - {date}" rows={3} />
       </Form.Item>
 
       <Form.Item
@@ -112,7 +108,9 @@ const GitConfigForm = ({ onSave, initialValues, onTestConnection }) => {
             <div>{t('git.tokenHelp')}</div>
             <div style={{ marginTop: '8px' }}>
               <strong>{t('git.howToGetToken')}</strong>
-              <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+              <div
+                style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}
+              >
                 <div>1. {t('git.tokenStep1')}</div>
                 <div>2. {t('git.tokenStep2')}</div>
                 <div>3. {t('git.tokenStep3')}</div>

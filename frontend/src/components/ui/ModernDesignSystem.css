@@ -1,10 +1,10 @@
 /**
  * Modern Design System Styles
- * 基于复习计划详情页面的现代化设计风格的CSS样式系统
+ * Modern design system based on review plan detail page styles
  */
 
 /* ===========================================
-   1. 渐变页面头部样式
+   1. Gradient Page Header Styles
    =========================================== */
 
 .gradient-page-header {
@@ -13,7 +13,9 @@
   border-radius: 20px;
   padding: 48px 32px;
   color: white;
-  box-shadow: 0 20px 40px rgba(99, 102, 241, 0.15), 0 10px 20px rgba(139, 92, 246, 0.1);
+  box-shadow:
+    0 20px 40px rgba(99, 102, 241, 0.15),
+    0 10px 20px rgba(139, 92, 246, 0.1);
   position: relative;
   overflow: hidden;
 }
@@ -24,7 +26,7 @@
   padding: 24px 16px;
 }
 
-/* 背景装饰元素 */
+/* Background decorative elements */
 .gradient-decoration {
   position: absolute;
   border-radius: 50%;
@@ -116,7 +118,7 @@
 }
 
 /* ===========================================
-   2. 现代化图标容器样式
+   2. Modern Icon Container Styles
    =========================================== */
 
 .modern-icon-container {
@@ -126,7 +128,7 @@
   border-radius: 12px;
 }
 
-/* 图标容器尺寸 */
+/* Icon container sizes */
 .modern-icon-container.large {
   width: 40px;
   height: 40px;
@@ -162,7 +164,7 @@
   border-radius: 4px;
 }
 
-/* 图标大小 */
+/* Icon sizes */
 .modern-icon-container.large .anticon {
   font-size: 20px;
   color: white;
@@ -194,7 +196,7 @@
 }
 
 /* ===========================================
-   3. 现代化卡片样式
+   3. Modern Card Styles
    =========================================== */
 
 .modern-card {
@@ -237,7 +239,7 @@
 }
 
 /* ===========================================
-   4. 现代化信息项样式
+   4. Modern Info Item Styles
    =========================================== */
 
 .modern-info-item {
@@ -287,7 +289,7 @@
   font-size: 15px;
 }
 
-/* 特殊样式的信息内容 */
+/* Special styled info content */
 .modern-info-content.highlighted {
   white-space: pre-wrap;
   word-break: break-all;
@@ -301,7 +303,7 @@
 }
 
 /* ===========================================
-   5. 渐变按钮样式
+   5. Gradient Button Styles
    =========================================== */
 
 .gradient-button {
@@ -333,7 +335,7 @@
 }
 
 /* ===========================================
-   6. 现代化标签样式
+   6. Modern Tag Styles
    =========================================== */
 
 .modern-tag {
@@ -375,7 +377,7 @@
   color: #475569;
 }
 
-/* 大尺寸标签 */
+/* Large size tags */
 .modern-tag.large {
   font-size: 18px;
   padding: 8px 16px;
@@ -390,7 +392,7 @@
 }
 
 /* ===========================================
-   7. 响应式网格布局
+   7. Responsive Grid Layout
    =========================================== */
 
 .modern-grid {
@@ -411,7 +413,7 @@
 }
 
 /* ===========================================
-   8. 现代化表格样式
+   8. Modern Table Styles
    =========================================== */
 
 .modern-table .ant-table {
@@ -435,7 +437,7 @@
 }
 
 /* ===========================================
-   9. 动画效果
+   9. Animation Effects
    =========================================== */
 
 .modern-fade-in {
@@ -469,7 +471,7 @@
 }
 
 /* ===========================================
-   10. 实用工具类
+   10. Utility Classes
    =========================================== */
 
 .modern-container {
@@ -491,7 +493,9 @@
 }
 
 .modern-shadow-lg {
-  box-shadow: 0 20px 40px rgba(99, 102, 241, 0.15), 0 10px 20px rgba(139, 92, 246, 0.1);
+  box-shadow:
+    0 20px 40px rgba(99, 102, 241, 0.15),
+    0 10px 20px rgba(139, 92, 246, 0.1);
 }
 
 .modern-rounded-sm {

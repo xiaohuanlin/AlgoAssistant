@@ -41,7 +41,7 @@ def verify_token(token: str) -> dict:
         return payload
     except jwt.ExpiredSignatureError:
         raise jwt.ExpiredSignatureError("Token has expired")
-    except jwt.JWTError as e:
+    except jwt.InvalidTokenError as e:
         raise jwt.InvalidTokenError(f"Invalid token: {e}")
 
 

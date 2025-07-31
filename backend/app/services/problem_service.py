@@ -41,7 +41,7 @@ class ProblemService:
                 description=detail.get("content"),
                 url=problem_in.url,
             )
-        problem = models.Problem(**problem_in.dict())
+        problem = models.Problem(**problem_in.model_dump())
         self.db.add(problem)
         self.db.commit()
         self.db.refresh(problem)
@@ -198,7 +198,7 @@ class ProblemService:
     ) -> List[models.Problem]:
         problems = []
         for p in problems_in:
-            problem = models.Problem(**p.dict())
+            problem = models.Problem(**p.model_dump())
             self.db.add(problem)
             problems.append(problem)
         self.db.commit()

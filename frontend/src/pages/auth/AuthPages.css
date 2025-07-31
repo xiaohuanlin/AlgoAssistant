@@ -72,11 +72,11 @@
   .auth-container {
     padding: 10px;
   }
-  
+
   .auth-content {
     max-width: 100%;
   }
-  
+
   .auth-card {
     border-radius: 8px;
   }
@@ -136,4 +136,4 @@
     opacity: 1;
     transform: translateY(0);
   }
-} 
+}

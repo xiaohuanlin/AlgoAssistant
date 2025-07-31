@@ -36,7 +36,10 @@ class ProblemService {
    */
   async createProblem(problemData) {
     try {
-      const response = await api.post(API_ENDPOINTS.PROBLEM.CREATE, problemData);
+      const response = await api.post(
+        API_ENDPOINTS.PROBLEM.CREATE,
+        problemData,
+      );
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -51,7 +54,10 @@ class ProblemService {
    */
   async updateProblem(problemId, updateData) {
     try {
-      const response = await api.put(API_ENDPOINTS.PROBLEM.UPDATE(problemId), updateData);
+      const response = await api.put(
+        API_ENDPOINTS.PROBLEM.UPDATE(problemId),
+        updateData,
+      );
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -78,7 +84,9 @@ class ProblemService {
    */
   async batchCreateProblems(problems) {
     try {
-      const response = await api.post(API_ENDPOINTS.PROBLEM.BATCH_CREATE, { problems });
+      const response = await api.post(API_ENDPOINTS.PROBLEM.BATCH_CREATE, {
+        problems,
+      });
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -92,7 +100,9 @@ class ProblemService {
    */
   async getProblemUserRecords(problemId) {
     try {
-      const response = await api.get(API_ENDPOINTS.PROBLEM.USER_RECORDS(problemId));
+      const response = await api.get(
+        API_ENDPOINTS.PROBLEM.USER_RECORDS(problemId),
+      );
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -120,7 +130,9 @@ class ProblemService {
    */
   async getProblemStatistics(problemId) {
     try {
-      const response = await api.get(API_ENDPOINTS.PROBLEM.STATISTICS(problemId));
+      const response = await api.get(
+        API_ENDPOINTS.PROBLEM.STATISTICS(problemId),
+      );
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));

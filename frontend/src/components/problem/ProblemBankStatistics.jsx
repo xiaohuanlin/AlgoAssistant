@@ -4,7 +4,7 @@ import {
   BookOutlined,
   TrophyOutlined,
   CheckCircleOutlined,
-  FireOutlined
+  FireOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import ResponsiveStatCard from '../dashboard/ResponsiveStatCard';
@@ -25,7 +25,7 @@ const ProblemBankStatistics = () => {
     solveRate: 0,
     avgAttempts: 0,
     totalReviews: 0,
-    popularTags: []
+    popularTags: [],
   });
 
   const fetchStatistics = async () => {
@@ -44,11 +44,12 @@ const ProblemBankStatistics = () => {
         solveRate: data.solve_rate || 0,
         avgAttempts: data.avg_attempts || 0,
         totalReviews: data.total_reviews || 0,
-        popularTags: data.popular_tags || []
+        popularTags: data.popular_tags || [],
       });
     } catch (error) {
-      console.error('Failed to fetch problem bank statistics:', error);
-      message.error(t('problem.bankStatisticsLoadError') + ': ' + error.message);
+      message.error(
+        t('problem.bankStatisticsLoadError') + ': ' + error.message,
+      );
     } finally {
       setLoading(false);
     }
@@ -63,7 +64,6 @@ const ProblemBankStatistics = () => {
     if (statistics.totalProblems === 0) return 0;
     return Math.round(rate * 100);
   };
-
 
   if (loading) {
     return (
@@ -105,7 +105,13 @@ const ProblemBankStatistics = () => {
             value={formatSolveRate(statistics.solveRate)}
             suffix="%"
             prefix={<TrophyOutlined />}
-            color={statistics.solveRate >= 0.7 ? "#52c41a" : statistics.solveRate >= 0.4 ? "#faad14" : "#f5222d"}
+            color={
+              statistics.solveRate >= 0.7
+                ? '#52c41a'
+                : statistics.solveRate >= 0.4
+                  ? '#faad14'
+                  : '#f5222d'
+            }
             loading={loading}
           />
         </Col>

@@ -1,6 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Typography, Row, Col, Statistic, Tag, Avatar, Spin, Alert, Button } from 'antd';
-import { UserOutlined, TrophyOutlined, StarOutlined, GlobalOutlined, CompanyOutlined, BankOutlined } from '@ant-design/icons';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Card,
+  Typography,
+  Row,
+  Col,
+  Statistic,
+  Tag,
+  Avatar,
+  Spin,
+  Alert,
+  Button,
+} from 'antd';
+import {
+  UserOutlined,
+  TrophyOutlined,
+  StarOutlined,
+  GlobalOutlined,
+  CompanyOutlined,
+  BankOutlined,
+} from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import leetcodeService from '../services/leetcodeService';
 import configService from '../services/configService';
@@ -14,7 +32,7 @@ const LeetCodeProfile = () => {
   const [error, setError] = useState(null);
   const [hasLeetCodeConfig, setHasLeetCodeConfig] = useState(false);
 
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -25,7 +43,7 @@ const LeetCodeProfile = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
   useEffect(() => {
     const checkLeetCodeConfig = async () => {
@@ -39,12 +57,11 @@ const LeetCodeProfile = () => {
           loadProfile();
         }
       } catch (error) {
-        console.error('Error checking LeetCode config:', error);
         setHasLeetCodeConfig(false);
       }
     };
     checkLeetCodeConfig();
-  }, [t]);
+  }, [loadProfile, t]);
 
   // If user doesn't have LeetCode config, show configuration message
   if (!hasLeetCodeConfig) {
@@ -110,7 +127,13 @@ const LeetCodeProfile = () => {
         {/* Basic Information */}
         <Col xs={24} md={12}>
           <Card size="small" title={t('leetcode.basicInformation')}>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                marginBottom: 16,
+              }}
+            >
               <Avatar
                 size={64}
                 src={profile.user_avatar}

@@ -1,0 +1,279 @@
+"""Core tests for RecordService business logic."""
+
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
+from sqlalchemy.orm import Session
+
+from app import models, schemas
+from app.services.record_service import RecordService
+
+
+class TestRecordService:
+    """Test cases for RecordService core functionality."""
+
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.mock_db = Mock(spec=Session)
+        self.service = RecordService(self.mock_db)
+
+    def test_get_analysis_stats_success(self):
+        """Test getting analysis statistics successfully."""
+        # Arrange
+        mock_query = Mock()
+        self.mock_db.query.return_value = mock_query
+
+        # Mock the count queries
+        mock_query.filter.return_value.scalar.side_effect = [
+            10,
+            7,
+            2,
+            1,
+        ]  # total, analyzed, pending, failed
+
+        # Act
+        result = self.service.get_analysis_stats(user_id=1)
+
+        # Assert
+        assert result.total_records == 10
+        assert result.analyzed_records == 7
+        assert result.pending_records == 2
+        assert result.failed_records == 1
+        assert result.analysis_coverage == 70.0  # 7/10 * 100
+
+    def test_get_analysis_stats_zero_records(self):
+        """Test analysis statistics with zero records."""
+        # Arrange
+        mock_query = Mock()
+        self.mock_db.query.return_value = mock_query
+        mock_query.filter.return_value.scalar.side_effect = [0, 0, 0, 0]
+
+        # Act
+        result = self.service.get_analysis_stats(user_id=1)
+
+        # Assert
+        assert result.total_records == 0
+        assert result.analyzed_records == 0
+        assert result.pending_records == 0
+        assert result.failed_records == 0
+        assert result.analysis_coverage == 0.0
+
+    @patch("app.services.record_service.ReviewService")
+    def test_create_record_success(self, mock_review_service_class):
+        """Test creating a record successfully."""
+        # Arrange
+        record_data = schemas.RecordCreate(
+            problem_id=123,
+            problem_title="Test Problem",
+            solution_code="print('hello')",
+            execution_result="Accepted",
+            language="python",
+        )
+
+        expected_record = models.Record(
+            id=1, user_id=1, problem_id=123, execution_result="Accepted"
+        )
+
+        # Mock database operations
+        self.mock_db.add.return_value = None
+        self.mock_db.commit.return_value = None
+        self.mock_db.refresh.return_value = None
+
+        # Mock models.Record constructor
+        with patch("app.services.record_service.models.Record") as mock_record_class:
+            mock_record_class.return_value = expected_record
+
+            # Act
+            result = self.service.create_record(user_id=1, record_data=record_data)
+
+            # Assert
+            assert result == expected_record
+            self.mock_db.add.assert_called_once_with(expected_record)
+            self.mock_db.commit.assert_called_once()
+            self.mock_db.refresh.assert_called_once_with(expected_record)
+
+            # Verify record data was properly prepared
+            call_args = mock_record_class.call_args[1]
+            assert call_args["user_id"] == 1
+            assert call_args["problem_id"] == 123
+
+    @patch("app.services.record_service.ReviewService")
+    def test_create_record_generates_review_for_failed_submission(
+        self, mock_review_service_class
+    ):
+        """Test that creating a failed record generates a review."""
+        # Arrange
+        record_data = schemas.RecordCreate(
+            problem_id=123,
+            problem_title="Test Problem",
+            solution_code="print('hello')",
+            execution_result="Wrong Answer",
+            language="python",
+        )
+
+        failed_record = models.Record(
+            id=1,
+            user_id=1,
+            problem_id=123,
+            execution_result="Wrong Answer",
+            ai_analysis=None,
+        )
+
+        mock_review_service = Mock()
+        mock_review_service_class.return_value = mock_review_service
+
+        # Mock database operations
+        self.mock_db.add.return_value = None
+        self.mock_db.commit.return_value = None
+        self.mock_db.refresh.return_value = None
+
+        with patch("app.services.record_service.models.Record") as mock_record_class:
+            mock_record_class.return_value = failed_record
+
+            # Act
+            result = self.service.create_record(user_id=1, record_data=record_data)
+
+            # Assert
+            assert result == failed_record
+
+            # Verify review was created
+            mock_review_service_class.assert_called_once_with(self.mock_db)
+            mock_review_service.mark_as_wrong.assert_called_once_with(
+                user_id=1,
+                problem_id=123,
+                wrong_reason="Auto generated by submission",
+                review_plan=None,
+            )
+
+    @patch("app.services.record_service.ReviewService")
+    def test_create_record_no_review_for_accepted(self, mock_review_service_class):
+        """Test that accepted submissions don't generate reviews."""
+        # Arrange
+        record_data = schemas.RecordCreate(
+            problem_id=123,
+            problem_title="Test Problem",
+            solution_code="print('hello')",
+            execution_result="Accepted",
+            language="python",
+        )
+
+        accepted_record = models.Record(
+            id=1, user_id=1, problem_id=123, execution_result="Accepted"
+        )
+
+        mock_review_service = Mock()
+        mock_review_service_class.return_value = mock_review_service
+
+        with patch("app.services.record_service.models.Record") as mock_record_class:
+            mock_record_class.return_value = accepted_record
+
+            # Act
+            result = self.service.create_record(user_id=1, record_data=record_data)
+
+            # Assert
+            assert result == accepted_record
+
+            # Verify no review was created
+            mock_review_service_class.assert_not_called()
+            mock_review_service.mark_as_wrong.assert_not_called()
+
+    def test_get_record_success(self):
+        """Test getting a single record successfully."""
+        # Arrange
+        expected_record = models.Record(id=1, user_id=1, problem_id=123)
+        self.mock_db.query.return_value.filter.return_value.first.return_value = (
+            expected_record
+        )
+
+        # Act
+        result = self.service.get_record(1)
+
+        # Assert
+        assert result == expected_record
+        self.mock_db.query.assert_called_once_with(models.Record)
+
+    def test_get_record_not_found(self):
+        """Test getting a nonexistent record returns None."""
+        # Arrange
+        self.mock_db.query.return_value.filter.return_value.first.return_value = None
+
+        # Act
+        result = self.service.get_record(999)
+
+        # Assert
+        assert result is None
+
+    def test_create_review_if_needed_with_ai_analysis(self):
+        """Test review creation uses AI analysis when available."""
+        # Arrange
+        record = models.Record(
+            id=1,
+            user_id=1,
+            problem_id=123,
+            execution_result="Time Limit Exceeded",
+            ai_analysis={"error_reason": "Algorithm too slow"},
+        )
+
+        with patch(
+            "app.services.record_service.ReviewService"
+        ) as mock_review_service_class:
+            mock_review_service = Mock()
+            mock_review_service_class.return_value = mock_review_service
+
+            # Act
+            self.service._create_review_if_needed(record)
+
+            # Assert
+            mock_review_service.mark_as_wrong.assert_called_once_with(
+                user_id=1,
+                problem_id=123,
+                wrong_reason="{'error_reason': 'Algorithm too slow'}",
+                review_plan=None,
+            )
+
+    def test_create_review_if_needed_skips_accepted(self):
+        """Test that review creation is skipped for accepted submissions."""
+        # Arrange
+        record = models.Record(
+            id=1, user_id=1, problem_id=123, execution_result="Accepted"
+        )
+
+        with patch(
+            "app.services.record_service.ReviewService"
+        ) as mock_review_service_class:
+            # Act
+            self.service._create_review_if_needed(record)
+
+            # Assert
+            mock_review_service_class.assert_not_called()
+
+    def test_create_review_if_needed_skips_missing_fields(self):
+        """Test that review creation is skipped when required fields are missing."""
+        # Arrange
+        record = models.Record(
+            id=1,
+            user_id=None,  # Missing user_id
+            problem_id=123,
+            execution_result="Wrong Answer",
+        )
+
+        with patch(
+            "app.services.record_service.ReviewService"
+        ) as mock_review_service_class:
+            # Act
+            self.service._create_review_if_needed(record)
+
+            # Assert
+            mock_review_service_class.assert_not_called()
+
+    @patch("app.services.record_service.logger")
+    def test_get_analysis_stats_handles_exception(self, mock_logger):
+        """Test that analysis stats handles database exceptions."""
+        # Arrange
+        self.mock_db.query.side_effect = Exception("Database error")
+
+        # Act & Assert
+        with pytest.raises(Exception, match="Database error"):
+            self.service.get_analysis_stats(user_id=1)
+
+        mock_logger.error.assert_called_once()

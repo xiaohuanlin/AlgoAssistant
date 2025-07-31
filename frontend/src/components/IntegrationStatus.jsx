@@ -8,7 +8,7 @@ import {
   BellOutlined,
   SettingOutlined,
   CheckCircleOutlined,
-  ExclamationCircleOutlined
+  ExclamationCircleOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 
@@ -17,7 +17,7 @@ const { Text } = Typography;
 const IntegrationStatus = ({
   configs = {},
   onConfigureService,
-  loading = false
+  loading = false,
 }) => {
   const { t } = useTranslation();
 
@@ -26,49 +26,63 @@ const IntegrationStatus = ({
       key: 'leetcode',
       title: t('settings.leetcodeIntegration') || 'LeetCode Integration',
       icon: <CodeOutlined style={{ color: '#1890ff' }} />,
-      description: t('settings.leetcodeDescription') || 'Sync problem records and submission history',
+      description:
+        t('settings.leetcodeDescription') ||
+        'Sync problem records and submission history',
       isConfigured: configs.leetcode_config?.session_cookie,
-      configPath: 'leetcode'
+      configPath: 'leetcode',
     },
     {
       key: 'github',
       title: t('git.title') || 'GitHub Integration',
       icon: <GithubOutlined style={{ color: '#1890ff' }} />,
-      description: t('settings.githubDescription') || 'Automatically sync code to Git repository',
-      isConfigured: configs.github_config?.repo_url && configs.github_config?.token,
-      configPath: 'github'
+      description:
+        t('settings.githubDescription') ||
+        'Automatically sync code to Git repository',
+      isConfigured:
+        configs.github_config?.repo_url && configs.github_config?.token,
+      configPath: 'github',
     },
     {
       key: 'notion',
       title: t('settings.notionIntegration') || 'Notion Integration',
       icon: <BookOutlined style={{ color: '#1890ff' }} />,
-      description: t('settings.notionDescription') || 'Sync problem records and AI analysis results',
-      isConfigured: configs.notion_config?.token && configs.notion_config?.db_id,
-      configPath: 'notion'
+      description:
+        t('settings.notionDescription') ||
+        'Sync problem records and AI analysis results',
+      isConfigured:
+        configs.notion_config?.token && configs.notion_config?.db_id,
+      configPath: 'notion',
     },
     {
       key: 'gemini',
       title: t('gemini.title') || 'Gemini Integration',
       icon: <RobotOutlined style={{ color: '#1890ff' }} />,
-      description: t('gemini.description') || 'AI-powered code analysis and improvement suggestions',
+      description:
+        t('gemini.description') ||
+        'AI-powered code analysis and improvement suggestions',
       isConfigured: configs.gemini_config?.api_key,
-      configPath: 'gemini'
+      configPath: 'gemini',
     },
     {
       key: 'notification',
       title: t('settings.notificationSettings') || 'Notification Configuration',
       icon: <BellOutlined style={{ color: '#1890ff' }} />,
-      description: t('settings.notificationDescription') || 'Configure email, push, SMS notifications',
-      isConfigured: configs.notification_config && (
-        configs.notification_config.email?.enabled ||
-        configs.notification_config.push?.enabled ||
-        configs.notification_config.sms?.enabled
-      ),
-      configPath: 'notification'
-    }
+      description:
+        t('settings.notificationDescription') ||
+        'Configure email, push, SMS notifications',
+      isConfigured:
+        configs.notification_config &&
+        (configs.notification_config.email?.enabled ||
+          configs.notification_config.push?.enabled ||
+          configs.notification_config.sms?.enabled),
+      configPath: 'notification',
+    },
   ];
 
-  const configuredCount = integrationServices.filter(service => service.isConfigured).length;
+  const configuredCount = integrationServices.filter(
+    (service) => service.isConfigured,
+  ).length;
   const totalCount = integrationServices.length;
 
   const renderListItem = (item) => (
@@ -81,7 +95,7 @@ const IntegrationStatus = ({
           size="small"
         >
           {item.isConfigured ? t('common.configure') : t('common.configure')}
-        </Button>
+        </Button>,
       ]}
     >
       <List.Item.Meta
@@ -93,10 +107,9 @@ const IntegrationStatus = ({
               status={item.isConfigured ? 'success' : 'default'}
               text={
                 <Text type={item.isConfigured ? 'success' : 'secondary'}>
-                  {item.isConfigured ?
-                    (t('common.configured') || 'Configured') :
-                    (t('common.notConfigured') || 'Not Configured')
-                  }
+                  {item.isConfigured
+                    ? t('common.configured') || 'Configured'
+                    : t('common.notConfigured') || 'Not Configured'}
                 </Text>
               }
             />
@@ -122,14 +135,16 @@ const IntegrationStatus = ({
       loading={loading}
       size="small"
     >
-      {/* 统计概览 */}
-      <div style={{
-        background: '#fafafa',
-        padding: 16,
-        borderRadius: 6,
-        marginBottom: 16,
-        textAlign: 'center'
-      }}>
+      {/* Statistics Overview */}
+      <div
+        style={{
+          background: '#fafafa',
+          padding: 16,
+          borderRadius: 6,
+          marginBottom: 16,
+          textAlign: 'center',
+        }}
+      >
         <Space split={<Divider type="vertical" />}>
           <div>
             <div style={{ fontSize: 20, fontWeight: 'bold', color: '#52c41a' }}>
@@ -158,7 +173,7 @@ const IntegrationStatus = ({
         </Space>
       </div>
 
-      {/* 服务列表 */}
+      {/* Services List */}
       <List
         itemLayout="horizontal"
         dataSource={integrationServices}
@@ -166,15 +181,17 @@ const IntegrationStatus = ({
         size="small"
       />
 
-      {/* 提示信息 */}
+      {/* Tip Information */}
       {configuredCount < totalCount && (
-        <div style={{
-          marginTop: 16,
-          padding: 12,
-          background: '#fff7e6',
-          border: '1px solid #ffd591',
-          borderRadius: 6
-        }}>
+        <div
+          style={{
+            marginTop: 16,
+            padding: 12,
+            background: '#fff7e6',
+            border: '1px solid #ffd591',
+            borderRadius: 6,
+          }}
+        >
           <Space>
             <ExclamationCircleOutlined style={{ color: '#fa8c16' }} />
             <Text style={{ fontSize: 12 }}>
@@ -186,13 +203,15 @@ const IntegrationStatus = ({
       )}
 
       {configuredCount === totalCount && (
-        <div style={{
-          marginTop: 16,
-          padding: 12,
-          background: '#f6ffed',
-          border: '1px solid #b7eb8f',
-          borderRadius: 6
-        }}>
+        <div
+          style={{
+            marginTop: 16,
+            padding: 12,
+            background: '#f6ffed',
+            border: '1px solid #b7eb8f',
+            borderRadius: 6,
+          }}
+        >
           <Space>
             <CheckCircleOutlined style={{ color: '#52c41a' }} />
             <Text style={{ fontSize: 12 }}>

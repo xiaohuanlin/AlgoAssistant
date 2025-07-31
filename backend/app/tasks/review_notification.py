@@ -4,7 +4,7 @@ from typing import List
 from celery import shared_task
 
 from app.deps import get_db
-from app.models import Review, User, UserConfig
+from app.models import Problem, Review, User, UserConfig
 from app.services.notification_service import NotificationService
 from app.utils.logger import get_logger
 
@@ -22,7 +22,11 @@ def check_due_reviews():
         now = datetime.utcnow()
         due_reviews: List[Review] = (
             db.query(Review)
-            .filter(Review.next_review_date <= now, Review.notification_sent == False)
+            .join(Problem)  # Join with Problem table
+            .filter(
+                Review.next_review_date <= now,
+                Review.notification_sent == False,  # noqa: E712
+            )
             .all()
         )
 
@@ -60,10 +64,24 @@ def check_due_reviews():
                 results = notification_service.send_review_notifications(user, reviews)
 
                 if any(results.values()):
+                    # Update notification status for successful notifications
+                    for review in reviews:
+                        review.notification_sent = True
+                        review.notification_sent_at = datetime.utcnow()
+                        review.notification_status = "sent"
+                        # Set notification type based on successful channels
+                        successful_channels = [k for k, v in results.items() if v]
+                        review.notification_type = ",".join(successful_channels)
+
+                    db.commit()
                     successful_users += 1
                     successful_reviews += len(reviews)
                     logger.info(f"Notifications sent to user {user_id}: {results}")
                 else:
+                    # Update notification status for failed notifications
+                    for review in reviews:
+                        review.notification_status = "failed"
+                    db.commit()
                     failed_users += 1
                     failed_reviews += len(reviews)
                     logger.warning(f"Failed to send notifications to user {user_id}")
@@ -74,7 +92,7 @@ def check_due_reviews():
                 logger.exception(f"Failed to send notifications to user {user_id}: {e}")
 
         # Log statistics
-        logger.info(f"Review notification task completed:")
+        logger.info("Review notification task completed:")
         logger.info(f"  Total users: {total_users}")
         logger.info(f"  Successful users: {successful_users}")
         logger.info(f"  Failed users: {failed_users}")

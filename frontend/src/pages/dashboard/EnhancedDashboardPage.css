@@ -130,7 +130,9 @@
 
 /* Animation and Transitions */
 .enhanced-dashboard * {
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
 }
 
 /* Fade-in animation for loaded content */

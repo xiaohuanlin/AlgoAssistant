@@ -4,7 +4,7 @@ import {
   CheckCircleOutlined,
   SyncOutlined,
   RobotOutlined,
-  ClockCircleOutlined
+  ClockCircleOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 
@@ -29,7 +29,8 @@ const GeminiSyncAction = ({ record, onSync, geminiConfig, disabled }) => {
     setLoading(true);
     try {
       // Call Gemini sync service
-      const geminiSyncService = require('../services/geminiSyncService').default;
+      const geminiSyncService =
+        require('../services/geminiSyncService').default;
       await geminiSyncService.syncToGemini([record.id]);
       message.success(t('gemini.syncStarted'));
       onSync && onSync();
@@ -53,7 +54,7 @@ const GeminiSyncAction = ({ record, onSync, geminiConfig, disabled }) => {
             padding: '4px 8px',
             height: 'auto',
             lineHeight: '1.2',
-            color: '#52c41a'
+            color: '#52c41a',
           }}
         >
           {t('gemini.synced')}
@@ -75,7 +76,7 @@ const GeminiSyncAction = ({ record, onSync, geminiConfig, disabled }) => {
             padding: '4px 8px',
             height: 'auto',
             lineHeight: '1.2',
-            color: '#999'
+            color: '#999',
           }}
         >
           {t('gemini.aiSync')}
@@ -131,7 +132,7 @@ const GeminiSyncAction = ({ record, onSync, geminiConfig, disabled }) => {
           padding: '4px 8px',
           height: 'auto',
           lineHeight: '1.2',
-          color: disabled ? '#999' : undefined
+          color: disabled ? '#999' : undefined,
         }}
       >
         {getSyncStatusText(record?.ai_sync_status)}
