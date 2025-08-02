@@ -10,10 +10,7 @@ class SyncTaskService {
    */
   async createTask(taskData) {
     try {
-      const response = await api.post(
-        API_ENDPOINTS.SYNC_TASKS.CREATE,
-        taskData,
-      );
+      const response = await api.post(API_ENDPOINTS.SYNC_TASK.CREATE, taskData);
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -31,7 +28,7 @@ class SyncTaskService {
    */
   async getTasks(params = {}) {
     try {
-      const response = await api.get(API_ENDPOINTS.SYNC_TASKS.LIST, { params });
+      const response = await api.get(API_ENDPOINTS.SYNC_TASK.LIST, { params });
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -45,7 +42,7 @@ class SyncTaskService {
    */
   async getTask(taskId) {
     try {
-      const response = await api.get(API_ENDPOINTS.SYNC_TASKS.DETAIL(taskId));
+      const response = await api.get(API_ENDPOINTS.SYNC_TASK.DETAIL(taskId));
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -59,7 +56,7 @@ class SyncTaskService {
    */
   async deleteTask(taskId) {
     try {
-      await api.delete(API_ENDPOINTS.SYNC_TASKS.DELETE(taskId));
+      await api.delete(API_ENDPOINTS.SYNC_TASK.DELETE(taskId));
       return true;
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -73,7 +70,7 @@ class SyncTaskService {
    */
   async getTaskStats(filters = {}) {
     try {
-      const response = await api.get(API_ENDPOINTS.SYNC_TASKS.STATS, {
+      const response = await api.get(API_ENDPOINTS.SYNC_TASK.STATS, {
         params: filters,
       });
       return handleApiSuccess(response);
@@ -222,7 +219,7 @@ class SyncTaskService {
    */
   async retryTask(taskId) {
     try {
-      const response = await api.post(API_ENDPOINTS.SYNC_TASKS.RETRY(taskId));
+      const response = await api.post(API_ENDPOINTS.SYNC_TASK.RETRY(taskId));
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -236,7 +233,7 @@ class SyncTaskService {
    */
   async pauseTask(taskId) {
     try {
-      const response = await api.post(API_ENDPOINTS.SYNC_TASKS.PAUSE(taskId));
+      const response = await api.post(API_ENDPOINTS.SYNC_TASK.PAUSE(taskId));
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -250,7 +247,7 @@ class SyncTaskService {
    */
   async resumeTask(taskId) {
     try {
-      const response = await api.post(API_ENDPOINTS.SYNC_TASKS.RESUME(taskId));
+      const response = await api.post(API_ENDPOINTS.SYNC_TASK.RESUME(taskId));
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));

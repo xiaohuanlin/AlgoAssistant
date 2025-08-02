@@ -65,10 +65,7 @@ class GitSyncService {
         record_ids: recordIds,
         ...options,
       };
-      const response = await api.post(
-        API_ENDPOINTS.SYNC_TASKS.CREATE,
-        syncData,
-      );
+      const response = await api.post(API_ENDPOINTS.SYNC_TASK.CREATE, syncData);
       return handleApiSuccess(response);
     } catch (error) {
       if (error.message.includes('Git configuration not found')) {
@@ -86,7 +83,7 @@ class GitSyncService {
   async stopSync(taskId) {
     try {
       // Assuming stop is handled by updating the task status
-      const response = await api.put(API_ENDPOINTS.SYNC_TASKS.DETAIL(taskId), {
+      const response = await api.put(API_ENDPOINTS.SYNC_TASK.DETAIL(taskId), {
         status: 'stopped',
       });
       return handleApiSuccess(response);
@@ -103,7 +100,7 @@ class GitSyncService {
   async resumeSync(taskId) {
     try {
       // Assuming resume is handled by updating the task status
-      const response = await api.put(API_ENDPOINTS.SYNC_TASKS.DETAIL(taskId), {
+      const response = await api.put(API_ENDPOINTS.SYNC_TASK.DETAIL(taskId), {
         status: 'running',
       });
       return handleApiSuccess(response);
@@ -120,7 +117,7 @@ class GitSyncService {
   async retryFailedRecords(taskId) {
     try {
       // Assuming retry is handled by updating the task status
-      const response = await api.put(API_ENDPOINTS.SYNC_TASKS.DETAIL(taskId), {
+      const response = await api.put(API_ENDPOINTS.SYNC_TASK.DETAIL(taskId), {
         status: 'retry',
       });
       return handleApiSuccess(response);
@@ -137,7 +134,7 @@ class GitSyncService {
   async getSyncLogs(taskId) {
     try {
       // Assuming logs are part of the task detail or a separate endpoint
-      const response = await api.get(API_ENDPOINTS.SYNC_TASKS.DETAIL(taskId));
+      const response = await api.get(API_ENDPOINTS.SYNC_TASK.DETAIL(taskId));
       return handleApiSuccess(response).logs || [];
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -150,7 +147,7 @@ class GitSyncService {
    */
   async getTaskList() {
     try {
-      const response = await api.get(API_ENDPOINTS.SYNC_TASKS.LIST);
+      const response = await api.get(API_ENDPOINTS.SYNC_TASK.LIST);
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -164,10 +161,7 @@ class GitSyncService {
    */
   async createSyncTask(taskData) {
     try {
-      const response = await api.post(
-        API_ENDPOINTS.SYNC_TASKS.CREATE,
-        taskData,
-      );
+      const response = await api.post(API_ENDPOINTS.SYNC_TASK.CREATE, taskData);
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -181,9 +175,7 @@ class GitSyncService {
    */
   async deleteSyncTask(taskId) {
     try {
-      const response = await api.delete(
-        API_ENDPOINTS.SYNC_TASKS.DELETE(taskId),
-      );
+      const response = await api.delete(API_ENDPOINTS.SYNC_TASK.DELETE(taskId));
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -196,7 +188,7 @@ class GitSyncService {
    */
   async getTaskStats() {
     try {
-      const response = await api.get(API_ENDPOINTS.SYNC_TASKS.STATS);
+      const response = await api.get(API_ENDPOINTS.SYNC_TASK.STATS);
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));

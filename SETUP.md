@@ -21,11 +21,19 @@ git clone https://github.com/your-org/AlgoAssistant.git
 cd AlgoAssistant
 ```
 
-### 2. Environment Variable Setup
+### 2. Choose Deployment Option
+
+#### Option A: Full Development Setup (Recommended for Development)
+Use PostgreSQL, full resource allocation, hot reload support.
+
+#### Option B: Mini Production Setup (Recommended for Production/Low-Resource)
+Use SQLite, optimized for 1GB RAM servers, production-ready.
+
+### 3. Environment Variable Setup
 
 **⚠️ CRITICAL: Never commit `.env` files containing real credentials to version control!**
 
-#### Copy Environment Templates
+#### For Development (Option A)
 
 ```bash
 # Frontend environment variables
@@ -33,6 +41,17 @@ cp frontend/.env.example frontend/.env
 
 # Backend environment variables
 cp backend/.env.example backend/.env
+```
+
+#### For Production Mini (Option B)
+
+```bash
+# Create production environment file
+cp backend/.env.example .env.production
+
+# Generate secure production keys
+openssl rand -hex 32  # Use for SECRET_KEY
+python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"  # Use for FERNET_KEY
 ```
 
 #### Verify Template Files
@@ -195,9 +214,9 @@ GEMINI_API_KEY=your-gemini-api-key
 
 ## 🐳 Start the Application
 
-### Method 1: Docker Compose (Recommended)
+### Method 1: Full Development Setup (Option A)
 
-Start all services with hot reload:
+Start all services with PostgreSQL and hot reload:
 
 ```bash
 # Start all services
@@ -213,7 +232,45 @@ docker-compose logs -f
 docker-compose down
 ```
 
-### Method 2: Development Mode
+### Method 2: Mini Production Setup (Option B)
+
+For production deployment with SQLite (1GB RAM optimized):
+
+```bash
+# 1. Create production environment (if not done in step 3)
+cat > .env.production << EOF
+SECRET_KEY=$(openssl rand -hex 32)
+FERNET_KEY=$(python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
+DATABASE_URL=sqlite:////app/data/algo_assistant.db
+ENVIRONMENT=production
+DEBUG=false
+LOG_LEVEL=WARNING
+CORS_ORIGINS=["http://your-domain.com","https://your-domain.com"]
+
+# Redis
+REDIS_URL=redis://redis:6379/0
+CELERY_BROKER_URL=redis://redis:6379/1
+CELERY_RESULT_BACKEND=redis://redis:6379/2
+
+# Add your real credentials here
+GOOGLE_CLIENT_ID=your-real-google-client-id
+GOOGLE_CLIENT_SECRET=your-real-google-client-secret
+EOF
+
+# 2. Start mini deployment
+docker-compose -f docker-compose.mini.yml up -d --build
+
+# 3. Check status
+docker-compose -f docker-compose.mini.yml ps
+
+# 4. View logs
+docker-compose -f docker-compose.mini.yml logs -f
+
+# 5. Stop services
+docker-compose -f docker-compose.mini.yml down
+```
+
+### Method 3: Development Mode with File Watching
 
 For development with file watching:
 
@@ -238,7 +295,14 @@ docker-compose ps
 
 ### 2. Access Applications
 
+#### Full Development Setup (Option A)
 - **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8000
+- **API Documentation**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+
+#### Mini Production Setup (Option B)
+- **Frontend**: http://localhost:80 (or your-domain.com)
 - **Backend API**: http://localhost:8000
 - **API Documentation**: http://localhost:8000/docs
 - **ReDoc**: http://localhost:8000/redoc
@@ -410,15 +474,15 @@ newgrp docker
 
 ## 🚢 Production Deployment
 
-### Environment Preparation
+### Option A: Full Production Setup (High Resources)
 
+#### Environment Preparation
 1. **Create production OAuth clients** with production domain URLs
 2. **Set up SSL certificates** (Let's Encrypt recommended)
 3. **Configure production database** (managed PostgreSQL service)
 4. **Set up monitoring and logging**
 
-### Environment Variables for Production
-
+#### Environment Variables for Full Production
 ```env
 # Production backend .env
 DATABASE_URL=postgresql://user:password@prod-db:5432/algoassistant
@@ -430,23 +494,109 @@ ENVIRONMENT=production
 LOG_LEVEL=INFO
 ```
 
-```env
-# Production frontend .env
-REACT_APP_API_BASE_URL=https://api.yourdomain.com
-REACT_APP_GOOGLE_CLIENT_ID=prod-google-client-id.apps.googleusercontent.com
-REACT_APP_ENV=production
+### Option B: Mini Production Setup (1GB RAM Optimized)
+
+#### Environment Preparation
+1. **Generate secure production keys**
+2. **Set up SSL certificates** (optional but recommended)
+3. **Configure domain and DNS**
+4. **Set up basic monitoring**
+
+#### Mini Production Deployment
+```bash
+# 1. Create secure production environment
+cat > .env.production << EOF
+# Security (CRITICAL - Generate new keys!)
+SECRET_KEY=$(openssl rand -hex 32)
+FERNET_KEY=$(python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
+
+# Database (SQLite for mini deployment)
+DATABASE_URL=sqlite:////app/data/algo_assistant.db
+
+# Application
+ENVIRONMENT=production
+DEBUG=false
+LOG_LEVEL=WARNING
+HOST=0.0.0.0
+PORT=8000
+
+# CORS (Update with your actual domain)
+CORS_ORIGINS=["http://your-domain.com","https://your-domain.com"]
+
+# Redis
+REDIS_URL=redis://redis:6379/0
+CELERY_BROKER_URL=redis://redis:6379/1
+CELERY_RESULT_BACKEND=redis://redis:6379/2
+
+# OAuth (Update with your production credentials)
+GOOGLE_CLIENT_ID=your-production-google-client-id
+GOOGLE_CLIENT_SECRET=your-production-google-client-secret
+GOOGLE_REDIRECT_URI=https://your-domain.com/api/google/callback
+
+# Optional services (add if needed)
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+GEMINI_API_KEY=your-gemini-api-key
+SMTP_USERNAME=your-email@domain.com
+SMTP_PASSWORD=your-app-password
+
+# Resource optimization
+CELERY_WORKER_CONCURRENCY=1
+UVICORN_WORKERS=1
+WEB_CONCURRENCY=1
+EOF
+
+# 2. Deploy mini configuration
+docker-compose -f docker-compose.mini.yml up -d --build
+
+# 3. Monitor deployment
+docker-compose -f docker-compose.mini.yml ps
+docker-compose -f docker-compose.mini.yml logs -f
+```
+
+#### Mini Production Maintenance
+```bash
+# View container resource usage
+docker stats
+
+# Database backup (SQLite)
+docker-compose -f docker-compose.mini.yml exec backend \
+  sqlite3 /app/data/algo_assistant.db ".backup /app/data/backup_$(date +%Y%m%d_%H%M%S).db"
+
+# View logs with limited lines
+docker-compose -f docker-compose.mini.yml logs --tail=100 -f backend
+
+# Restart specific service
+docker-compose -f docker-compose.mini.yml restart backend
+
+# Update deployment (zero-downtime)
+docker-compose -f docker-compose.mini.yml pull
+docker-compose -f docker-compose.mini.yml up -d --no-deps backend frontend
 ```
 
 ### Deployment Checklist
 
-- [ ] Domain and SSL certificates configured
+#### Required Steps (Both Options)
+- [ ] Domain and DNS configured
 - [ ] Production OAuth clients created with correct redirect URIs
-- [ ] Database and Redis services set up
 - [ ] Environment variables configured securely
+- [ ] CORS origins updated with actual domain
+- [ ] Security keys generated (never use defaults in production!)
+
+#### Full Production Additional Steps
+- [ ] SSL certificates configured
+- [ ] Database and Redis services set up
 - [ ] Monitoring and logging enabled
 - [ ] Backup strategy implemented
 - [ ] Performance testing completed
 - [ ] Security audit performed
+
+#### Mini Production Additional Steps
+- [ ] SSL certificate configured (recommended)
+- [ ] Basic monitoring set up
+- [ ] SQLite backup strategy implemented
+- [ ] Resource monitoring enabled
+- [ ] Basic security audit performed
 
 ## 🤝 Team Development
 

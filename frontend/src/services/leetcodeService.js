@@ -71,71 +71,6 @@ class LeetCodeService {
   }
 
   /**
-   * Start LeetCode synchronization
-   * @returns {Promise<Object>} Sync result
-   */
-  async startSync() {
-    try {
-      const response = await api.post(API_ENDPOINTS.LEETCODE.SYNC);
-      return handleApiSuccess(response);
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  /**
-   * Get sync status
-   * @returns {Promise<Object>} Sync status
-   */
-  async getSyncStatus() {
-    try {
-      const response = await api.get(API_ENDPOINTS.LEETCODE.SYNC_PROGRESS);
-      return handleApiSuccess(response);
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  /**
-   * Get sync progress
-   * @returns {Promise<Object>} Sync progress
-   */
-  async getSyncProgress() {
-    try {
-      const response = await api.get(API_ENDPOINTS.LEETCODE.SYNC_PROGRESS);
-      return handleApiSuccess(response);
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  /**
-   * Stop synchronization
-   * @returns {Promise<Object>} Stop result
-   */
-  async stopSync() {
-    try {
-      const response = await api.post(API_ENDPOINTS.LEETCODE.SYNC_STOP);
-      return handleApiSuccess(response);
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  /**
-   * Get sync logs
-   * @returns {Promise<Array>} Sync logs
-   */
-  async getSyncLogs() {
-    try {
-      const response = await api.get(API_ENDPOINTS.LEETCODE.SYNC_LOGS);
-      return handleApiSuccess(response);
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
-
-  /**
    * Get LeetCode user profile
    * @param {string} username - Username (optional)
    * @returns {Promise<Object>} User profile
@@ -158,7 +93,7 @@ class LeetCodeService {
    */
   async testLeetCodeConnection() {
     try {
-      const response = await api.get(API_ENDPOINTS.INTEGRATIONS.LEETCODE_TEST);
+      const response = await api.get(API_ENDPOINTS.LEETCODE.TEST_CONNECTION);
       return handleApiSuccess(response);
     } catch (error) {
       throw new Error(handleApiError(error));

@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.deps import get_current_user, get_db, get_redis_client
 from app.schemas import LeetCodeConnectionTestOut
+from app.schemas.user import UserOut
 from app.services.leetcode_service import LeetCodeService
 from app.services.user_config_service import UserConfigService
 
