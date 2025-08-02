@@ -1,0 +1,109 @@
+---
+description: Backend development rules for FastAPI Python application
+globs: ["backend/**/*.py", "backend/**/*.pyi"]
+alwaysApply: true
+---
+
+# Backend Development Rules
+
+## Responsibility Boundaries
+- Only modify files within the backend directory
+- Do not modify frontend, database schema, or other project files
+- Backend developers should focus exclusively on backend concerns
+- API endpoints should be designed for frontend consumption
+- Do not attempt to modify frontend components or UI logic
+- Coordinate with frontend team for any API interface changes
+- Keep backend and frontend concerns properly separated
+- Database schema changes should be done through proper migrations
+
+## Configuration Management
+- All parameters must be configurable, no hardcoding allowed
+- Provide default configuration values
+- Read parameter values from environment files and allow override
+- Use configuration classes or dictionaries for parameter management
+- Implement configuration validation and error handling
+
+## Component Reusability
+- Maximize component reuse across the application
+- Design components to be generic and reusable
+- Create shared utility modules and base classes
+- Avoid code duplication by extracting common functionality
+- Use inheritance and composition for code reuse
+
+## Programming Paradigms
+- Prefer object-oriented programming over functional programming
+- Use classes and objects for data and behavior encapsulation
+- Implement proper class hierarchies and interfaces
+- Minimize the use of pure functions and functional patterns
+- Focus on stateful objects and methods
+
+## Testing Requirements
+- Write unit tests for every component
+- Ensure comprehensive test coverage for all classes and methods
+- Use pytest for testing framework
+- Mock external dependencies and database connections
+- Test both success and failure scenarios
+- Maintain test data fixtures and factories
+
+## Code Quality and Validation
+- Use tox to validate code quality and run tests
+- Ensure all tests pass before committing code
+- Run linting and formatting checks through tox
+- Validate code against PEP 8 and other Python standards
+- Use tox for continuous integration validation
+
+## Python and FastAPI Standards
+- Follow PEP 8 style guidelines for Python code
+- Use type hints for all function parameters and return values
+- Use FastAPI dependency injection patterns
+- Implement proper async/await patterns where appropriate
+- Use Pydantic models for request/response validation
+
+## API Design
+- Follow RESTful API design principles
+- Use appropriate HTTP status codes
+- Implement proper error responses with meaningful messages
+- Use consistent endpoint naming conventions
+- Document APIs using FastAPI's automatic documentation
+
+## Database and Models
+- Use SQLAlchemy ORM patterns consistently
+- Follow existing model naming conventions
+- Use database migrations for schema changes
+- Implement proper database session management
+- Use existing database connection patterns
+
+## Service Layer
+- Keep business logic in service classes
+- Use dependency injection for service dependencies
+- Follow existing service patterns in the codebase
+- Implement proper error handling in services
+- Use logging for debugging and monitoring
+
+## Authentication and Authorization
+- Use existing authentication middleware
+- Implement proper role-based access control
+- Follow security best practices for user data
+- Use JWT tokens for session management
+- Validate user permissions at endpoint level
+
+## Testing
+- Write unit tests for new functionality
+- Use pytest for testing framework
+- Mock external dependencies in tests
+- Follow existing test patterns and structure
+- Maintain good test coverage for critical paths
+
+## Configuration and Environment
+- Use environment variables for configuration
+- Follow existing configuration patterns
+- Use proper secret management
+- Implement feature flags where appropriate
+- Use logging configuration from existing setup
+
+## Performance
+- Optimize database queries
+- Use connection pooling
+- Implement proper caching strategies
+- Monitor and optimize API response times
+- Use async operations for I/O-bound tasks

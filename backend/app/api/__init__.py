@@ -1,0 +1,1 @@
+"""AlgoAssistant API endpoints package."""

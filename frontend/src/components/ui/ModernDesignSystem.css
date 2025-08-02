@@ -1,0 +1,515 @@
+/**
+ * Modern Design System Styles
+ * Modern design system based on review plan detail page styles
+ */
+
+/* ===========================================
+   1. Gradient Page Header Styles
+   =========================================== */
+
+.gradient-page-header {
+  margin-bottom: 32px;
+  text-align: center;
+  border-radius: 20px;
+  padding: 48px 32px;
+  color: white;
+  box-shadow:
+    0 20px 40px rgba(99, 102, 241, 0.15),
+    0 10px 20px rgba(139, 92, 246, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.gradient-page-header.mobile {
+  margin-bottom: 20px;
+  border-radius: 12px;
+  padding: 24px 16px;
+}
+
+/* Background decorative elements */
+.gradient-decoration {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+}
+
+.gradient-decoration-1 {
+  top: -50%;
+  right: -20%;
+  width: 200px;
+  height: 200px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.gradient-decoration-2 {
+  bottom: -30%;
+  left: -10%;
+  width: 150px;
+  height: 150px;
+  background: rgba(255, 255, 255, 0.08);
+  filter: blur(30px);
+}
+
+.gradient-page-header.mobile .gradient-decoration-1 {
+  width: 120px;
+  height: 120px;
+}
+
+.gradient-page-header.mobile .gradient-decoration-2 {
+  width: 100px;
+  height: 100px;
+}
+
+.gradient-header-content {
+  position: relative;
+  z-index: 1;
+}
+
+.gradient-icon-container {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  margin-bottom: 24px;
+  backdrop-filter: blur(10px);
+}
+
+.gradient-page-header.mobile .gradient-icon-container {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  margin-bottom: 16px;
+}
+
+.gradient-header-title {
+  margin: 0 !important;
+  color: white !important;
+  font-size: 32px !important;
+  font-weight: 700 !important;
+  margin-bottom: 8px !important;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+  padding-bottom: 0 !important;
+}
+
+.gradient-page-header.mobile .gradient-header-title {
+  font-size: 20px !important;
+  margin-bottom: 6px !important;
+  line-height: 1.4;
+}
+
+.gradient-header-subtitle {
+  font-size: 18px;
+  opacity: 0.9;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.gradient-page-header.mobile .gradient-header-subtitle {
+  font-size: 14px;
+  gap: 6px;
+}
+
+/* ===========================================
+   2. Modern Icon Container Styles
+   =========================================== */
+
+.modern-icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+/* Icon container sizes */
+.modern-icon-container.large {
+  width: 40px;
+  height: 40px;
+}
+
+.modern-icon-container.large-mobile {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+}
+
+.modern-icon-container.medium {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+}
+
+.modern-icon-container.medium-mobile {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+}
+
+.modern-icon-container.small {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+}
+
+.modern-icon-container.small-mobile {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+}
+
+/* Icon sizes */
+.modern-icon-container.large .anticon {
+  font-size: 20px;
+  color: white;
+}
+
+.modern-icon-container.large-mobile .anticon {
+  font-size: 18px;
+  color: white;
+}
+
+.modern-icon-container.medium .anticon {
+  font-size: 16px;
+  color: white;
+}
+
+.modern-icon-container.medium-mobile .anticon {
+  font-size: 14px;
+  color: white;
+}
+
+.modern-icon-container.small .anticon {
+  font-size: 14px;
+  color: white;
+}
+
+.modern-icon-container.small-mobile .anticon {
+  font-size: 12px;
+  color: white;
+}
+
+/* ===========================================
+   3. Modern Card Styles
+   =========================================== */
+
+.modern-card {
+  border-radius: 16px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06) !important;
+  border: 1px solid #e5e7eb !important;
+  background: white !important;
+}
+
+.modern-card.mobile {
+  border-radius: 12px !important;
+}
+
+.modern-card .ant-card-body {
+  padding: 32px !important;
+}
+
+.modern-card.mobile .ant-card-body {
+  padding: 20px !important;
+}
+
+.modern-card-title {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.modern-card-title.mobile {
+  gap: 12px;
+}
+
+.modern-card-title-text {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.modern-card-title.mobile .modern-card-title-text {
+  font-size: 18px;
+}
+
+/* ===========================================
+   4. Modern Info Item Styles
+   =========================================== */
+
+.modern-info-item {
+  margin-bottom: 24px;
+}
+
+.modern-info-item.mobile {
+  margin-bottom: 20px;
+}
+
+.modern-info-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.modern-info-item.mobile .modern-info-header {
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.modern-info-label {
+  color: #374151 !important;
+  font-size: 16px !important;
+}
+
+.modern-info-item.mobile .modern-info-label {
+  font-size: 15px !important;
+}
+
+.modern-info-content {
+  margin-left: 44px;
+}
+
+.modern-info-item.mobile .modern-info-content {
+  margin-left: 38px;
+}
+
+.modern-info-value {
+  font-size: 16px;
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.modern-info-item.mobile .modern-info-value {
+  font-size: 15px;
+}
+
+/* Special styled info content */
+.modern-info-content.highlighted {
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-size: 15px;
+  color: #1f2937;
+  line-height: 1.7;
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+/* ===========================================
+   5. Gradient Button Styles
+   =========================================== */
+
+.gradient-button {
+  border: none;
+  border-radius: 16px;
+  padding: 16px 40px;
+  height: auto;
+  font-size: 18px;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.gradient-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(16, 185, 129, 0.4);
+}
+
+.gradient-button.mobile {
+  padding: 12px 24px;
+  font-size: 16px;
+  border-radius: 12px;
+  gap: 8px;
+}
+
+/* ===========================================
+   6. Modern Tag Styles
+   =========================================== */
+
+.modern-tag {
+  border-radius: 8px;
+  font-weight: 500;
+  border: none;
+  padding: 6px 12px;
+  font-size: 14px;
+}
+
+.modern-tag.mobile {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.modern-tag-success {
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.modern-tag-error {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.modern-tag-warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.modern-tag-info {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.modern-tag-default {
+  background: #f8fafc;
+  color: #475569;
+}
+
+/* Large size tags */
+.modern-tag.large {
+  font-size: 18px;
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.modern-tag.large.mobile {
+  font-size: 16px;
+  padding: 6px 12px;
+  border-radius: 8px;
+}
+
+/* ===========================================
+   7. Responsive Grid Layout
+   =========================================== */
+
+.modern-grid {
+  display: grid;
+  gap: 32px;
+}
+
+.modern-grid.mobile {
+  gap: 16px;
+}
+
+.modern-grid.two-column {
+  grid-template-columns: 1fr 1fr;
+}
+
+.modern-grid.mobile.two-column {
+  grid-template-columns: 1fr;
+}
+
+/* ===========================================
+   8. Modern Table Styles
+   =========================================== */
+
+.modern-table .ant-table {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.modern-table .ant-table-thead > tr > th {
+  background: #fafbfc;
+  border-bottom: 1px solid #e5e7eb;
+  font-weight: 600;
+  color: #374151;
+}
+
+.modern-table .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.modern-table .ant-table-tbody > tr:hover > td {
+  background: #f9fafb;
+}
+
+/* ===========================================
+   9. Animation Effects
+   =========================================== */
+
+.modern-fade-in {
+  animation: modernFadeIn 0.3s ease-out;
+}
+
+@keyframes modernFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modern-scale-in {
+  animation: modernScaleIn 0.2s ease-out;
+}
+
+@keyframes modernScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ===========================================
+   10. Utility Classes
+   =========================================== */
+
+.modern-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.modern-container.mobile {
+  padding: 16px;
+}
+
+.modern-shadow-sm {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.modern-shadow-md {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+}
+
+.modern-shadow-lg {
+  box-shadow:
+    0 20px 40px rgba(99, 102, 241, 0.15),
+    0 10px 20px rgba(139, 92, 246, 0.1);
+}
+
+.modern-rounded-sm {
+  border-radius: 8px;
+}
+
+.modern-rounded-md {
+  border-radius: 12px;
+}
+
+.modern-rounded-lg {
+  border-radius: 16px;
+}
+
+.modern-rounded-xl {
+  border-radius: 20px;
+}

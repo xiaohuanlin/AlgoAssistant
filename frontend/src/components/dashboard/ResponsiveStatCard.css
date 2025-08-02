@@ -1,0 +1,190 @@
+/* Responsive Stat Card Styles */
+.responsive-stat-card {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 2px 12px rgba(24, 144, 255, 0.08);
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #ffffff 0%, #f8faff 100%);
+}
+
+.responsive-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(24, 144, 255, 0.12);
+}
+
+/* Mobile Layout */
+.responsive-stat-card.mobile {
+  margin-bottom: 12px;
+}
+
+.stat-content-mobile {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-header-mobile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stat-icon-mobile {
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.stat-title-mobile {
+  color: #666;
+  font-weight: 500;
+  flex: 1;
+}
+
+.stat-main-mobile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-value-mobile {
+  line-height: 1.2;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.stat-suffix-mobile {
+  font-size: 0.8em;
+  opacity: 0.8;
+}
+
+.stat-trend-mobile {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Desktop Layout */
+.responsive-stat-card.desktop {
+  margin-bottom: 24px;
+}
+
+.stat-content-desktop {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.stat-icon-desktop {
+  font-size: 24px;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(24, 144, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  min-height: 48px;
+}
+
+.stat-main-desktop {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-trend-desktop {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Tablet Adjustments */
+@media (min-width: 576px) and (max-width: 767px) {
+  .responsive-stat-card {
+    margin-bottom: 16px;
+  }
+
+  .stat-content-mobile {
+    gap: 10px;
+  }
+
+  .stat-header-mobile {
+    gap: 10px;
+  }
+
+  .stat-icon-mobile {
+    font-size: 18px;
+  }
+}
+
+/* Loading State */
+.responsive-stat-card .ant-card-loading-content {
+  padding: 0;
+}
+
+.responsive-stat-card .ant-skeleton {
+  padding: 0;
+}
+
+/* Accessibility */
+.responsive-stat-card:focus-within {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+
+/* Dark Theme Support (Optional) */
+@media (prefers-color-scheme: dark) {
+  .responsive-stat-card {
+    background: linear-gradient(135deg, #262626 0%, #1f1f1f 100%);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .responsive-stat-card:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  }
+
+  .stat-title-mobile {
+    color: #ccc;
+  }
+
+  .stat-icon-desktop {
+    background: rgba(24, 144, 255, 0.2);
+  }
+}
+
+/* Animation for value changes */
+.stat-value-mobile,
+.stat-main-desktop .ant-statistic-content-value {
+  transition: all 0.3s ease;
+}
+
+/* Responsive grid adjustments */
+.dashboard-stats-grid {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+/* Mobile: Single column */
+@media (max-width: 575px) {
+  .dashboard-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Tablet: Two columns */
+@media (min-width: 576px) and (max-width: 991px) {
+  .dashboard-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+}
+
+/* Desktop: Four columns */
+@media (min-width: 992px) {
+  .dashboard-stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+  }
+}

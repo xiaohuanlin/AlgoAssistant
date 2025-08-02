@@ -1,0 +1,117 @@
+---
+description: Frontend development rules for React JavaScript application
+globs: ["frontend/src/**/*.js", "frontend/src/**/*.jsx", "frontend/src/**/*.ts", "frontend/src/**/*.tsx", "frontend/src/**/*.css", "frontend/src/**/*.scss"]
+alwaysApply: true
+---
+
+# Frontend Development Rules
+
+## Responsibility Boundaries
+- Only modify files within the frontend directory
+- Do not modify backend, database, or other project files
+- Frontend developers should focus exclusively on frontend concerns
+- API integration should be done through existing backend endpoints
+- Do not attempt to modify server-side logic or database schemas
+- Coordinate with backend team for any API changes or new endpoints
+- Keep frontend and backend concerns properly separated
+
+## React and JavaScript Standards
+- Use functional components with hooks for new components
+- Follow React best practices and patterns
+- Use TypeScript for type safety when possible
+- Implement proper prop validation and default props
+- Use React Router for navigation management
+- Follow React naming conventions (PascalCase for components)
+
+## Component Architecture
+- Create reusable, modular components
+- Implement proper component composition
+- Use custom hooks for shared logic
+- Separate presentational and container components
+- Follow single responsibility principle for components
+- Use proper component lifecycle management
+- Implement unified request handling and validation components
+- Create shared utility components for common functionality
+- Use higher-order components (HOCs) for cross-cutting concerns
+- Implement proper component abstraction layers
+
+## State Management
+- Use React hooks (useState, useEffect, useContext) for local state
+- Implement proper state lifting patterns
+- Use context API for global state when needed
+- Avoid prop drilling by using context or state management libraries
+- Implement proper error boundaries
+
+## UI/UX Standards
+- Use Ant Design components consistently
+- Follow Material Design principles
+- Implement responsive design patterns
+- Use proper accessibility attributes (aria-labels, roles)
+- Ensure consistent spacing and typography
+- Implement proper loading states and error handling
+- Design for multi-platform compatibility (desktop, tablet, mobile)
+- Implement adaptive UI that works across different screen sizes
+- Use platform-specific optimizations when necessary
+- Ensure consistent user experience across all devices and platforms
+- Implement proper touch interactions for mobile devices
+- Consider different input methods (mouse, touch, keyboard)
+
+## Styling and CSS
+- Use CSS modules or styled-components for component styling
+- Follow BEM methodology for CSS class naming
+- Implement responsive design with mobile-first approach
+- Use CSS variables for theming and consistency
+- Avoid inline styles, prefer external stylesheets
+- Use proper CSS organization and structure
+
+## Internationalization (i18n)
+- Use react-i18next for internationalization
+- Implement proper translation keys and namespaces
+- Support multiple languages and locales
+- Use proper date and number formatting
+- Implement RTL support when needed
+- Maintain translation files in organized structure
+
+## API Integration
+- Use axios for HTTP requests
+- Implement proper error handling for API calls
+- Use interceptors for common request/response handling
+- Implement proper loading states for async operations
+- Use proper HTTP status code handling
+- Implement retry logic for failed requests
+
+## Testing Requirements
+- Write unit tests for all components using React Testing Library
+- Test component behavior and user interactions
+- Mock external dependencies and API calls
+- Test both success and error scenarios
+- Maintain good test coverage for critical components
+- Use proper test data and fixtures
+
+## Performance Optimization
+- Implement proper React.memo for expensive components
+- Use useMemo and useCallback for performance optimization
+- Implement code splitting and lazy loading
+- Optimize bundle size and loading times
+- Use proper image optimization and lazy loading
+- Implement proper caching strategies
+
+## Code Quality and Validation
+- Use ESLint for code linting and formatting
+- Follow JavaScript/TypeScript best practices
+- Use Prettier for code formatting
+- Implement proper error handling and logging
+- Use proper TypeScript types and interfaces
+- Follow consistent naming conventions
+- Regularly clean and organize code files
+- Remove unused imports, variables, and functions
+- Maintain clean and readable code structure
+- Refactor code when necessary to improve maintainability
+
+## Build and Deployment
+- Use proper environment configuration
+- Implement proper build optimization
+- Use proper asset optimization and compression
+- Implement proper source maps for debugging
+- Use proper deployment strategies and CI/CD
+- Maintain proper version control and releases

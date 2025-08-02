@@ -1,0 +1,99 @@
+body {
+  margin: 0;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
+    'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family:
+    source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Mobile table styles */
+.mobile-table .ant-table {
+  font-size: 13px;
+}
+
+.mobile-table .ant-table-tbody > tr > td {
+  padding: 8px 4px;
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Global link styles */
+a {
+  color: #1890ff;
+  text-decoration: none;
+}
+
+a:hover {
+  color: #40a9ff;
+  text-decoration: underline;
+}
+
+/* Global button styles */
+.ant-btn {
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+/* Global card styles */
+.ant-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Global input styles */
+.ant-input,
+.ant-input-password {
+  border-radius: 6px;
+}
+
+/* Global table styles */
+.ant-table {
+  border-radius: 8px;
+}
+
+/* Global pagination styles */
+.ant-pagination {
+  text-align: center;
+  margin-top: 16px;
+}
+
+/* Responsive utility classes */
+@media (max-width: 768px) {
+  .hide-mobile {
+    display: none !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .hide-desktop {
+    display: none !important;
+  }
+}

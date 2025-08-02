@@ -1,0 +1,142 @@
+.app-layout {
+  min-height: 100vh;
+}
+
+.app-sider {
+  background: #001529;
+}
+
+.logo {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #002140;
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  gap: 8px;
+}
+
+.logo-icon {
+  font-size: 24px;
+  color: #1890ff;
+}
+
+.logo-text {
+  color: white;
+  font-weight: 600;
+}
+
+.app-menu {
+  border-right: none;
+}
+
+.app-header {
+  background: white;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.trigger-button {
+  font-size: 18px;
+  color: #666;
+  background: transparent;
+  border: none;
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+}
+
+.trigger-button:hover {
+  color: #1890ff;
+  background: rgba(24, 144, 255, 0.1);
+  border-radius: 6px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.welcome-text {
+  color: #666;
+  font-size: 14px;
+  margin-right: 12px;
+}
+
+.user-avatar {
+  cursor: pointer;
+  transition: all 0.3s;
+  background: #1890ff;
+}
+
+.user-avatar:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
+}
+
+.app-content {
+  margin: 24px;
+  padding: 24px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  min-height: calc(100vh - 112px);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .app-header {
+    padding: 0 16px;
+  }
+
+  .app-content {
+    margin: 16px;
+    padding: 16px;
+  }
+
+  .welcome-text {
+    display: none;
+  }
+}
+
+/* Menu item style optimization */
+.ant-menu-item {
+  margin: 4px 8px !important;
+  border-radius: 6px !important;
+}
+
+.ant-menu-item:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.ant-menu-item-selected {
+  background-color: #1890ff !important;
+}
+
+/* Dropdown menu styles */
+.ant-dropdown-menu {
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.ant-dropdown-menu-item {
+  padding: 8px 16px;
+  border-radius: 4px;
+  margin: 2px 8px;
+}
+
+.ant-dropdown-menu-item:hover {
+  background-color: #f5f5f5;
+}
