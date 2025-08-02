@@ -108,3 +108,5 @@ safety-report.json
 
 # Pre-commit
 .pre-commit-config.yaml.bak
+
+celerybeat-schedule

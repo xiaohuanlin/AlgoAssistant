@@ -39,7 +39,7 @@ A comprehensive algorithm practice management system with AI analysis, multi-pla
 ### Backend Technology Stack
 - **FastAPI**: High-performance Python web framework
 - **SQLAlchemy**: ORM database operations
-- **PostgreSQL**: Primary database
+- **PostgreSQL/SQLite**: Primary database (SQLite for mini deployment)
 - **Redis**: Cache and message queue
 - **Celery**: Asynchronous task processing
 - **JWT**: User authentication
@@ -56,8 +56,9 @@ A comprehensive algorithm practice management system with AI analysis, multi-pla
 ### Infrastructure
 - **Docker**: Containerized deployment
 - **Docker Compose**: Multi-service orchestration
-- **PostgreSQL**: Data persistence
+- **PostgreSQL/SQLite**: Data persistence (flexible database options)
 - **Redis**: Cache and task queue
+- **Nginx**: Static file serving and reverse proxy
 
 ## 🚀 Quick Start
 
@@ -113,7 +114,7 @@ cp backend/.env.example backend/.env
 
 #### Development Mode (Hot Reload)
 ```bash
-# Start all services
+# Start all services (full PostgreSQL setup)
 docker-compose up
 
 # Or start individual services
@@ -122,13 +123,44 @@ docker-compose up backend frontend
 
 #### Production Mode
 ```bash
-# Start all services in background
+# Full deployment (recommended for development)
 docker-compose up -d
+
+# Mini deployment (lightweight, 1GB RAM)
+docker-compose -f docker-compose.mini.yml up -d
 ```
+
+#### 🚀 Mini Deployment (Resource-Optimized)
+For servers with limited resources (1GB RAM), use the mini configuration:
+
+```bash
+# Start mini deployment
+docker-compose -f docker-compose.mini.yml up -d --build
+
+# Check status
+docker-compose -f docker-compose.mini.yml ps
+
+# View logs
+docker-compose -f docker-compose.mini.yml logs -f
+```
+
+**Mini deployment features:**
+- **SQLite** instead of PostgreSQL (saves ~200MB RAM)
+- **Lightweight Redis** with memory limits
+- **Optimized resource limits** for each service
+- **Single-worker Celery** configuration
+- **Nginx** for static file serving
 
 ### 4️⃣ Access Application
 
+#### Full Deployment
 - **Frontend Interface**: http://localhost:3000
+- **Backend API**: http://localhost:8000
+- **API Documentation**: http://localhost:8000/docs
+- **ReDoc Documentation**: http://localhost:8000/redoc
+
+#### Mini Deployment
+- **Frontend Interface**: http://localhost:80 (or your-domain.com)
 - **Backend API**: http://localhost:8000
 - **API Documentation**: http://localhost:8000/docs
 - **ReDoc Documentation**: http://localhost:8000/redoc
@@ -140,8 +172,9 @@ AlgoAssistant/
 ├── 📁 backend/                    # FastAPI backend
 │   ├── 📁 app/
 │   │   ├── 📁 api/               # API routes
-│   │   │   ├── 📄 users.py       # User authentication
+│   │   │   ├── 📄 users.py       # User authentication & profiles
 │   │   │   ├── 📄 records.py     # Solution records
+│   │   │   ├── 📄 problem.py     # Problem bank management
 │   │   │   ├── 📄 leetcode.py    # LeetCode integration
 │   │   │   ├── 📄 notion.py      # Notion integration
 │   │   │   ├── 📄 github.py      # GitHub integration
@@ -149,16 +182,36 @@ AlgoAssistant/
 │   │   │   ├── 📄 review.py      # Review system
 │   │   │   ├── 📄 sync_task.py   # Sync tasks
 │   │   │   ├── 📄 gemini.py      # AI analysis
-│   │   │   └── 📄 dashboard.py   # Dashboard
-│   │   ├── 📁 models/            # Database models
+│   │   │   └── 📄 dashboard.py   # Dashboard analytics
+│   │   ├── 📄 models.py          # Database models
 │   │   ├── 📁 schemas/           # Pydantic schemas
+│   │   │   ├── 📁 enums/         # Enumeration schemas
+│   │   │   ├── 📄 problem.py     # Problem schemas
+│   │   │   ├── 📄 record.py      # Record schemas
+│   │   │   ├── 📄 notification.py # Notification schemas
+│   │   │   └── 📄 ...            # Other schema files
 │   │   ├── 📁 services/          # Business logic
+│   │   │   ├── 📄 base_*.py      # Base service classes
+│   │   │   ├── 📄 problem_service.py # Problem management
+│   │   │   ├── 📄 dashboard_service.py # Dashboard data
+│   │   │   ├── 📄 email_service.py # Email notifications
+│   │   │   └── 📄 ...            # Other service files
 │   │   ├── 📁 tasks/             # Celery tasks
+│   │   │   ├── 📄 leetcode_batch_sync.py # Batch synchronization
+│   │   │   ├── 📄 review_notification.py # Review reminders
+│   │   │   ├── 📄 task_manager.py # Task coordination
+│   │   │   └── 📄 ...            # Other task files
 │   │   ├── 📁 utils/             # Utility functions
+│   │   │   ├── 📄 logger.py      # Logging utilities
+│   │   │   ├── 📄 security.py    # Security functions
+│   │   │   └── 📄 rate_limiter.py # Rate limiting
 │   │   └── 📁 config/            # Configuration management
+│   │       ├── 📄 settings.py    # Application settings
+│   │       └── 📄 sqlite_config.py # SQLite optimizations
 │   ├── 📁 tests/                 # Backend tests
 │   ├── 📄 pyproject.toml         # Project configuration
 │   ├── 📄 Dockerfile             # Docker configuration
+│   ├── 📄 Dockerfile.mini        # Mini deployment Docker
 │   └── 📄 README.md              # Backend documentation
 ├── 📁 frontend/                   # React frontend
 │   ├── 📁 src/
@@ -175,9 +228,15 @@ AlgoAssistant/
 │   │   └── 📁 i18n/              # Internationalization
 │   ├── 📄 package.json           # Node.js dependencies
 │   ├── 📄 Dockerfile             # Docker configuration
+│   ├── 📄 Dockerfile.mini        # Mini deployment Docker
+│   ├── 📄 nginx.conf             # Nginx configuration (full)
+│   ├── 📄 nginx.mini.conf        # Nginx configuration (mini)
 │   └── 📄 README.md              # Frontend documentation
-├── 📄 docker-compose.yml         # Docker orchestration
+├── 📄 docker-compose.yml         # Docker orchestration (full)
 ├── 📄 docker-compose.dev.yml     # Development environment
+├── 📄 docker-compose.mini.yml    # Mini deployment (resource-optimized)
+├── 📄 deploy-mini.sh             # Mini deployment script
+├── 📄 DEPLOY_MINI.md             # Mini deployment guide
 ├── 📄 SETUP.md                   # Detailed setup guide
 ├── 📄 LICENSE                    # MIT license
 └── 📄 README.md                  # Project documentation
@@ -185,15 +244,22 @@ AlgoAssistant/
 
 ## 🔌 API Overview
 
-### 👤 User Authentication (8 endpoints)
+### 👤 User Management (13 endpoints)
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
 | POST | `/api/users/register` | User registration | ❌ |
 | POST | `/api/users/login` | User login | ❌ |
 | GET | `/api/users/me` | Get current user | ✅ |
+| GET | `/api/users/auth-type` | Get authentication type | ✅ |
+| GET | `/api/users/user/profile` | Get user profile | ✅ |
 | PUT | `/api/users/user/profile` | Update user profile | ✅ |
+| POST | `/api/users/change-password` | Change password | ✅ |
+| POST | `/api/users/set-password` | Set password (OAuth users) | ✅ |
+| POST | `/api/users/upload-avatar` | Upload avatar image | ✅ |
+| POST | `/api/users/config` | Create user config | ✅ |
 | GET | `/api/users/config` | Get user config | ✅ |
 | PUT | `/api/users/config` | Update user config | ✅ |
+| POST | `/api/users/trigger-notifications` | Test notifications | ✅ |
 
 ### 🔍 Google OAuth (5 endpoints)
 | Method | Endpoint | Description | Auth Required |
@@ -204,40 +270,94 @@ AlgoAssistant/
 | GET | `/api/google/status` | Check connection status | ✅ |
 | DELETE | `/api/google/disconnect` | Disconnect Google | ✅ |
 
-### 📊 Problem Records (10 endpoints)
+### 📊 Solution Records (9 endpoints)
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| GET | `/api/records/` | Get record list | ✅ |
 | POST | `/api/records/` | Create new record | ✅ |
+| GET | `/api/records/` | Get record list with filters | ✅ |
 | GET | `/api/records/stats` | Get statistics | ✅ |
 | GET | `/api/records/{id}` | Get specific record | ✅ |
 | PUT | `/api/records/{id}` | Update record | ✅ |
 | DELETE | `/api/records/{id}` | Delete record | ✅ |
 | GET | `/api/records/tags` | Get all tags | ✅ |
-| POST | `/api/records/{id}/tags` | Assign tags | ✅ |
+| POST | `/api/records/{id}/tags` | Assign tags to record | ✅ |
+| PUT | `/api/records/tags/{tag_id}/wiki` | Update tag wiki | ✅ |
 
-### 🤖 AI Analysis (4 endpoints)
+### 🧩 Problem Bank (9 endpoints)
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| POST | `/api/gemini/analyze` | Analyze code | ✅ |
-| POST | `/api/gemini/analyze/batch` | Batch analysis | ✅ |
-| GET | `/api/gemini/analysis/{id}` | Get analysis result | ✅ |
-| GET | `/api/gemini/stats` | Get analysis stats | ✅ |
+| POST | `/api/problem/` | Create new problem | ✅ |
+| POST | `/api/problem/import` | Import problems from text | ✅ |
+| GET | `/api/problem/stats` | Get problem bank statistics | ✅ |
+| GET | `/api/problem/{problem_id}` | Get specific problem | ✅ |
+| GET | `/api/problem/{problem_id}/user-records` | Get user records for problem | ✅ |
+| GET | `/api/problem/{problem_id}/statistics` | Get problem statistics | ✅ |
+| PUT | `/api/problem/{problem_id}` | Update problem | ✅ |
+| DELETE | `/api/problem/{problem_id}` | Delete problem | ✅ |
+| GET | `/api/problem/` | Get problem list | ✅ |
 
-### 📚 Review System (4 endpoints)
+### 🤖 AI Analysis (3 endpoints)
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/api/gemini/profile` | Get AI analysis stats | ✅ |
+| POST | `/api/gemini/test-connection` | Test Gemini connection | ✅ |
+
+### 📚 Review System (12 endpoints)
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
 | POST | `/api/review/` | Create review task | ✅ |
 | GET | `/api/review/` | Get review list | ✅ |
 | GET | `/api/review/due` | Get due reviews | ✅ |
-| POST | `/api/review/{id}/mark-reviewed` | Mark as reviewed | ✅ |
+| GET | `/api/review/filter` | Get filtered reviews | ✅ |
+| POST | `/api/review/batch-update` | Batch update reviews | ✅ |
+| POST | `/api/review/batch-delete` | Batch delete reviews | ✅ |
+| POST | `/api/review/delete-all` | Delete all reviews | ✅ |
+| POST | `/api/review/batch-mark-reviewed` | Batch mark as reviewed | ✅ |
+| GET | `/api/review/stats` | Get review statistics | ✅ |
+| GET | `/api/review/{review_id}` | Get specific review | ✅ |
+| POST | `/api/review/{review_id}/mark-reviewed` | Mark as reviewed | ✅ |
 
-### 🔄 Platform Integration
+### 📈 Dashboard Analytics (6 endpoints)
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/api/dashboard/stats/basic` | Get basic statistics | ✅ |
+| GET | `/api/dashboard/stats/categories` | Get category statistics | ✅ |
+| GET | `/api/dashboard/activity/recent` | Get recent activity | ✅ |
+| GET | `/api/dashboard/errors/analysis` | Get error analysis | ✅ |
+| GET | `/api/dashboard/progress/trend` | Get progress trends | ✅ |
+| GET | `/api/dashboard/overview` | Get dashboard overview | ✅ |
+
+### 🔄 Sync Tasks (9 endpoints)
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/api/sync_task/` | Create sync task | ✅ |
+| GET | `/api/sync_task/` | Get sync task list | ✅ |
+| GET | `/api/sync_task/stats` | Get sync statistics | ✅ |
+| GET | `/api/sync_task/{task_id}` | Get specific task | ✅ |
+| DELETE | `/api/sync_task/{task_id}` | Delete sync task | ✅ |
+| POST | `/api/sync_task/{task_id}/pause` | Pause sync task | ✅ |
+| POST | `/api/sync_task/{task_id}/resume` | Resume sync task | ✅ |
+| POST | `/api/sync_task/{task_id}/retry` | Retry sync task | ✅ |
+| GET | `/api/sync_task/{task_id}/review-candidates` | Get review candidates | ✅ |
+
+### 💻 LeetCode Integration (3 endpoints)
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
 | GET | `/api/leetcode/test-connection` | Test LeetCode connection | ✅ |
+| GET | `/api/leetcode/profile` | Get LeetCode profile | ✅ |
+
+### 🔗 Other Platform Integration (3 endpoints)
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
 | GET | `/api/notion/test_connection` | Test Notion connection | ✅ |
 | GET | `/api/github/test_connection` | Test GitHub connection | ✅ |
+
+### 🌐 System Endpoints (3 endpoints)
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/` | API welcome message | ❌ |
+| GET | `/health` | Health check endpoint | ❌ |
+| GET | `/uploads/{file_path}` | Static file serving | ❌ |
 
 ## 🧠 AI Analysis Features
 
@@ -360,15 +480,11 @@ npm run build
 
 ## 🚀 Deployment
 
-### 🌐 Production Deployment
+### 🌐 Production Deployment Options
 
-1. **Update production environment variables**
-2. **Set up SSL certificates**
-3. **Configure reverse proxy (nginx)**
-4. **Use production Docker images**
-
+#### Option 1: Full Deployment (Recommended for Development)
 ```bash
-# Build and deploy
+# Build and deploy with PostgreSQL
 docker-compose up -d
 
 # Check service status
@@ -378,8 +494,46 @@ docker-compose ps
 docker-compose logs -f backend frontend
 ```
 
+#### Option 2: Mini Deployment (Production/Low-Resource Servers)
+For production servers with limited resources (1GB RAM):
+
+```bash
+# 1. Create production environment file
+cp backend/.env.example .env.production
+
+# 2. Update critical settings
+cat > .env.production << EOF
+SECRET_KEY=$(openssl rand -hex 32)
+FERNET_KEY=$(python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
+DATABASE_URL=sqlite:////app/data/algo_assistant.db
+ENVIRONMENT=production
+DEBUG=false
+CORS_ORIGINS=["http://your-domain.com","https://your-domain.com"]
+EOF
+
+# 3. Deploy mini configuration
+docker-compose -f docker-compose.mini.yml up -d --build
+
+# 4. Check status
+docker-compose -f docker-compose.mini.yml ps
+```
+
+### 🔒 Production Security Checklist
+
+#### Required Steps
+1. **Environment Variables**: Generate secure keys and update CORS origins
+2. **SSL Certificate**: Configure HTTPS for production domains
+3. **Database**: Set up database backups and monitoring
+4. **Monitoring**: Set up logging and alerting
+
+#### Optional Steps
+5. **External Services**: Configure OAuth providers and API keys
+6. **Email**: Set up SMTP for notifications
+7. **Domain**: Configure custom domain and DNS
+
 ### 📊 Service Overview
 
+#### Full Deployment
 | Service | Port | Description |
 |---------|------|-------------|
 | Frontend | 3000 | React application |
@@ -387,6 +541,16 @@ docker-compose logs -f backend frontend
 | PostgreSQL | 5432 | Primary database |
 | Redis | 6379 | Cache and message broker |
 | Celery Worker | - | Background task processor |
+
+#### Mini Deployment
+| Service | Port | Description | Memory Limit |
+|---------|------|-------------|--------------|
+| Frontend (Nginx) | 80 | Static files + reverse proxy | 512MB |
+| Backend API | 8000 | FastAPI application | 400MB |
+| SQLite | - | File database | N/A |
+| Redis | 6379 | Cache and message broker | 64MB |
+| Celery Worker | - | Background task processor | 200MB |
+| Celery Beat | - | Task scheduler | 100MB |
 
 ## 📊 Environment Variables
 

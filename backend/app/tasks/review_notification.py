@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List
 
 from celery import shared_task
@@ -19,7 +19,7 @@ def check_due_reviews():
     try:
         db = next(get_db())
         # Get all due reviews (next_review_date <= now and notification not sent)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         due_reviews: List[Review] = (
             db.query(Review)
             .join(Problem)  # Join with Problem table
@@ -67,7 +67,7 @@ def check_due_reviews():
                     # Update notification status for successful notifications
                     for review in reviews:
                         review.notification_sent = True
-                        review.notification_sent_at = datetime.utcnow()
+                        review.notification_sent_at = datetime.now(timezone.utc)
                         review.notification_status = "sent"
                         # Set notification type based on successful channels
                         successful_channels = [k for k, v in results.items() if v]

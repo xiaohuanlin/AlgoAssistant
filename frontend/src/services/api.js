@@ -86,7 +86,6 @@ export const API_ENDPOINTS = {
 
   // Platform Integrations
   INTEGRATIONS: {
-    LEETCODE_TEST: '/api/leetcode/test-connection',
     NOTION_TEST: '/api/notion/test_connection',
     GITHUB_TEST: '/api/github/test_connection',
     GEMINI_TEST: '/api/gemini/test-connection',
@@ -113,62 +112,15 @@ export const API_ENDPOINTS = {
     RESUME: (taskId) => `/api/sync_task/${taskId}/resume`,
   },
 
-  // Sync Tasks (alias for backward compatibility)
-  SYNC_TASKS: {
-    CREATE: '/api/sync_task/',
-    LIST: '/api/sync_task/',
-    DETAIL: (taskId) => `/api/sync_task/${taskId}`,
-    DELETE: (taskId) => `/api/sync_task/${taskId}`,
-    STATS: '/api/sync_task/stats',
-    RETRY: (taskId) => `/api/sync_task/${taskId}/retry`,
-    PAUSE: (taskId) => `/api/sync_task/${taskId}/pause`,
-    RESUME: (taskId) => `/api/sync_task/${taskId}/resume`,
-  },
-
-  // GitHub Integration (supplement)
-  GITHUB: {
-    SYNC: '/api/github/sync',
-    SYNC_STATUS: '/api/github/sync/status',
-    SYNC_PROGRESS: '/api/github/sync/progress',
-    SYNC_STOP: '/api/github/sync/stop',
-    SYNC_RESUME: '/api/github/sync/resume',
-    RETRY_FAILED: '/api/github/sync/retry',
-    SYNC_LOGS: '/api/github/sync/logs',
-  },
-
-  // LeetCode Integration (supplement)
+  // LeetCode Integration
   LEETCODE: {
-    SYNC: '/api/leetcode/sync',
-    SYNC_PROGRESS: '/api/leetcode/sync/progress',
-    SYNC_STOP: '/api/leetcode/sync/stop',
-    SYNC_LOGS: '/api/leetcode/sync/logs',
+    TEST_CONNECTION: '/api/leetcode/test-connection',
     PROFILE: '/api/leetcode/profile',
   },
 
-  // Notion Integration (supplement)
+  // Notion Integration
   NOTION: {
     TEST_CONNECTION: '/api/notion/test_connection',
-    SYNC: '/api/notion/sync',
-    SYNC_STATUS: '/api/notion/sync/status',
-    SYNC_PROGRESS: '/api/notion/sync/progress',
-  },
-
-  // AI Analysis
-  AI: {
-    ANALYZE: '/api/ai/analyze',
-    ANALYZE_BATCH: '/api/ai/analyze/batch',
-    STATUS: (recordId) => `/api/ai/status/${recordId}`,
-    STATS: '/api/ai/stats',
-    HISTORY: (recordId) => `/api/ai/history/${recordId}`,
-  },
-
-  // AI Analysis (legacy)
-  AI_ANALYSIS: {
-    CREATE: '/api/ai_analysis/',
-    LIST: '/api/ai_analysis/',
-    DETAIL: (taskId) => `/api/ai_analysis/${taskId}`,
-    DELETE: (taskId) => `/api/ai_analysis/${taskId}`,
-    STATS: '/api/ai_analysis/stats',
   },
 
   // Problem Bank
