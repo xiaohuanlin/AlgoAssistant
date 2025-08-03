@@ -192,7 +192,19 @@ export const handleApiError = (error) => {
           return `Bad request: ${JSON.stringify(data)}`;
         }
       case 401:
-        return data.detail || 'Authentication failed, please login again';
+        // Handle authentication errors
+        if (data.detail) {
+          // Check for specific authentication error types
+          if (data.detail.includes('password') || 
+              data.detail.includes('credentials') ||
+              data.detail.includes('用户名') || 
+              data.detail.includes('密码')) {
+            // Return a special marker that the frontend can translate
+            return 'INVALID_CREDENTIALS';
+          }
+          return data.detail;
+        }
+        return 'AUTHENTICATION_FAILED';
       case 403:
         return data.detail || 'Permission denied, cannot access this resource';
       case 404:

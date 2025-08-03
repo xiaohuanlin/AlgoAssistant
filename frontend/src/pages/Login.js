@@ -20,7 +20,14 @@ const Login = () => {
       message.success(t('auth.loginSuccess'));
       navigate('/');
     } catch (error) {
-      message.error(error.message || t('auth.loginFailed'));
+      // Handle special error codes for better i18n
+      let errorMessage = error.message || t('auth.loginFailed');
+      if (error.message === 'INVALID_CREDENTIALS') {
+        errorMessage = t('auth.invalidCredentials');
+      } else if (error.message === 'AUTHENTICATION_FAILED') {
+        errorMessage = t('auth.loginFailed');
+      }
+      message.error(errorMessage);
     } finally {
       setLoading(false);
     }

@@ -7,18 +7,23 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install all dependencies first (needed for build)
-# Set Node.js memory limits for build
-ENV NODE_OPTIONS="--max-old-space-size=1024"
-RUN npm install --legacy-peer-deps --no-audit --no-fund
+# Set Node.js memory limits for ultra-low memory build
+ENV NODE_OPTIONS="--max-old-space-size=768"
+ENV NPM_CONFIG_PROGRESS=false
+ENV NPM_CONFIG_LOGLEVEL=error
+# Install dependencies
+RUN npm install --legacy-peer-deps --no-audit --no-fund --prefer-offline
 
 # Copy source code
 COPY . .
 
-# Build production version with memory optimizations
+# Build production version with ultra-low memory optimizations
 ENV NODE_ENV=production
 ENV GENERATE_SOURCEMAP=false
 ENV INLINE_RUNTIME_CHUNK=false
-ENV CI=false
+ENV CI=true
+ENV BUILD_PATH=build
+ENV DISABLE_ESLINT_PLUGIN=true
 RUN npm run build
 
 # Production stage - use nginx alpine

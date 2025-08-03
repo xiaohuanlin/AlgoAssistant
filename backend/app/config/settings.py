@@ -63,39 +63,10 @@ class Settings(BaseSettings):
     # EXTERNAL SERVICE INTEGRATIONS
     # ================================
 
-    # GitHub OAuth
-    GITHUB_CLIENT_ID: str = "your-github-client-id"
-    GITHUB_CLIENT_SECRET: str = "your-github-client-secret"
-    GITHUB_REDIRECT_URI: str = "http://localhost:8000/api/github/callback"
-
-    # Google OAuth
+    # Google OAuth (only service used in mini deployment)
     GOOGLE_CLIENT_ID: str = "your-google-client-id"
     GOOGLE_CLIENT_SECRET: str = "your-google-client-secret"
     GOOGLE_REDIRECT_URI: str = "http://localhost:8000/api/google/callback"
-
-    # LeetCode Integration
-    LEETCODE_SESSION_COOKIE: str = "your-leetcode-session-cookie"
-    LEETCODE_CSRF_TOKEN: str = "your-leetcode-csrf-token"
-
-    # Notion Integration
-    NOTION_CLIENT_ID: str = "your-notion-client-id"
-    NOTION_CLIENT_SECRET: str = "your-notion-client-secret"
-    NOTION_REDIRECT_URI: str = "http://localhost:8000/api/notion/callback"
-
-    # Gemini AI Integration
-    GEMINI_API_KEY: str = "your-gemini-api-key"
-    GEMINI_MODEL: str = "gemini-pro"
-
-    # ================================
-    # EMAIL CONFIGURATION
-    # ================================
-    SMTP_SERVER: str = "smtp.gmail.com"
-    SMTP_PORT: int = 587
-    SMTP_USERNAME: str = "your-email@gmail.com"
-    SMTP_PASSWORD: str = "your-app-specific-password"
-    SMTP_USE_TLS: bool = True
-    FROM_EMAIL: str = "noreply@algoassistant.com"
-    FROM_NAME: str = "AlgoAssistant"
 
     # ================================
     # FILE UPLOAD CONFIGURATION
@@ -130,41 +101,9 @@ class Settings(BaseSettings):
     ENABLE_PROFILING: bool = False
 
     # ================================
-    # FEATURE FLAGS
-    # ================================
-    ENABLE_USER_REGISTRATION: bool = True
-    ENABLE_EMAIL_NOTIFICATIONS: bool = True
-    ENABLE_GITHUB_INTEGRATION: bool = True
-    ENABLE_NOTION_INTEGRATION: bool = True
-    ENABLE_LEETCODE_INTEGRATION: bool = True
-    ENABLE_GEMINI_INTEGRATION: bool = True
-    ENABLE_REVIEW_SYSTEM: bool = True
-    ENABLE_BACKGROUND_TASKS: bool = True
-
-    # ================================
     # BACKGROUND TASK PROCESSING
     # ================================
     CELERY_WORKER_CONCURRENCY: int = 1
-
-    # Legacy queue configurations for backward compatibility
-    USER_RATE_LIMIT_DELAY: float = 2.0
-    MAX_SUBMISSIONS_PER_USER: int = 1000
-    LEETCODE_QUEUE_NAME: str = "leetcode_sync_queue"
-    GIT_QUEUE_NAME: str = "git_sync_queue"
-    CONSUMER_BATCH_SIZE: int = 5
-    DB_CONNECTION_TIMEOUT: int = 300
-
-    # Rate limit configurations
-    LEETCODE_RATE_LIMIT: dict = {
-        "max_requests": 10,
-        "window_seconds": 60,
-        "operation": "leetcode_graphql",
-    }
-    GIT_RATE_LIMIT: dict = {
-        "max_requests": 5,
-        "window_seconds": 60,
-        "operation": "github_api",
-    }
 
     # ================================
     # MEMORY OPTIMIZATION SETTINGS

@@ -21,11 +21,13 @@ const Register = () => {
     setLoading(true);
     try {
       await register(values);
-      message.success(t('auth.registerSuccess'));
-      navigate('/');
+      message.success(t('auth.registerSuccess'), 3);
+      // Delay navigation to show success message
+      setTimeout(() => {
+        navigate('/');
+      }, 1500);
     } catch (error) {
       message.error(error.message || t('auth.registerFailed'));
-    } finally {
       setLoading(false);
     }
   };

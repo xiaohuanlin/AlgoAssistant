@@ -224,7 +224,7 @@ const Layout = ({ children }) => {
       label: (
         <span style={{ fontWeight: '500' }}>{t('navigation.profile')}</span>
       ),
-      onClick: () => navigate('/profile'),
+      onClick: () => navigate('/settings'),
     },
     {
       key: 'settings',

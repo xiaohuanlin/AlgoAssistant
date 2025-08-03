@@ -36,6 +36,7 @@
     "googleLoginSuccess": "Google login successful!",
     "login": "Login",
     "loginFailed": "Login failed, please check username and password",
+    "invalidCredentials": "Invalid username or password, please try again",
     "loginNow": "Login Now",
     "loginSuccess": "Login successful!",
     "loginWithGoogle": "Login with Google",

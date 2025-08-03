@@ -236,28 +236,23 @@ docker-compose down
 
 For production deployment with SQLite (1GB RAM optimized):
 
+**Note**: Mini setup uses pre-configured `.env.mini` files instead of `.env.production`.
+
 ```bash
-# 1. Create production environment (if not done in step 3)
-cat > .env.production << EOF
-SECRET_KEY=$(openssl rand -hex 32)
-FERNET_KEY=$(python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
-DATABASE_URL=sqlite:////app/data/algo_assistant.db
-ENVIRONMENT=production
-DEBUG=false
-LOG_LEVEL=WARNING
-CORS_ORIGINS=["http://your-domain.com","https://your-domain.com"]
+# 1. Configure mini environment files
+# Edit backend/.env.mini - update the following critical settings:
+# - SECRET_KEY: Generate with $(openssl rand -hex 32)
+# - GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET
+# - CORS_ORIGINS: Update with your actual domain
+# - Any other API keys you need
 
-# Redis
-REDIS_URL=redis://redis:6379/0
-CELERY_BROKER_URL=redis://redis:6379/1
-CELERY_RESULT_BACKEND=redis://redis:6379/2
+# Edit frontend/.env.mini if needed (usually default settings work)
 
-# Add your real credentials here
-GOOGLE_CLIENT_ID=your-real-google-client-id
-GOOGLE_CLIENT_SECRET=your-real-google-client-secret
-EOF
+# 2. For 1GB memory servers, use the optimized deployment script:
+cd scripts
+./deploy-1gb.sh
 
-# 2. Start mini deployment
+# OR manually start mini deployment:
 docker-compose -f docker-compose.mini.yml up -d --build
 
 # 3. Check status

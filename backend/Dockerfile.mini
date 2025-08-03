@@ -48,11 +48,9 @@ ENV PATH="/app/.venv/bin:$PATH"
 COPY --chown=appuser:appuser . .
 
 # Create data, logs, and uploads directories with proper permissions
-RUN mkdir -p data logs uploads && \
-    touch data/algo_assistant.db && \
+RUN mkdir -p /app/data /app/logs /app/uploads && \
     chown -R appuser:appuser /app && \
-    chmod 755 data uploads && \
-    chmod 644 data/algo_assistant.db
+    chmod 755 /app/data /app/logs /app/uploads
 
 # Switch to non-root user
 USER appuser
